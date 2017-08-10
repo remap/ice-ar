@@ -1,0 +1,61 @@
+digraph content_object {
+	graph [dir=none, layout=dot, nodesep=0.2, margin=0, ranksep=0.3];
+	node [label="\N", shape=box];
+	edge [dir=none];
+	compound=true
+	node [style=filled, fillcolor="#f2f2f2"]
+	label="Mobile Terminal Namespace"
+	labelloc=top;
+
+	userid [label = "<user-id>" fillcolor="#ffff00"]
+	root [label = "/icear/user"]
+	root -> userid
+
+	userid->ndnrtc [lhead=cluster_ndnrtc]
+
+	subgraph cluster_ndnrtc {
+		edge [weight=10]
+		graph[style=dotted];
+		label = "NDN-RTC Stream"
+
+		ndnrtcVer [label="%FD%02"]
+		ndnrtc -> ndnrtcVer
+		ndnrtcVer -> stream_type
+
+		stream_type -> stream_name [weight=0.9]
+		stream_name [label="<stream name>", style=filled, fillcolor="#deadbe"]
+		mid [label="hd1080p", style=filled, fillcolor="#deadbe"]
+		stream_name -> mid [weight=0.9]
+
+		_meta2 [label="_meta"]
+		stream_name -> _meta2 [weight=0.9]
+		streamMeta [shape=record, label="{SD640 | HD720p | HD1080p }", width=1.2 style=filled, fillcolor="#BBEEFF", fontname="courier bold", fontsize=10]
+		_meta2 -> streamMeta [style=dashed, dir=forward]
+		mid -> d
+		mid -> k
+		mid -> _meta
+		threadMeta [label="Thread Metadata", style=filled, fillcolor="#BBEEFF", fontname="courier bold", fontsize=10]
+		_meta -> threadMeta [style=dashed, dir=forward]
+
+		deltaSeqNo [label="<sequence no>", style=filled, fillcolor="#eeddee"]
+		d -> deltaSeqNo
+		deltaSegNo [label="<segment #>", style=filled, fillcolor="#bedead", fontsize=10]
+		deltaSeqNo-> deltaSegNo
+		frameData [label="Frame Payload", style=filled, fillcolor="#BBEEFF", fontname="courier bold", fontsize=10]
+		deltaSegNo -> frameData [style=dashed, dir=forward]
+
+		deltaSeqNo-> _parity
+		deltaSeqNo-> _manifest
+		paritySegNo [label="<segment #>", style=filled, fillcolor="#bedead", fontsize=10]
+		manifestSegNo [label="<segment #>", style=filled, fillcolor="#bedead", fontsize=10]
+		
+		_parity -> paritySegNo
+		parityData [label="FEC Payload", style=filled, fillcolor="#BBEEFF", fontname="courier bold", fontsize=10]
+		paritySegNo -> parityData [style=dashed, dir=forward]
+
+		manifestPayload [label="Manifest Payload", style=filled, fillcolor="#BBEEFF", fontname="courier bold", fontsize=10]
+		_manifest -> manifestSegNo
+		manifestSegNo -> manifestPayload [style=dashed, dir=forward]
+	}
+
+}

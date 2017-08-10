@@ -1,0 +1,160 @@
+digraph content_object {
+	graph [dir=none, layout=dot, nodesep=0.2, margin=0, ranksep=0.3];
+	node [label="\N", shape=box];
+	edge [dir=none];
+	compound=true
+	node [style=filled, fillcolor="#f2f2f2"]
+	labelloc=top;
+	label = "Edge Node Process Namespace"
+
+	frame [label = "<Frame N>" fillcolor="#eeddee"]
+	frame2 [label = "<Frame N+1>" fillcolor="#eeddee"]
+	frame3 [label = "..." fillcolor="#eeddee"]
+	frame4 [label = "<Frame N+K>" fillcolor="#eeddee"]
+	userid [label = "<user-id>" fillcolor="#ffff00"]
+	processid [label = "<process-id>" fillcolor="#ff8800"]
+	root [label = "/icear/user"]
+
+	root -> userid
+	userid -> processid
+	processid -> frame
+	processid -> frame2
+	processid -> frame3
+	processid -> frame4
+
+	frame -> yolo
+
+	yolo -> objectManifest [lhead = "cluster_object"]
+	//object [label="Generalized NDN object: Annotations Bundle" fillcolor="#eeffbb" style=dashed]
+
+	subgraph cluster_object {
+		edge [weight=10]
+		graph[style=dotted];
+		label = "Generalized Object"
+
+		fs0 [label="%00%00", style=filled, fillcolor="#eeddee", fontsize=10]
+		fs1 [label="%00%01", style=filled, fillcolor="#eeddee", fontsize=10]
+		fs2 [label="...", style=filled, fillcolor="#eeddee", fontsize=10]
+		fsN [label="%00%NN", style=filled, fillcolor="#eeddee", fontsize=10]
+	
+		objectManifest [label="_manifest" fillcolor="#ADEADA"]
+		objectPayload [shape=record, label = "{ Payload }", fontname = "courier bold", style=filled, fillcolor="#bedead", width=2]
+		objectManifestPayload [fillcolor="#bedead" label="Manifest" fontname="courier bold"]
+		objectManifest -> objectManifestPayload [style=dashed, dir=forward]
+		objectMetaComp [label="_meta" fillcolor="#ADEADA"]
+		objectMetaComp -> objectMeta
+		objectMeta [
+			shape=none
+			fontname="courier"
+			fontsize=11
+			label=<<table border="0" cellspacing="0">
+    	                <tr><td border="1" bgcolor="#bedead">Content-Type</td></tr>
+    	                <tr><td border="1" bgcolor="#bedead">Timestamp</td></tr>
+						<tr><td border="1" bgcolor="#bedead">Content-Size</td></tr>
+						<tr><td border="1" bgcolor="#bedead">Other</td></tr>
+					</table>>
+		]
+
+		fs0 -> objectPayload [style=dashed,dir=forward, shape="normal"]
+		fs1 -> objectPayload [style=dashed,dir=forward, shape="normal"]
+		fs2 -> objectPayload [style=dashed,dir=forward, shape="normal"]
+		fsN -> objectPayload [style=dashed,dir=forward, shape="normal"]
+	}
+
+   /*
+	seq_invis [style=invisible]
+	seq_invis -> seq
+	seq [label="<sequence no>" style=filled, fillcolor="#eeddee"]
+
+	invis1 [shape=point label=""]
+	seq->invis1
+	invis1->objectManifest [lhead=cluster_object]
+
+	invis2 [shape=point label=""]
+	seq->invis2
+	invis2->stream_type [lhead=cluster_ndnrtc]
+
+	commentOr [label="OR" shape=diamond color="#00aa00" fillcolor="#00ee00"]
+	invis1->commentOr [weight=5 width=0.5 color="#00aa00"]
+	commentOr->invis2 [weight=5 width=0.5 color="#00aa00"]
+
+	seq -> objectMetaComp
+	objectMetaComp [label="_meta" fillcolor="#ADEADA"]
+	objectMeta [
+			shape=none
+			fontname="courier"
+			fontsize=11
+			label=<<table border="0" cellspacing="0">
+    	                <tr><td border="1" bgcolor="grey">Content-Type=...</td></tr>
+    	                <tr><td border="1" bgcolor="grey">Timestamp</td></tr>
+                    	<tr><td border="1" bgcolor="grey">Content-Size</td></tr>
+    	                <tr><td border="1" bgcolor="grey">Content-Type-Specific Fields</td></tr>
+    	            </table>>
+	]
+	objectMetaComp->objectMeta [dir=forward style=dashed]
+	{rank=same; objectMetaComp; invis1; commentOr; invis2;}
+
+	subgraph cluster_object {
+		edge [weight=10]
+		graph[style=dotted];
+		label = "Data Payload + Manifest"
+
+		fs0 [label="%00%00", style=filled, fillcolor="#bedead", fontsize=10]
+		fs1 [label="%00%01", style=filled, fillcolor="#bedead", fontsize=10]
+		fs2 [label="...", style=filled, fillcolor="#bedead", fontsize=10]
+		fsN [label="%00%NN", style=filled, fillcolor="#bedead", fontsize=10]
+	
+		objectManifest [label="_manifest" fillcolor="#ADEADA"]
+		objectPayload [shape=record, label = "{ Payload }", fontname = "courier bold", style=filled, fillcolor="#BBEEFF", width=2]
+		objectManifestPayload [fillcolor="#BBEEFF" label="manifest" fontname="courier bold"]
+		objectManifest -> objectManifestPayload [style=dashed, dir=forward]
+
+		fs0 -> objectPayload [style=dashed,dir=forward, shape="normal"]
+		fs1 -> objectPayload [style=dashed,dir=forward, shape="normal"]
+		fs2 -> objectPayload [style=dashed,dir=forward, shape="normal"]
+		fsN -> objectPayload [style=dashed,dir=forward, shape="normal"]
+	}
+
+	subgraph cluster_ndnrtc {
+		edge [weight=10]
+		graph[style=dotted];
+		label = "NDN-RTC Stream"
+
+		stream_type -> stream_name [weight=0.9]
+		stream_name [label="<stream name>", style=filled, fillcolor="#deadbe"]
+		mid [label="hd1080p", style=filled, fillcolor="#deadbe"]
+		stream_name -> mid [weight=0.9]
+
+		_meta2 [label="_meta"]
+		stream_name -> _meta2 [weight=0.9]
+		streamMeta [shape=record, label="{SD640 | HD720p | HD1080p }", width=1.2 style=filled, fillcolor="#BBEEFF", fontname="courier bold", fontsize=10]
+		_meta2 -> streamMeta [style=dashed, dir=forward]
+		mid -> d
+		mid -> k
+		mid -> _meta
+		threadMeta [label="Thread Metadata", style=filled, fillcolor="#BBEEFF", fontname="courier bold", fontsize=10]
+		_meta -> threadMeta [style=dashed, dir=forward]
+
+		deltaSeqNo [label="<sequence no>", style=filled, fillcolor="#eeddee"]
+		d -> deltaSeqNo
+		deltaSegNo [label="<segment #>", style=filled, fillcolor="#bedead", fontsize=10]
+		deltaSeqNo-> deltaSegNo
+		frameData [label="Frame Payload", style=filled, fillcolor="#BBEEFF", fontname="courier bold", fontsize=10]
+		deltaSegNo -> frameData [style=dashed, dir=forward]
+
+		deltaSeqNo-> _parity
+		deltaSeqNo-> _manifest
+		paritySegNo [label="<segment #>", style=filled, fillcolor="#bedead", fontsize=10]
+		manifestSegNo [label="<segment #>", style=filled, fillcolor="#bedead", fontsize=10]
+		
+		_parity -> paritySegNo
+		parityData [label="FEC Payload", style=filled, fillcolor="#BBEEFF", fontname="courier bold", fontsize=10]
+		paritySegNo -> parityData [style=dashed, dir=forward]
+
+		manifestPayload [label="Manifest Payload", style=filled, fillcolor="#BBEEFF", fontname="courier bold", fontsize=10]
+		_manifest -> manifestSegNo
+		manifestSegNo -> manifestPayload [style=dashed, dir=forward]
+	}
+	*/
+
+}
