@@ -12,7 +12,7 @@ digraph content_object {
 	frame3 [label = "..." fillcolor="#eeddee"]
 	frame4 [label = "<Frame N+K>" fillcolor="#eeddee"]
 	userid [label = "<user-id>" fillcolor="#ffff00"]
-	processid [label = "<process-id>" fillcolor="#ff8800"]
+	processid [label = "<service-name>" fillcolor="#ff8800"]
 	root [label = "/icear/user"]
 
 	root -> userid
