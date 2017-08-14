@@ -65,7 +65,7 @@ public class PointCloudGUI : MonoBehaviour
     private float m_accumulation;
     private float m_currentTime;
 	private string logString;
-	private LastFrameData lastFrame;
+	private OnCameraFrame lastFrame;
 
     private TangoApplication m_tangoApplication;
 
@@ -79,7 +79,7 @@ public class PointCloudGUI : MonoBehaviour
         m_currentTime = 0.0f;
         m_fpsText = "FPS = Calculating";
 		m_tangoApplication = FindObjectOfType<TangoApplication>();
-		lastFrame = OnCameraFrame.FindObjectOfType<LastFrameData>();
+		lastFrame = GameObject.FindObjectOfType<OnCameraFrame>();
     }
 
     /// <summary>
@@ -150,10 +150,10 @@ public class PointCloudGUI : MonoBehaviour
 				UI_FONT_SIZE + "Last frame (s): " + lastFrame.timestamp + "</size>");
 
 			GUI.Label(new Rect(UI_LABEL_START_X, UI_DEPTH_LABLE_START_Y + (UI_LABEL_OFFSET * 4.0f), UI_LABEL_SIZE_X, UI_LABEL_SIZE_Y),
-				UI_FONT_SIZE + "Position: " + _GetLoggingStringFromVec3(lastFrame.camPos) + "</size>");
+				UI_FONT_SIZE + "Position: " + _GetLoggingStringFromVec3(lastFrame.cameraPos) + "</size>");
 
 			GUI.Label(new Rect(UI_LABEL_START_X, UI_DEPTH_LABLE_START_Y + (UI_LABEL_OFFSET * 5.0f), UI_LABEL_SIZE_X, UI_LABEL_SIZE_Y),
-				UI_FONT_SIZE + "Rotation: " + _GetLoggingStringFromQuaternion(lastFrame.camRot) + "</size>");
+				UI_FONT_SIZE + "Rotation: " + _GetLoggingStringFromQuaternion(lastFrame.cameraRot) + "</size>");
 
             GUI.color = oldColor;
         }

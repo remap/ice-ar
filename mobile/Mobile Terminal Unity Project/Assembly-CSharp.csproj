@@ -49,12 +49,11 @@
      <Compile Include="Assets\FrameObjectData.cs" />
      <Compile Include="Assets\Google-Unity\Scripts\AndroidHelper.cs" />
      <Compile Include="Assets\Google-Unity\Scripts\AndroidLifecycle.cs" />
-     <Compile Include="Assets\LastFrameData.cs" />
+     <Compile Include="Assets\Google-Unity\Scripts\NdnRtc.cs" />
      <Compile Include="Assets\OnCameraFrame.cs" />
      <Compile Include="Assets\PointCloudGUI.cs" />
      <Compile Include="Assets\Scripts\ObjectPool.cs" />
      <Compile Include="Assets\Scripts\PooledObject.cs" />
-     <Compile Include="Assets\Scripts\Stuff.cs" />
      <Compile Include="Assets\TangoPrefabs\Deprecated\TangoARPoseController.cs" />
      <Compile Include="Assets\TangoPrefabs\Deprecated\TangoDeltaPoseController.cs" />
      <Compile Include="Assets\TangoPrefabs\Scripts\ARCameraPostProcess.cs" />

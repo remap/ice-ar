@@ -10,7 +10,12 @@ public class OnCameraFrame : MonoBehaviour, ITangoVideoOverlay {
 	public FrameObjectData prefab;
 	public long frameNumber;
 	public FrameObjectData spawn;
-	public LastFrameData lastFrame;
+	public double timestamp;
+	public Tango.TangoUnityImageData imgBuffer;
+	public Vector3 cameraPos;
+	public Quaternion cameraRot;
+	public float uOffset;
+	public float vOffset;
 	public Dictionary<long, FrameObjectData> frameObjects;
 
 	void Awake () {
@@ -23,8 +28,13 @@ public class OnCameraFrame : MonoBehaviour, ITangoVideoOverlay {
 		tango = FindObjectOfType <TangoApplication> ();
 		tango.Register (this);
 		frameNumber = 0;
-		lastFrame = gameObject.GetComponent<LastFrameData>();
 		frameObjects = new Dictionary<long, FrameObjectData> ();
+		timestamp = 0;
+		imgBuffer = null;
+		cameraPos = Vector3.zero;
+		cameraRot = Quaternion.identity;
+		uOffset = 0.0f;
+		vOffset = 0.0f;
 	}
 
 	public void OnDestroy()
@@ -34,13 +44,13 @@ public class OnCameraFrame : MonoBehaviour, ITangoVideoOverlay {
 
 	public void OnTangoImageAvailableEventHandler(Tango.TangoEnums.TangoCameraId cameraId, Tango.TangoUnityImageData imageBuffer)
 	{
-		//holds latest frame data to access outside of this script
-		lastFrame.setLastFrameData(gameObject.GetComponent<TangoARScreen> ().m_screenUpdateTime,
-			imageBuffer,
-			gameObject.GetComponent<TangoPoseController> ().finalPosition,
-			gameObject.GetComponent<TangoPoseController> ().finalRotation,
-			gameObject.GetComponent<TangoARScreen> ().m_uOffset,
-			gameObject.GetComponent<TangoARScreen> ().m_vOffset);
+
+		timestamp = gameObject.GetComponent<TangoARScreen> ().m_screenUpdateTime;
+		imgBuffer = imageBuffer;
+		cameraPos = gameObject.GetComponent<TangoPoseController> ().finalPosition;
+		cameraRot = gameObject.GetComponent<TangoPoseController> ().finalRotation;
+		uOffset = gameObject.GetComponent<TangoARScreen> ().m_uOffset;
+		vOffset = gameObject.GetComponent<TangoARScreen> ().m_vOffset;
 		
 		//for testing
 		//frameNumber++;
@@ -86,5 +96,6 @@ public class OnCameraFrame : MonoBehaviour, ITangoVideoOverlay {
 		spawn.vOffset = gameObject.GetComponent<TangoARScreen> ().m_vOffset;
 
 	}
+
 		
 }
