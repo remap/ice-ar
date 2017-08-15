@@ -1,0 +1,4 @@
+src/libndnrtc_la-slot-buffer.lo: src/slot-buffer.cpp \
+ /usr/include/stdc-predef.h
+
+/usr/include/stdc-predef.h:
