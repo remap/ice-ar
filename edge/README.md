@@ -22,6 +22,7 @@ The edge node includes the communication plane (using `ndnrtc` and `nfd`) and th
 4. In the `darknet` folder, compile `YOLO`:
 
 		cd darknet
+		wget https://pjreddie.com/media/files/yolo.weights
 		make
 
 5. Now it's ready to run the edge. 
@@ -38,6 +39,8 @@ The edge node includes the communication plane (using `ndnrtc` and `nfd`) and th
 		cd ndnrtc/cpp
 		./ndnrtc-client -c ./sample-producer.cfg -p ./rule.conf -t 300 -s /yuanjie
 		./ndnrtc-client -c ./sample-consumer.cfg -p ./rule.conf -t 300 -s /yuanjie
+
+	**NOTE:** Please copy the test videos (e.g., *test-source-320x240.argb*) into `ndnrtc/cpp`.
 		
 	A window will popup to display the recognized frames. Alternatively, you can check `darknet/ndnrtc.png`, which stores the latest frame with recognized objects. 
 
@@ -46,5 +49,4 @@ The edge node includes the communication plane (using `ndnrtc` and `nfd`) and th
 - **Performance issue in `YOLO`**: Without GPU acceleration, it takes ~10s for YOLO to process each video frame. 
 
 - **Synchronization between `ndnrtc` and `YOLO`**: For real-time computation, ideally `YOLO` should catch up with frame fetching by `ndnrtc-client`. But without CUDA, it turns out to be impossible. Currently, `ndnrtc` and `YOLO` use a named pipe `/tmp/frame_fifo` for synchronization. But due to the limited size of pipe, if `YOLO` cannot catch up with `ndnrtc`, frame loss would be observed. 
-
 
