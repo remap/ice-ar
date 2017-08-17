@@ -35,6 +35,8 @@ public class OnCameraFrame : MonoBehaviour, ITangoVideoOverlay {
 		cameraRot = Quaternion.identity;
 		uOffset = 0.0f;
 		vOffset = 0.0f;
+
+		NdnRtc.Initialize ();
 	}
 
 	public void OnDestroy()
@@ -71,6 +73,7 @@ public class OnCameraFrame : MonoBehaviour, ITangoVideoOverlay {
 		//create a FrameObject and save associated data
 		//saveData (imageBuffer, frameNumber);
 
+		NdnRtc.videoStream.processIncomingFrame (imageBuffer);
 	}
 
 	void saveData(Tango.TangoUnityImageData imageBuffer, long frameNumber)
