@@ -73,7 +73,13 @@ public class OnCameraFrame : MonoBehaviour, ITangoVideoOverlay {
 		//create a FrameObject and save associated data
 		//saveData (imageBuffer, frameNumber);
 
-		NdnRtc.videoStream.processIncomingFrame (imageBuffer);
+		int publishedFrameNo = NdnRtc.videoStream.processIncomingFrame (imageBuffer);
+
+		if (publishedFrameNo > 0) {
+			// frame was published succesfully, do something here
+		} else {
+			// frame was dropped by the encoder and was not published
+		}
 	}
 
 	void saveData(Tango.TangoUnityImageData imageBuffer, long frameNumber)

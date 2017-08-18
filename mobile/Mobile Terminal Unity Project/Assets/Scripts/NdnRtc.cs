@@ -53,7 +53,7 @@ public class NdnRtcWrapper {
 	public static extern IntPtr ndnrtc_LocalStream_getStreamName(IntPtr stream);
 
 	[DllImport ("ndnrtc")]
-	public static extern void ndnrtc_LocalVideoStream_incomingI420Frame(IntPtr stream, 
+	public static extern int ndnrtc_LocalVideoStream_incomingI420Frame(IntPtr stream, 
 		uint width, uint height, uint strideY, uint strideU, uint strideV,
 		IntPtr yPlane, IntPtr uPlane, IntPtr vPlane);
 }
@@ -82,12 +82,11 @@ public class LocalVideoStream {
 		NdnRtcWrapper.ndnrtc_destroyLocalStream(ndnrtcHandle_);
 	}
 
-	public void processIncomingFrame (Tango.TangoUnityImageData imageData)
+	public int processIncomingFrame (Tango.TangoUnityImageData imageData)
 	{
 		uint offset = imageData.stride;
 		uint yPlaneSize = imageData.stride * imageData.height;
 		uint vPlaneSize = (imageData.stride / 2) * (imageData.height / 2);
-		uint uPlaneSize = vPlaneSize;
 
 		GCHandle pinnedBuffer = GCHandle.Alloc (imageData.data, GCHandleType.Pinned);
 
@@ -97,10 +96,12 @@ public class LocalVideoStream {
 		offset += vPlaneSize;
 		IntPtr uPlane = new IntPtr (pinnedBuffer.AddrOfPinnedObject ().ToInt64 () + offset);
 
-		NdnRtcWrapper.ndnrtc_LocalVideoStream_incomingI420Frame (ndnrtcHandle_, imageData.width, imageData.height,
+		int frameNo = NdnRtcWrapper.ndnrtc_LocalVideoStream_incomingI420Frame (ndnrtcHandle_, imageData.width, imageData.height,
 			imageData.stride, imageData.stride/2, imageData.stride/2, yPlane, uPlane, vPlane);
 
 		pinnedBuffer.Free ();
+
+		return frameNo;
 	}
 
 	static private void loggerSinkHandler(string logMessage)
