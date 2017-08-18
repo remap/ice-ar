@@ -75,7 +75,7 @@ public class OnCameraFrame : MonoBehaviour, ITangoVideoOverlay {
 
 		int publishedFrameNo = NdnRtc.videoStream.processIncomingFrame (imageBuffer);
 
-		if (publishedFrameNo > 0) {
+		if (publishedFrameNo >= 0) {
 			// frame was published succesfully, do something here
 		} else {
 			// frame was dropped by the encoder and was not published
