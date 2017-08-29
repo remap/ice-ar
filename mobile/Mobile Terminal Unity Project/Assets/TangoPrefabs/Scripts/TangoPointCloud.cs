@@ -253,7 +253,7 @@ public class TangoPointCloud : MonoBehaviour, ITangoPointCloud
             DMatrix4x4 unityWorldTDepthCamera = unityWorldTDevice * m_deviceTDepthCamera;
             transform.position = Vector3.zero;
             transform.rotation = Quaternion.identity;
-
+			m_tangoDeltaPoseController = null;
             // Add offset to the point cloud depending on the offset from TangoDeltaPoseController.
             if (m_tangoDeltaPoseController != null)
             {

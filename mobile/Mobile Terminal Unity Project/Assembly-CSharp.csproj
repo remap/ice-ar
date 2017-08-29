@@ -46,14 +46,18 @@
     </Reference>
   </ItemGroup>
   <ItemGroup>
-     <Compile Include="Assets\FrameObjectData.cs" />
      <Compile Include="Assets\Google-Unity\Scripts\AndroidHelper.cs" />
      <Compile Include="Assets\Google-Unity\Scripts\AndroidLifecycle.cs" />
-     <Compile Include="Assets\OnCameraFrame.cs" />
-     <Compile Include="Assets\PointCloudGUI.cs" />
+     <Compile Include="Assets\Scripts\BoundingBoxObjectData.cs" />
+     <Compile Include="Assets\Scripts\BoundingBoxPoolManager.cs" />
+     <Compile Include="Assets\Scripts\FrameObjectData.cs" />
      <Compile Include="Assets\Scripts\FramePoolManager.cs" />
+     <Compile Include="Assets\Scripts\LabelBackground.cs" />
+     <Compile Include="Assets\Scripts\LabelData.cs" />
      <Compile Include="Assets\Scripts\NdnRtc.cs" />
      <Compile Include="Assets\Scripts\ObjectPool.cs" />
+     <Compile Include="Assets\Scripts\OnCameraFrame.cs" />
+     <Compile Include="Assets\Scripts\PointCloudGUI.cs" />
      <Compile Include="Assets\Scripts\PooledObject.cs" />
      <Compile Include="Assets\TangoPrefabs\Deprecated\TangoARPoseController.cs" />
      <Compile Include="Assets\TangoPrefabs\Deprecated\TangoDeltaPoseController.cs" />
@@ -148,25 +152,76 @@
      <Compile Include="Assets\TangoSDK\TangoUX\Scripts\Interfaces\ITangoUXMultithreaded.cs" />
      <Compile Include="Assets\TangoSDK\TangoUX\Scripts\Listeners\UxExceptionEventListener.cs" />
      <Compile Include="Assets\TangoSDK\TangoUX\Scripts\TangoUx.cs" />
+     <Compile Include="Assets\TextMesh Pro\Examples\Scripts\Benchmark01.cs" />
+     <Compile Include="Assets\TextMesh Pro\Examples\Scripts\Benchmark01_UGUI.cs" />
+     <Compile Include="Assets\TextMesh Pro\Examples\Scripts\Benchmark02.cs" />
+     <Compile Include="Assets\TextMesh Pro\Examples\Scripts\Benchmark03.cs" />
+     <Compile Include="Assets\TextMesh Pro\Examples\Scripts\Benchmark04.cs" />
+     <Compile Include="Assets\TextMesh Pro\Examples\Scripts\CameraController.cs" />
+     <Compile Include="Assets\TextMesh Pro\Examples\Scripts\ChatController.cs" />
+     <Compile Include="Assets\TextMesh Pro\Examples\Scripts\EnvMapAnimator.cs" />
+     <Compile Include="Assets\TextMesh Pro\Examples\Scripts\ObjectSpin.cs" />
+     <Compile Include="Assets\TextMesh Pro\Examples\Scripts\ShaderPropAnimator.cs" />
+     <Compile Include="Assets\TextMesh Pro\Examples\Scripts\SimpleScript.cs" />
+     <Compile Include="Assets\TextMesh Pro\Examples\Scripts\SkewTextExample.cs" />
+     <Compile Include="Assets\TextMesh Pro\Examples\Scripts\TMP_DigitValidator.cs" />
+     <Compile Include="Assets\TextMesh Pro\Examples\Scripts\TMP_ExampleScript_01.cs" />
+     <Compile Include="Assets\TextMesh Pro\Examples\Scripts\TMP_FrameRateCounter.cs" />
+     <Compile Include="Assets\TextMesh Pro\Examples\Scripts\TMP_TextEventCheck.cs" />
+     <Compile Include="Assets\TextMesh Pro\Examples\Scripts\TMP_TextEventHandler.cs" />
+     <Compile Include="Assets\TextMesh Pro\Examples\Scripts\TMP_TextInfoDebugTool.cs" />
+     <Compile Include="Assets\TextMesh Pro\Examples\Scripts\TMP_TextSelector_A.cs" />
+     <Compile Include="Assets\TextMesh Pro\Examples\Scripts\TMP_TextSelector_B.cs" />
+     <Compile Include="Assets\TextMesh Pro\Examples\Scripts\TMP_UiFrameRateCounter.cs" />
+     <Compile Include="Assets\TextMesh Pro\Examples\Scripts\TMPro_InstructionOverlay.cs" />
+     <Compile Include="Assets\TextMesh Pro\Examples\Scripts\TeleType.cs" />
+     <Compile Include="Assets\TextMesh Pro\Examples\Scripts\TextConsoleSimulator.cs" />
+     <Compile Include="Assets\TextMesh Pro\Examples\Scripts\TextMeshProFloatingText.cs" />
+     <Compile Include="Assets\TextMesh Pro\Examples\Scripts\TextMeshSpawner.cs" />
+     <Compile Include="Assets\TextMesh Pro\Examples\Scripts\VertexColorCycler.cs" />
+     <Compile Include="Assets\TextMesh Pro\Examples\Scripts\VertexJitter.cs" />
+     <Compile Include="Assets\TextMesh Pro\Examples\Scripts\VertexShakeA.cs" />
+     <Compile Include="Assets\TextMesh Pro\Examples\Scripts\VertexShakeB.cs" />
+     <Compile Include="Assets\TextMesh Pro\Examples\Scripts\VertexZoom.cs" />
+     <Compile Include="Assets\TextMesh Pro\Examples\Scripts\WarpTextExample.cs" />
+     <None Include="Assets\TextMesh Pro\Resources\LineBreaking Leading Characters.txt" />
+     <None Include="Assets\TextMesh Pro\Resources\Shaders\TMP_Bitmap-Mobile.shader" />
      <None Include="Assets\TangoSDK\Examples\ExperimentalMeshOcclusion\Shaders\ZTestBlur.shader" />
      <None Include="Assets\TangoPrefabs\Shaders\TangoEnvironmentalLighting\EnvironmentalLightingStandard.shader" />
+     <None Include="Assets\TextMesh Pro\Fonts\Anton OFL.txt" />
+     <None Include="Assets\TextMesh Pro\Resources\Shaders\TMPro_Surface.cginc" />
      <None Include="Assets\TangoSDK\Examples\SimpleAugmentedReality\Textures\README.txt" />
      <None Include="Assets\TangoPrefabs\Shaders\PointCloud.shader" />
+     <None Include="Assets\TextMesh Pro\Resources\Shaders\TMP_SDF-Surface.shader" />
      <None Include="Assets\TangoSDK\Core\Shaders\RGB_ARScreen.shader" />
+     <None Include="Assets\TextMesh Pro\Resources\Shaders\TMP_SDF.shader" />
      <None Include="Assets\TangoPrefabs\Shaders\YUV2RGB.shader" />
      <None Include="Assets\TangoSDK\Core\Shaders\RGB2YUV_CbCr.shader" />
+     <None Include="Assets\TextMesh Pro\Resources\Shaders\TMP_SDF-Mobile Overlay.shader" />
+     <None Include="Assets\TextMesh Pro\Resources\Shaders\TMPro_Properties.cginc" />
      <None Include="Assets\TangoPrefabs\Shaders\ARPostProcess.shader" />
+     <None Include="Assets\TextMesh Pro\Resources\Shaders\TMP_SDF-Surface-Mobile.shader" />
      <None Include="Assets\TangoSDK\Examples\ExperimentalMeshBuilderWithPhysics\Shader\UnlitColor.shader" />
      <None Include="Assets\TangoPrefabs\Shaders\TangoEnvironmentalLighting\EnvironmentalLightingSpecularBumped.shader" />
      <None Include="Assets\TangoPrefabs\Shaders\TangoEnvironmentalLighting\TangoEnvironmentalLighting.cginc" />
      <None Include="Assets\TangoSDK\Core\Shaders\DepthEmulation.shader" />
+     <None Include="Assets\TextMesh Pro\Resources\Shaders\TMP_SDF Overlay.shader" />
+     <None Include="Assets\TextMesh Pro\Resources\Shaders\TMPro.cginc" />
      <None Include="Assets\TangoSDK\Core\Shaders\RGB2YUV_Y.shader" />
+     <None Include="Assets\TextMesh Pro\Fonts\Oswald-Bold - OFL.txt" />
+     <None Include="Assets\TextMesh Pro\Resources\Shaders\TMP_SDF-Mobile Masking.shader" />
      <None Include="Assets\TangoSDK\Examples\ExperimentalMeshOcclusion\Shaders\OcclusionMesh.shader" />
+     <None Include="Assets\TextMesh Pro\Resources\Shaders\TMP_Bitmap.shader" />
+     <None Include="Assets\TextMesh Pro\Resources\Shaders\TMP_Sprite.shader" />
      <None Include="Assets\TangoSDK\Examples\ExperimentalMeshBuilderWithColor\Shaders\UnlitVertexColor.shader" />
+     <None Include="Assets\TextMesh Pro\Resources\Shaders\TMP_SDF-Mobile.shader" />
+     <None Include="Assets\TextMesh Pro\Resources\LineBreaking Following Characters.txt" />
      <None Include="Assets\TangoSDK\Examples\ExperimentalMeshOcclusion\Shaders\OcclusionMask.shader" />
+     <None Include="Assets\TextMesh Pro\Fonts\LiberationSans - OFL.txt" />
      <None Include="Assets\TangoSDK\Core\Shaders\ColorCameraEmulation.shader" />
      <None Include="Assets\TangoPrefabs\Shaders\PointCloud_Occlusion.shader" />
      <None Include="Assets\TangoSDK\Examples\ExperimentalMeshOcclusion\Shaders\TangoOcclusion.cginc" />
+     <None Include="Assets\TextMesh Pro\Fonts\Bangers - OFL.txt" />
      <None Include="Assets\Plugins\Android\AndroidManifest.xml" />
      <None Include="Assets\TangoPrefabs\Shaders\TangoEnvironmentalLighting\EnvironmentalLightingDiffuse.shader" />
  <Reference Include="UnityEngine.UI">
@@ -189,6 +244,12 @@
  </Reference>
  <Reference Include="UnityEngine.VR">
  <HintPath>C:/Program Files/Unity/Editor/Data/UnityExtensions/Unity/UnityVR/RuntimeEditor/UnityEngine.VR.dll</HintPath>
+ </Reference>
+ <Reference Include="TextMeshPro-1.0.55.56.0b12">
+ <HintPath>C:/Users/pudgy/Documents/Tango/Mobile Terminal Unity Project/Assets/TextMesh Pro/Plugins/TextMeshPro-1.0.55.56.0b12.dll</HintPath>
+ </Reference>
+ <Reference Include="Vectrosity">
+ <HintPath>C:/Users/pudgy/Documents/Tango/Mobile Terminal Unity Project/Assets/Vectrosity/Plugins/Vectrosity.dll</HintPath>
  </Reference>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
