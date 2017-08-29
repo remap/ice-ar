@@ -59,6 +59,12 @@
      <Compile Include="Assets\Scripts\OnCameraFrame.cs" />
      <Compile Include="Assets\Scripts\PointCloudGUI.cs" />
      <Compile Include="Assets\Scripts\PooledObject.cs" />
+     <Compile Include="Assets\Scripts\cnl\content-meta-info.cs" />
+     <Compile Include="Assets\Scripts\cnl\generalized-content.cs" />
+     <Compile Include="Assets\Scripts\cnl\namespace.cs" />
+     <Compile Include="Assets\Scripts\cnl\segment-stream.cs" />
+     <Compile Include="Assets\Scripts\cnl\segmented-content.cs" />
+     <Compile Include="Assets\Scripts\cnl\test-generalized-content.cs" />
      <Compile Include="Assets\TangoPrefabs\Deprecated\TangoARPoseController.cs" />
      <Compile Include="Assets\TangoPrefabs\Deprecated\TangoDeltaPoseController.cs" />
      <Compile Include="Assets\TangoPrefabs\Scripts\ARCameraPostProcess.cs" />
@@ -250,6 +256,9 @@
  </Reference>
  <Reference Include="Vectrosity">
  <HintPath>C:/Users/pudgy/Documents/Tango/Mobile Terminal Unity Project/Assets/Vectrosity/Plugins/Vectrosity.dll</HintPath>
+ </Reference>
+ <Reference Include="ndn-dot-net">
+ <HintPath>C:/Users/pudgy/Documents/Tango/Mobile Terminal Unity Project/Assets/ndn-dot-net.dll</HintPath>
  </Reference>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />

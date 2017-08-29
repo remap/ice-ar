@@ -164,6 +164,9 @@
  <Reference Include="VectrosityEditor">
  <HintPath>C:/Users/pudgy/Documents/Tango/Mobile Terminal Unity Project/Assets/Vectrosity/Plugins/Editor/VectrosityEditor.dll</HintPath>
  </Reference>
+ <Reference Include="ndn-dot-net">
+ <HintPath>C:/Users/pudgy/Documents/Tango/Mobile Terminal Unity Project/Assets/ndn-dot-net.dll</HintPath>
+ </Reference>
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="Assembly-CSharp.csproj">
