@@ -19,6 +19,7 @@ public class OnCameraFrame : MonoBehaviour, ITangoVideoOverlay {
 	//public Dictionary<long, FrameObjectData> frameObjects;
 	public FramePoolManager frameMgr;
 	public BoundingBoxPoolManager boxMgr;
+	private AnnotationsFetcher aFetcher_;
 
 	void Awake () {
 		QualitySettings.vSyncCount = 0;  // VSync must be disabled
@@ -40,7 +41,19 @@ public class OnCameraFrame : MonoBehaviour, ITangoVideoOverlay {
 		uOffset = 0.0f;
 		vOffset = 0.0f;
 
-		NdnRtc.Initialize ();
+		// @Therese - these need to be moved somewhere to a higher-level entity as
+		// configuration parameters (may be changed frequently during testing)
+		string rootPrefix = "/icear/user";
+		string userId = "peter"; // "mobile-terminal0";
+		string serviceType = "object_recognizer";
+		string serviceInstance = "yolo-mock"; // "yolo";
+
+		NdnRtc.Initialize (rootPrefix, userId);
+
+		string servicePrefix = rootPrefix + "/" + userId + "/" + serviceType;
+		// AnnotationsFetcher instance might also be a singleton class
+		// and initialized/created somewhere else. here just as an example
+		aFetcher_ = new AnnotationsFetcher (servicePrefix, serviceInstance);
 	}
 
 	public void OnDestroy()
@@ -94,8 +107,14 @@ public class OnCameraFrame : MonoBehaviour, ITangoVideoOverlay {
 		int publishedFrameNo = NdnRtc.videoStream.processIncomingFrame (imageBuffer);
 
 		if (publishedFrameNo >= 0) {
-			// frame was published succesfully, do something here
 			frameMgr.CreateFrameObject (imgBuffer, publishedFrameNo, timestamp, cameraPos, cameraRot, uOffset, vOffset);
+
+			// spawn fetching task for annotations of this frame
+			// once successfully received, delegate callback will be called
+			aFetcher_.fetchAnnotation (publishedFrameNo, delegate(string jsonArrayString) {
+				Debug.Log("Received annotations JSON (frame " + publishedFrameNo + "): " + jsonArrayString);
+			});
+
 		} else {
 			// frame was dropped by the encoder and was not published
 		}
