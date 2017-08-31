@@ -55,14 +55,13 @@ RemoteStreamImpl(io, face, keyChain, streamPrefix)
     buffer_->attach(validator_.get());
 
     // Create the frame pipe between ndnrtc-client and YOLO
-    char * myfifo = "/tmp/frame_fifo";
-    mkfifo(myfifo, 0777); 
-    frame_pipe_ = open(myfifo, O_WRONLY);
-    fcntl(frame_pipe_, F_SETPIPE_SZ, 1024*1024);
-    // frame_pipe_ = open(myfifo, O_WRONLY);
+    char * frame_fifo_name = "/tmp/frame_fifo";
+    mkfifo(frame_fifo_name, 0777); 
+    frame_pipe_ = open(frame_fifo_name, O_WRONLY);
     if (frame_pipe_ == -1){
         LogErrorC<<"Fail to create the frame pipe"<<std::endl;
     }
+    fcntl(frame_pipe_, F_SETPIPE_SZ, 1024*1024);
 }
 
 RemoteVideoStreamImpl::~RemoteVideoStreamImpl()

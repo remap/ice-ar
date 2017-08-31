@@ -16,8 +16,21 @@ The edge node includes the communication plane (using `ndnrtc` and `nfd`) and th
 		sudo apt-get update
 		sudo apt-get install nfd
 		sudo apt-get install libconfig-dev libconfig++-dev # For building ndnrtc-client
+		sudo apt-get Install libprotobuf-dev protobuf-compiler
 
 3. In the `ndnrtc` folder, compile `ndnrtc` by following the instructions here: <https://github.com/remap/ndnrtc/blob/dev/cpp/INSTALL.md>
+
+**NOTE 1:** In compiling the webRTC, please use the following code to generate `libwebrtc-all.mri`:
+
+	cd /src/out/Default
+	echo "create libwebrtc-all.a" > libwebrtc-all.mri
+	for lib in $(find . -name '*.a'); do echo "addlib $lib" >> libwebrtc-all.mri; done;
+	echo "save" >> libwebrtc-all.mri && echo "end" >> libwebrtc-all.mri
+	ar -M <libwebrtc-all.mri
+
+**NOTE 2:** In compiling `ndn-cpp`, please use the following version instead of the official ones:
+
+	git clone -b peter-dev https://github.com/peetonn/ndn-cpp.git
 
 4. In the `darknet` folder, compile `YOLO`:
 

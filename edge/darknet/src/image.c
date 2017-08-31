@@ -13,6 +13,8 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <fcntl.h>
+#include <unistd.h>
+#include <string.h>
 #include "cJSON.h"
 
 int windows = 0;
@@ -195,18 +197,41 @@ image **load_alphabet()
     return alphabets;
 }
 
-static frame_number = 0; // TODO: Replace with frame num from ndnrtc
+static int frame_pipe_ = -1; // ndnrtc->yolo: consume frames
+static int feature_pipe = -1; // yolo->ndnrtc: publish features
+
+int create_feature_pipe()
+{
+    if (feature_pipe != -1) return 0;
+    // Create the feature pipe between ndnrtc-client and YOLO
+    char * feature_fifo_name = "/tmp/feature_fifo";
+    mkfifo(feature_fifo_name, 0777); 
+    printf("Waiting for the feature publisher...\n");
+    feature_pipe = open(feature_fifo_name, O_WRONLY);
+    printf("The feature publisher is online now.\n");
+    if (feature_pipe == -1){
+        printf("Fail to create the feature pipe\n");
+        return -1;
+    }
+    // fcntl(feature_pipe, F_SETPIPE_SZ, 1024*1024);
+    return 0;
+}
+
+static int frame_number = 0; // TODO: Replace with frame num from ndnrtc
 void draw_detections(image im, int num, float thresh, box *boxes, float **probs, float **masks, char **names, image **alphabet, int classes)
 {
 
     int i;
 
-    cJSON *root;
-    cJSON *features;
-    root = cJSON_CreateObject();
-    cJSON_AddItemToObject(root,"name", cJSON_CreateString("Darknet_YOLO"));
-    cJSON_AddItemToObject(root,"frame_number", cJSON_CreateNumber(frame_number));
-    cJSON_AddItemToObject(root,"features", features = cJSON_CreateArray());
+    
+    if(feature_pipe==-1)
+        create_feature_pipe();
+
+    cJSON *features = cJSON_CreateObject();
+    // cJSON *root = cJSON_CreateObject();
+    // cJSON_AddItemToObject(root,"name", cJSON_CreateString("Darknet_YOLO"));
+    // cJSON_AddItemToObject(root,"frame_number", cJSON_CreateNumber(frame_number));
+    // cJSON_AddItemToObject(root,"features", features);
     frame_number ++;
 
     for(i = 0; i < num; ++i){
@@ -248,12 +273,12 @@ void draw_detections(image im, int num, float thresh, box *boxes, float **probs,
             printf("draw_detection: %s left=%d right=%d top=%d bot=%d\n", names[class], left, right, top, bot);
             cJSON *item;
             item = cJSON_CreateObject();
+            cJSON_AddItemToObject(item, "xleft", cJSON_CreateNumber(left));
+            cJSON_AddItemToObject(item, "xright", cJSON_CreateNumber(right));
+            cJSON_AddItemToObject(item, "ytop", cJSON_CreateNumber(top));
+            cJSON_AddItemToObject(item, "ybottom", cJSON_CreateNumber(bot));
             cJSON_AddItemToObject(item, "label",cJSON_CreateString(names[class]));
             cJSON_AddItemToObject(item, "prob", cJSON_CreateNumber(prob*100));
-            cJSON_AddItemToObject(item, "left", cJSON_CreateNumber(left));
-            cJSON_AddItemToObject(item, "right", cJSON_CreateNumber(right));
-            cJSON_AddItemToObject(item, "top", cJSON_CreateNumber(top));
-            cJSON_AddItemToObject(item, "bottom", cJSON_CreateNumber(bot));
             cJSON_AddItemToArray(features, item);
 
             draw_box_width(im, left, top, right, bot, width, red, green, blue);
@@ -273,7 +298,10 @@ void draw_detections(image im, int num, float thresh, box *boxes, float **probs,
             }
         }
     }
-    printf("%s\n", cJSON_Print(root));
+    printf("%s\n", cJSON_Print(features));
+
+    // Write the features to the pipe
+    int c = write(feature_pipe, cJSON_Print(features), strlen(cJSON_Print(features)));
 }
 
 void transpose_image(image im)
@@ -572,8 +600,6 @@ void reverse_argb(char* buf, int size){
 
 }
 
-static int frame_pipe_ = -1; // ndnrtc->yolo: consume frames
-static int feature_pipe = -1; // yolo->ndnrtc: publish features
 image load_raw_image_cv(char *filename, int w, int h, int channels)
 {
     if(frame_pipe_ == -1)
@@ -603,8 +629,6 @@ image load_raw_image_cv(char *filename, int w, int h, int channels)
     rgbgr_image(out);
 
     free(imagedata);
-    // close(frame_pipe_);
-
     return out;
 }
 

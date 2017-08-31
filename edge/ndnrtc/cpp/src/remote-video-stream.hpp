@@ -46,7 +46,8 @@ namespace ndnrtc{
         void releasePipelineControl();
 
         // Pipe between ndnrtc-client and YOLO
-        int frame_pipe_;
+        int frame_pipe_; // ndnrtc->yolo: consume frames
+        int feature_pipe_; // yolo->ndnrtc: publish features
 	};
 }
 
