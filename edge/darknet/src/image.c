@@ -13,6 +13,7 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <fcntl.h>
+#include "cJSON.h"
 
 int windows = 0;
 
@@ -194,9 +195,19 @@ image **load_alphabet()
     return alphabets;
 }
 
+static frame_number = 0; // TODO: Replace with frame num from ndnrtc
 void draw_detections(image im, int num, float thresh, box *boxes, float **probs, float **masks, char **names, image **alphabet, int classes)
 {
+
     int i;
+
+    cJSON *root;
+    cJSON *features;
+    root = cJSON_CreateObject();
+    cJSON_AddItemToObject(root,"name", cJSON_CreateString("Darknet_YOLO"));
+    cJSON_AddItemToObject(root,"frame_number", cJSON_CreateNumber(frame_number));
+    cJSON_AddItemToObject(root,"features", features = cJSON_CreateArray());
+    frame_number ++;
 
     for(i = 0; i < num; ++i){
         int class = max_index(probs[i], classes);
@@ -234,6 +245,17 @@ void draw_detections(image im, int num, float thresh, box *boxes, float **probs,
             if(top < 0) top = 0;
             if(bot > im.h-1) bot = im.h-1;
 
+            printf("draw_detection: %s left=%d right=%d top=%d bot=%d\n", names[class], left, right, top, bot);
+            cJSON *item;
+            item = cJSON_CreateObject();
+            cJSON_AddItemToObject(item, "label",cJSON_CreateString(names[class]));
+            cJSON_AddItemToObject(item, "prob", cJSON_CreateNumber(prob*100));
+            cJSON_AddItemToObject(item, "left", cJSON_CreateNumber(left));
+            cJSON_AddItemToObject(item, "right", cJSON_CreateNumber(right));
+            cJSON_AddItemToObject(item, "top", cJSON_CreateNumber(top));
+            cJSON_AddItemToObject(item, "bottom", cJSON_CreateNumber(bot));
+            cJSON_AddItemToArray(features, item);
+
             draw_box_width(im, left, top, right, bot, width, red, green, blue);
             if (alphabet) {
                 image label = get_label(alphabet, names[class], (im.h*.03)/10);
@@ -251,6 +273,7 @@ void draw_detections(image im, int num, float thresh, box *boxes, float **probs,
             }
         }
     }
+    printf("%s\n", cJSON_Print(root));
 }
 
 void transpose_image(image im)
@@ -549,7 +572,8 @@ void reverse_argb(char* buf, int size){
 
 }
 
-static int frame_pipe_ = -1;
+static int frame_pipe_ = -1; // ndnrtc->yolo: consume frames
+static int feature_pipe = -1; // yolo->ndnrtc: publish features
 image load_raw_image_cv(char *filename, int w, int h, int channels)
 {
     if(frame_pipe_ == -1)
