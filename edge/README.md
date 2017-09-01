@@ -40,14 +40,7 @@ The edge node includes the communication plane (using `ndnrtc` and `nfd`) and th
 
 5. Now it's ready to run the edge. 
 
-	(1) Run `YOLO` first:
-	
-		cd darknet
-		./darknet detector ndnrtc cfg/coco.data cfg/yolo.cfg  yolo.weights /tmp/frame_fifo -w 320 -h 240
-		
-	**NOTE:** Please change the video frame width and height accordingly using the `-w` and `-h` parameters. Please do not  change the parameter `/tmp/frame_fifo`
-	
-	(2) Run `ndnrtc-client` consumers and producers:
+	(1) Run `ndnrtc-client` consumers and producers:
 	
 		cd ndnrtc/cpp
 		./ndnrtc-client -c ./sample-producer.cfg -p ./rule.conf -t 300 -s /yuanjie
@@ -55,7 +48,17 @@ The edge node includes the communication plane (using `ndnrtc` and `nfd`) and th
 
 	**NOTE:** Please copy the test videos (e.g., *test-source-320x240.argb*) into `ndnrtc/cpp`.
 		
-	A window will popup to display the recognized frames. Alternatively, you can check `darknet/ndnrtc.png`, which stores the latest frame with recognized objects. 
+	(2) Run `YOLO`:
+
+                cd darknet
+                ./darknet detector ndnrtc cfg/coco.data cfg/yolo.cfg  yolo.weights /tmp/frame_fifo -w 320 -h 240
+
+        **NOTE:** Please change the video frame width and height accordingly using the `-w` and `-h` parameters. Please do not  change the parameter `/tmp/frame_fifo`
+
+	(3) Run feature producer in `ndn-cpp`:
+
+		cd ndn-cpp/bin/
+		././test-annotations-example
 
 ## Known Issues
 

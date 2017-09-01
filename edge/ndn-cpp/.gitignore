@@ -1,0 +1,80 @@
+# Compiled files
+*.slo
+*.lo
+*.o
+*.so
+*.dylib
+*.lai
+*.la
+*.a
+bin/*
+libs/*
+.libs/*
+
+# Emacs temp files
+*~
+
+# Autoconf files
+/Makefile
+/include/Makefile
+/autom4te.cache
+config.log
+/config.status
+/include/config.h
+/_configs.sed
+/stamp-h1
+/include/ndn-cpp/ndn-cpp-config.h
+/include/stamp-h1
+/aclocal.m4
+/libtool
+/condefs.h
+/conftest.cpp
+/conftest.err
+/test-suite.log
+*.Po
+.deps
+.dirstamp
+*.tar.gz
+/*.pc
+# Let autoconf automatically copy these files
+/m4/libtool.m4
+/m4/ltoptions.m4
+/m4/ltsugar.m4
+/m4/ltversion.m4
+/m4/lt~obsolete.m4
+
+# Doxygen output
+/doc/html
+/doc/latex
+
+# unit_test temporary files
+tests/unit-tests/policy_config/test-public-info.db
+tests/unit-tests/policy_config/test-private-keys
+tests/unit-tests/policy_config/test-pib.db
+
+# Skip all gtest files except fused-src and LICENSE, etc.
+/contrib/gtest-1.7.0/aclocal.m4
+/contrib/gtest-1.7.0/CMakeLists.txt
+/contrib/gtest-1.7.0/configure
+/contrib/gtest-1.7.0/configure.ac
+/contrib/gtest-1.7.0/Makefile.am
+/contrib/gtest-1.7.0/Makefile.in
+/contrib/gtest-1.7.0/build-aux
+/contrib/gtest-1.7.0/cmake
+/contrib/gtest-1.7.0/codegear
+/contrib/gtest-1.7.0/fused-src/gtest/gtest_main.cc
+/contrib/gtest-1.7.0/include
+/contrib/gtest-1.7.0/m4
+/contrib/gtest-1.7.0/make
+/contrib/gtest-1.7.0/msvc
+/contrib/gtest-1.7.0/samples
+/contrib/gtest-1.7.0/scripts
+/contrib/gtest-1.7.0/src
+/contrib/gtest-1.7.0/test
+/contrib/gtest-1.7.0/xcode
+
+# Skip downloaded contrib files.
+/contrib/rsaref
+
+# Mac OSX
+.DS_Store

@@ -618,9 +618,12 @@ image load_raw_image_cv(char *filename, int w, int h, int channels)
     char *imagedata = (char*)malloc(frame_size);
     printf("Reading frame...\n");
 
-    int c = read(frame_pipe_, imagedata, frame_size);
+    int frameNo = -1;
+    int c = read(frame_pipe_, (char*)&frameNo, sizeof(frameNo));
+    c = read(frame_pipe_, imagedata, frame_size);
     reverse_argb(imagedata, frame_size);
-    printf("Frame read: %d bytes\n", c);
+    printf("New farme %d read: %d bytes\n", frameNo, c);
+
 
     IplImage* src= cvCreateImageHeader(size,IPL_DEPTH_8U,4);
     src->imageData = imagedata;

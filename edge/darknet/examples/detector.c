@@ -650,12 +650,6 @@ void test_detector(char *datacfg, char *cfgfile, char *weightfile, char *filenam
     }
 }
 
-void *display_in_ndnrtc(image im)
-{
-    show_image(im, "ndnrtc");
-    cvWaitKey(1);
-    return 0;
-}
 
 
 void ndnrtc_detector(char *datacfg, char *cfgfile, char *weightfile, char *filename, int frame_width, int frame_height, float thresh, float hier_thresh, char *outfile, int fullscreen)
@@ -682,13 +676,6 @@ void ndnrtc_detector(char *datacfg, char *cfgfile, char *weightfile, char *filen
     }
     strncpy(input, filename, 256);
 
-    cvNamedWindow("ndnrtc", CV_WINDOW_NORMAL); 
-    if(fullscreen){
-        cvSetWindowProperty("ndnrtc", CV_WND_PROP_FULLSCREEN, CV_WINDOW_FULLSCREEN);
-    }else {
-            cvMoveWindow("ndnrtc", 0, 0);
-            cvResizeWindow("ndnrtc", frame_width, frame_height);
-    }
 
     while(1){
         // if(filename){
@@ -733,7 +720,7 @@ void ndnrtc_detector(char *datacfg, char *cfgfile, char *weightfile, char *filen
             save_image(im, "ndnrtc");
 #ifdef OPENCV
             // show_image(im, "ndnrtc");
-            display_in_ndnrtc(im);
+            // display_in_ndnrtc(im);
 #endif
         }
 
