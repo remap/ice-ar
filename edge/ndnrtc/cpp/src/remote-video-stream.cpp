@@ -110,7 +110,7 @@ RemoteVideoStreamImpl::setLogger(boost::shared_ptr<ndnlog::new_api::Logger> logg
 
 #pragma mark private
 
-static int frame_counter=0;
+static int32_t frame_counter=0;
 
 void
 RemoteVideoStreamImpl::feedFrame(const WebRtcVideoFrame& frame)
@@ -135,7 +135,7 @@ RemoteVideoStreamImpl::feedFrame(const WebRtcVideoFrame& frame)
         LogInfo("")<<"Writing frame..."<<std::endl;
         int c = -1;
         while (c<=0)
-            c = write(frame_pipe_, (char*)&frame_counter, sizeof(frame_counter));
+            c = write(frame_pipe_, &frame_counter, sizeof(int32_t));
         c = -1;
         while (c<=frame.width()*frame.height()*4)
             c = write(frame_pipe_, rgbFrameBuffer, frame.width()*frame.height()*4);

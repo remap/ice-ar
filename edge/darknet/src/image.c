@@ -609,7 +609,7 @@ image load_raw_image_cv(char *filename, int w, int h, int channels)
         printf("Fail to create the frame pipe\n");
     }
     else{
-        printf("Frame pipe created\n");
+        //printf("Frame pipe created\n");
     }
 
     int width = w, height = h;
@@ -618,8 +618,8 @@ image load_raw_image_cv(char *filename, int w, int h, int channels)
     char *imagedata = (char*)malloc(frame_size);
     printf("Reading frame...\n");
 
-    int frameNo = -1;
-    int c = read(frame_pipe_, (char*)&frameNo, sizeof(frameNo));
+    int32_t frameNo = -1;
+    int c = read(frame_pipe_, &frameNo, sizeof(int32_t));
     c = read(frame_pipe_, imagedata, frame_size);
     reverse_argb(imagedata, frame_size);
     printf("New farme %d read: %d bytes\n", frameNo, c);
