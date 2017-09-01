@@ -62,6 +62,8 @@ RemoteStreamImpl(io, face, keyChain, streamPrefix)
         LogErrorC<<"Fail to create the frame pipe"<<std::endl;
     }
     fcntl(frame_pipe_, F_SETPIPE_SZ, 1024*1024);
+
+    frameNo_ = 0;
 }
 
 RemoteVideoStreamImpl::~RemoteVideoStreamImpl()
@@ -118,14 +120,15 @@ RemoteVideoStreamImpl::feedFrame(const WebRtcVideoFrame& frame)
     uint8_t *rgbFrameBuffer = renderer_->getFrameBuffer(frame.width(),
         frame.height());
 
-    LogInfo("")<<"DEBUG::feedFrame counter="<<frame_counter++<<std::endl;
+    frameNo_ ++;
+    LogInfo("")<<"DEBUG::feedFrame counter="<<frameNo_<<std::endl;
     
     if (rgbFrameBuffer)
     {
         
 #warning this needs to be tested with frames captured from real video devices
         ConvertFromI420(frame, webrtc::kBGRA, 0, rgbFrameBuffer);
-        renderer_->renderBGRAFrame(clock::millisecondTimestamp(),
+        renderer_->renderBGRAFrame(clock::millisecondTimestamp(), frameNo_,
                                           frame.width(), frame.height(),
                                           rgbFrameBuffer);
 
@@ -135,7 +138,7 @@ RemoteVideoStreamImpl::feedFrame(const WebRtcVideoFrame& frame)
         LogInfo("")<<"Writing frame..."<<std::endl;
         int c = -1;
         while (c<=0)
-            c = write(frame_pipe_, &frame_counter, sizeof(int32_t));
+            c = write(frame_pipe_, &frameNo_, sizeof(int32_t));
         c = -1;
         while (c<=frame.width()*frame.height()*4)
             c = write(frame_pipe_, rgbFrameBuffer, frame.width()*frame.height()*4);

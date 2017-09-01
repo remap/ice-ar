@@ -38,7 +38,7 @@ namespace ndnrtc{
 		boost::shared_ptr<ManifestValidator> validator_;
 		IExternalRenderer* renderer_;
 		boost::shared_ptr<VideoDecoder> decoder_;
-
+                uint32_t frameNo_;
 		void feedFrame(const WebRtcVideoFrame&);
         void setupDecoder();
         void releaseDecoder();
