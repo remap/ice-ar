@@ -649,7 +649,7 @@ void free_network(network net);
 void set_batch_network(network *net, int b);
 void set_temp_network(network net, float t);
 image load_image(char *filename, int w, int h, int c);
-image load_raw_image(char *filename, int w, int h, int c);
+image load_raw_image(char *filename, int w, int h, int c, uint32_t *frameNo);
 image load_image_color(char *filename, int w, int h);
 image make_image(int w, int h, int c);
 image resize_image(image im, int w, int h);
@@ -690,6 +690,7 @@ data load_all_cifar10();
 box_label *read_boxes(char *filename, int *n);
 box float_to_box(float *f, int stride);
 void draw_detections(image im, int num, float thresh, box *boxes, float **probs, float **masks, char **names, image **alphabet, int classes);
+void draw_detections_ndnrtc(image im, int num, float thresh, box *boxes, float **probs, float **masks, char **names, image **alphabet, int classes, uint32_t frameNo);
 
 matrix network_predict_data(network net, data test);
 image **load_alphabet();

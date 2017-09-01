@@ -678,22 +678,10 @@ void ndnrtc_detector(char *datacfg, char *cfgfile, char *weightfile, char *filen
 
 
     while(1){
-        // if(filename){
-        //     strncpy(input, filename, 256);
-        // } else {
-        //     printf("Enter Image Path: ");
-        //     fflush(stdout);
-        //     input = fgets(input, 256, stdin);
-        //     if(!input) return;
-        //     strtok(input, "\n");
-        // }
 
-        image im = load_raw_image(input,frame_width,frame_height,0);
+        uint32_t frameNo;
+        image im = load_raw_image(input,frame_width,frame_height,0, &frameNo);
         image sized = letterbox_image(im, net.w, net.h);
-        //image sized = resize_image(im, net.w, net.h);
-        //image sized2 = resize_max(im, net.w);
-        //image sized = crop_image(sized2, -((net.w - sized2.w)/2), -((net.h - sized2.h)/2), net.w, net.h);
-        //resize_network(&net, sized.w, sized.h);
         layer l = net.layers[net.n-1];
 
         box *boxes = calloc(l.w*l.h*l.n, sizeof(box));
@@ -712,7 +700,7 @@ void ndnrtc_detector(char *datacfg, char *cfgfile, char *weightfile, char *filen
         get_region_boxes(l, im.w, im.h, net.w, net.h, thresh, probs, boxes, masks, 0, 0, hier_thresh, 1);
         if (nms) do_nms_obj(boxes, probs, l.w*l.h*l.n, l.classes, nms);
         //else if (nms) do_nms_sort(boxes, probs, l.w*l.h*l.n, l.classes, nms);
-        draw_detections(im, l.w*l.h*l.n, thresh, boxes, probs, masks, names, alphabet, l.classes);
+        draw_detections_ndnrtc(im, l.w*l.h*l.n, thresh, boxes, probs, masks, names, alphabet, l.classes, frameNo);
         if(outfile){
             save_image(im, outfile);
         }

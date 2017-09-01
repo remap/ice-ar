@@ -47,7 +47,7 @@ uint8_t* RendererInternal::getFrameBuffer(int width, int height)
 }
 
 
-void RendererInternal::renderBGRAFrame(int64_t timestamp, uint frameNo, int width, int height, 
+void RendererInternal::renderBGRAFrame(int64_t timestamp, uint32_t frameNo, int width, int height, 
     const uint8_t* buffer)
 {
     if (!frame_.get())

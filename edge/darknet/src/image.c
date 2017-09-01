@@ -217,7 +217,91 @@ int create_feature_pipe()
     return 0;
 }
 
-static int frame_number = 0; // TODO: Replace with frame num from ndnrtc
+void draw_detections_ndnrtc(image im, int num, float thresh, box *boxes, float **probs, float **masks, char **names, image **alphabet, int classes, uint32_t frameNo)
+{
+
+    int i;
+
+    
+    if(feature_pipe==-1)
+        create_feature_pipe();
+
+    cJSON *features = cJSON_CreateObject();
+    // cJSON *root = cJSON_CreateObject();
+    // cJSON_AddItemToObject(root,"name", cJSON_CreateString("Darknet_YOLO"));
+    cJSON_AddItemToObject(features,"frame_number", cJSON_CreateNumber(frameNo));
+    // cJSON_AddItemToObject(root,"features", features);
+
+    for(i = 0; i < num; ++i){
+        int class = max_index(probs[i], classes);
+        float prob = probs[i][class];
+        if(prob > thresh){
+            int width = im.h * .006;
+
+            if(0){
+                width = pow(prob, 1./2.)*10+1;
+                alphabet = 0;
+            }
+
+            //printf("%d %s: %.0f%%\n", i, names[class], prob*100);
+            printf("%s: %.0f%%\n", names[class], prob*100);
+            int offset = class*123457 % classes;
+            float red = get_color(2,offset,classes);
+            float green = get_color(1,offset,classes);
+            float blue = get_color(0,offset,classes);
+            float rgb[3];
+
+            //width = prob*20+2;
+
+            rgb[0] = red;
+            rgb[1] = green;
+            rgb[2] = blue;
+            box b = boxes[i];
+
+            int left  = (b.x-b.w/2.)*im.w;
+            int right = (b.x+b.w/2.)*im.w;
+            int top   = (b.y-b.h/2.)*im.h;
+            int bot   = (b.y+b.h/2.)*im.h;
+
+            if(left < 0) left = 0;
+            if(right > im.w-1) right = im.w-1;
+            if(top < 0) top = 0;
+            if(bot > im.h-1) bot = im.h-1;
+
+            printf("draw_detection: %s left=%d right=%d top=%d bot=%d\n", names[class], left, right, top, bot);
+            cJSON *item;
+            item = cJSON_CreateObject();
+            cJSON_AddItemToObject(item, "xleft", cJSON_CreateNumber(left));
+            cJSON_AddItemToObject(item, "xright", cJSON_CreateNumber(right));
+            cJSON_AddItemToObject(item, "ytop", cJSON_CreateNumber(top));
+            cJSON_AddItemToObject(item, "ybottom", cJSON_CreateNumber(bot));
+            cJSON_AddItemToObject(item, "label",cJSON_CreateString(names[class]));
+            cJSON_AddItemToObject(item, "prob", cJSON_CreateNumber(prob*100));
+            cJSON_AddItemToArray(features, item);
+
+            draw_box_width(im, left, top, right, bot, width, red, green, blue);
+            if (alphabet) {
+                image label = get_label(alphabet, names[class], (im.h*.03)/10);
+                draw_label(im, top + width, left, label, rgb);
+                free_image(label);
+            }
+            if (masks){
+                image mask = float_to_image(14, 14, 1, masks[i]);
+                image resized_mask = resize_image(mask, b.w*im.w, b.h*im.h);
+                image tmask = threshold_image(resized_mask, .5);
+                embed_image(tmask, im, left, top);
+                free_image(mask);
+                free_image(resized_mask);
+                free_image(tmask);
+            }
+        }
+    }
+    printf("%s\n", cJSON_Print(features));
+
+    // Write the features to the pipe
+    int c = write(feature_pipe, cJSON_Print(features), strlen(cJSON_Print(features)));
+}
+
 void draw_detections(image im, int num, float thresh, box *boxes, float **probs, float **masks, char **names, image **alphabet, int classes)
 {
 
@@ -232,7 +316,6 @@ void draw_detections(image im, int num, float thresh, box *boxes, float **probs,
     // cJSON_AddItemToObject(root,"name", cJSON_CreateString("Darknet_YOLO"));
     // cJSON_AddItemToObject(root,"frame_number", cJSON_CreateNumber(frame_number));
     // cJSON_AddItemToObject(root,"features", features);
-    frame_number ++;
 
     for(i = 0; i < num; ++i){
         int class = max_index(probs[i], classes);
@@ -600,11 +683,11 @@ void reverse_argb(char* buf, int size){
 
 }
 
-image load_raw_image_cv(char *filename, int w, int h, int channels)
+image load_raw_image_cv(char *filename, int w, int h, int channels, uint32_t *frameNo)
 {
     if(frame_pipe_ == -1)
         printf("Waiting for the frame pipe (from ndnrtc)...\n");
-        frame_pipe_ = open(filename, O_RDONLY);
+        frame_pipe_ = open(filename, O_RDONLY | O_NONBLOCK);
     if (frame_pipe_ == -1){
         printf("Fail to create the frame pipe\n");
     }
@@ -618,11 +701,13 @@ image load_raw_image_cv(char *filename, int w, int h, int channels)
     char *imagedata = (char*)malloc(frame_size);
     printf("Reading frame...\n");
 
-    int32_t frameNo = -1;
-    int c = read(frame_pipe_, &frameNo, sizeof(int32_t));
-    c = read(frame_pipe_, imagedata, frame_size);
+    int c = -1;
+    while (c < 0){
+	c  = read(frame_pipe_, frameNo, sizeof(uint32_t));
+    	c = read(frame_pipe_, imagedata, frame_size);
+    }
     reverse_argb(imagedata, frame_size);
-    printf("New farme %d read: %d bytes\n", frameNo, c);
+    printf("New frame %u read: %d bytes\n", *frameNo, c);
 
 
     IplImage* src= cvCreateImageHeader(size,IPL_DEPTH_8U,4);
@@ -635,9 +720,9 @@ image load_raw_image_cv(char *filename, int w, int h, int channels)
     return out;
 }
 
-image load_raw_image(char *filename, int w, int h, int c)
+image load_raw_image(char *filename, int w, int h, int c, uint32_t *frameNo)
 {
-    image out = load_raw_image_cv(filename, w, h, c);
+    image out = load_raw_image_cv(filename, w, h, c, frameNo);
     if((h && w) && (h != out.h || w != out.w)){
         image resized = resize_image(out, w, h);
         free_image(out);

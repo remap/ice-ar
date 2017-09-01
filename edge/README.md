@@ -53,7 +53,7 @@ The edge node includes the communication plane (using `ndnrtc` and `nfd`) and th
                 cd darknet
                 ./darknet detector ndnrtc cfg/coco.data cfg/yolo.cfg  yolo.weights /tmp/frame_fifo -w 320 -h 240
 
-        **NOTE:** Please change the video frame width and height accordingly using the `-w` and `-h` parameters. Please do not  change the parameter `/tmp/frame_fifo`
+	**NOTE:** Please change the video frame width and height accordingly using the `-w` and `-h` parameters. Please do not  change the parameter `/tmp/frame_fifo`
 
 	(3) Run feature producer in `ndn-cpp`:
 
