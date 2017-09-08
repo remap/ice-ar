@@ -1,5 +1,6 @@
 C:\Users\pudgy\Documents\Tango\Mobile Terminal Unity Project\Temp\bin\Debug\Assembly-CSharp.dll
 C:\Users\pudgy\Documents\Tango\Mobile Terminal Unity Project\Temp\bin\Debug\Assembly-CSharp.pdb
+C:\Users\pudgy\Documents\Tango\Mobile Terminal Unity Project\Temp\bin\Debug\ndn-dot-net.dll
 C:\Users\pudgy\Documents\Tango\Mobile Terminal Unity Project\Temp\bin\Debug\nunit.framework.dll
 C:\Users\pudgy\Documents\Tango\Mobile Terminal Unity Project\Temp\bin\Debug\TextMeshPro-1.0.55.56.0b12.dll
 C:\Users\pudgy\Documents\Tango\Mobile Terminal Unity Project\Temp\bin\Debug\UnityEditor.dll
@@ -31,4 +32,3 @@ C:\Users\pudgy\Documents\Tango\Mobile Terminal Unity Project\Temp\bin\Debug\Unit
 C:\Users\pudgy\Documents\Tango\Mobile Terminal Unity Project\obj\Debug\Assembly-CSharp.csprojResolveAssemblyReference.cache
 C:\Users\pudgy\Documents\Tango\Mobile Terminal Unity Project\obj\Debug\Assembly-CSharp.dll
 C:\Users\pudgy\Documents\Tango\Mobile Terminal Unity Project\obj\Debug\Assembly-CSharp.pdb
-C:\Users\pudgy\Documents\Tango\Mobile Terminal Unity Project\Temp\bin\Debug\ndn-dot-net.dll

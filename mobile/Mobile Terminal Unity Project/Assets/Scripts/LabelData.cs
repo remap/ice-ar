@@ -28,7 +28,7 @@ public class LabelData : PooledObject {
 		background = gameObject.GetComponentInChildren<LabelBackground>();
 		background.render.material.color = color;
 
-		frameCount = 10;
+		frameCount = 5;
 
 		//not using label border lines right now
 //		var thisMatrix = box.transform.localToWorldMatrix;
@@ -69,10 +69,12 @@ public class LabelData : PooledObject {
 	
 	// Update is called once per frame
 	void Update () {
+		text.transform.LookAt (text.transform.position + Camera.main.transform.rotation * Vector3.forward,
+			Camera.main.transform.rotation * Vector3.up);
 		//remove after 10 frames
 		frameCount--;
 		if (frameCount == 0) {
-			frameCount = 10;
+			frameCount = 5;
 			Release ();
 		}
 

@@ -5,8 +5,13 @@
       <File FileName="Assets\Scripts\FramePoolManager.cs" Line="1" Column="1" />
       <File FileName="Assets\TangoPrefabs\Scripts\TangoPointCloud.cs" Line="1" Column="1" />
       <File FileName="Assets\Scripts\BoundingBoxPoolManager.cs" Line="1" Column="1" />
-      <File FileName="Assets\Scripts\OnCameraFrame.cs" Line="81" Column="82" />
-      <File FileName="Assets\Scripts\cnl\namespace.cs" Line="1" Column="1" />
+      <File FileName="Assets\Scripts\OnCameraFrame.cs" Line="187" Column="7" />
+      <File FileName="Assets\Scripts\AnnotationsFetcher.cs" Line="1" Column="1" />
+      <File FileName="Assets\Scripts\PointCloudGUI.cs" Line="1" Column="1" />
+      <File FileName="Assets\Scripts\BoundingBoxObjectData.cs" Line="1" Column="1" />
+      <File FileName="Assets\Scripts\LabelData.cs" Line="1" Column="1" />
+      <File FileName="Assets\Scripts\ConcurrentQueue.cs" Line="1" Column="1" />
+      <File FileName="Assets\Scripts\FrameObjectData.cs" Line="1" Column="1" />
     </Files>
   </MonoDevelop.Ide.Workbench>
   <MonoDevelop.Ide.DebuggingService.Breakpoints>
