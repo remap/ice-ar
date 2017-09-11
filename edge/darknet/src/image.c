@@ -268,15 +268,26 @@ void draw_detections_ndnrtc(image im, int num, float thresh, box *boxes, float *
             if(top < 0) top = 0;
             if(bot > im.h-1) bot = im.h-1;
 
-            printf("draw_detection: %s left=%d right=%d top=%d bot=%d\n", names[class], left, right, top, bot);
+            //JSON-version of the rectangles
+            float json_left = b.x - b.w/2.0;
+            float json_right = b.x+b.w/2.0;
+            float json_top   = b.y-b.h/2.0;
+            int json_bot   = b.y+b.h/2.0;
+
+            if(json_left < 0) json_left = 0;
+            if(json_right > 1) json_right = 1;
+            if(json_top < 0) top = 0;
+            if(json_bot > 1) bot = 1;
+
+            //printf("draw_detection: %s left=%d right=%d top=%d bot=%d\n", names[class], left, right, top, bot);
             cJSON *item;
             item = cJSON_CreateObject();
-            cJSON_AddItemToObject(item, "xleft", cJSON_CreateNumber(left));
-            cJSON_AddItemToObject(item, "xright", cJSON_CreateNumber(right));
-            cJSON_AddItemToObject(item, "ytop", cJSON_CreateNumber(top));
-            cJSON_AddItemToObject(item, "ybottom", cJSON_CreateNumber(bot));
+            cJSON_AddItemToObject(item, "xleft", cJSON_CreateNumber(json_left));
+            cJSON_AddItemToObject(item, "xright", cJSON_CreateNumber(json_right));
+            cJSON_AddItemToObject(item, "ytop", cJSON_CreateNumber(json_top));
+            cJSON_AddItemToObject(item, "ybottom", cJSON_CreateNumber(json_bot));
             cJSON_AddItemToObject(item, "label",cJSON_CreateString(names[class]));
-            cJSON_AddItemToObject(item, "prob", cJSON_CreateNumber(prob*100));
+            cJSON_AddItemToObject(item, "prob", cJSON_CreateNumber(prob));
             cJSON_AddItemToArray(features, item);
 
             draw_box_width(im, left, top, right, bot, width, red, green, blue);
