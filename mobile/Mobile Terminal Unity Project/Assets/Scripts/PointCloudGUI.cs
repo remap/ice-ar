@@ -150,10 +150,10 @@ public class PointCloudGUI : MonoBehaviour
 				UI_FONT_SIZE + "Last frame (s): " + lastFrame.timestamp + "</size>");
 
 			GUI.Label(new Rect(UI_LABEL_START_X, UI_DEPTH_LABLE_START_Y + (UI_LABEL_OFFSET * 4.0f), UI_LABEL_SIZE_X, UI_LABEL_SIZE_Y),
-				UI_FONT_SIZE + "Position: " + _GetLoggingStringFromVec3(lastFrame.cameraPos) + "</size>");
+				UI_FONT_SIZE + "Position: " + _GetLoggingStringFromVec3(lastFrame.poseData.finalPosition) + "</size>");
 
 			GUI.Label(new Rect(UI_LABEL_START_X, UI_DEPTH_LABLE_START_Y + (UI_LABEL_OFFSET * 5.0f), UI_LABEL_SIZE_X, UI_LABEL_SIZE_Y),
-				UI_FONT_SIZE + "Rotation: " + _GetLoggingStringFromQuaternion(lastFrame.cameraRot) + "</size>");
+				UI_FONT_SIZE + "Rotation: " + _GetLoggingStringFromQuaternion(lastFrame.poseData.finalRotation) + "</size>");
 
             GUI.color = oldColor;
         }

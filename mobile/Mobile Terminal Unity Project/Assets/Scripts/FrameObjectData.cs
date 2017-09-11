@@ -15,7 +15,8 @@ public class FrameObjectData : PooledObject {
 	public Quaternion camRot;
 	public float uOffset;
 	public float vOffset;
-	public Dictionary<long, FrameObjectData> frameObj;
+	public Camera cam;
+	public Dictionary<int, FrameObjectData> frameObj;
 	public int lifeTime;
 
 	/*public void setFrameObjectData (double ts, int fn, Tango.TangoUnityImageData fd, Vector3[] p, int numP, Vector3 cp, Quaternion cr, float u, float v)

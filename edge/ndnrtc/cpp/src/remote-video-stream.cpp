@@ -135,13 +135,13 @@ RemoteVideoStreamImpl::feedFrame(const WebRtcVideoFrame& frame)
         /* Write the frame to the frame FIFO in the following form
          * | frameNo (int) | ARGB raw data |
          */
-        LogInfo("")<<"Writing frame"<<frameNo_<<"..."<<std::endl;
+        LogInfo("")<<"Writing frame "<<frameNo_<<"..."<<std::endl;
         int c = -1;
-        //while (c<=0)
+        while (c<=0)
             c = write(frame_pipe_, &frameNo_, sizeof(uint32_t));
         LogInfo("")<<"frameNo_: c="<<c<<" &frameNo_="<<&frameNo_<<" frameNo="<<frameNo_<<std::endl;
-        //c = -1;
-        //while (c<=frame.width()*frame.height()*4)
+        c = -1;
+        while (c<frame.width()*frame.height()*4)
             c = write(frame_pipe_, rgbFrameBuffer, frame.width()*frame.height()*4);
         LogInfo("")<<"Frame written: "<<c<<" bytes"<<std::endl;
     }

@@ -1,6 +1,9 @@
 C:\Users\pudgy\Documents\Tango\Mobile Terminal Unity Project\Temp\bin\Debug\Assembly-CSharp-Editor.dll
 C:\Users\pudgy\Documents\Tango\Mobile Terminal Unity Project\Temp\bin\Debug\Assembly-CSharp-Editor.pdb
+C:\Users\pudgy\Documents\Tango\Mobile Terminal Unity Project\Temp\bin\Debug\ndn-dot-net.dll
 C:\Users\pudgy\Documents\Tango\Mobile Terminal Unity Project\Temp\bin\Debug\nunit.framework.dll
+C:\Users\pudgy\Documents\Tango\Mobile Terminal Unity Project\Temp\bin\Debug\TextMeshPro-1.0.55.56.0b12-Editor.dll
+C:\Users\pudgy\Documents\Tango\Mobile Terminal Unity Project\Temp\bin\Debug\TextMeshPro-1.0.55.56.0b12.dll
 C:\Users\pudgy\Documents\Tango\Mobile Terminal Unity Project\Temp\bin\Debug\UnityEditor.Advertisements.dll
 C:\Users\pudgy\Documents\Tango\Mobile Terminal Unity Project\Temp\bin\Debug\UnityEditor.Analytics.dll
 C:\Users\pudgy\Documents\Tango\Mobile Terminal Unity Project\Temp\bin\Debug\UnityEditor.Android.Extensions.dll
@@ -21,6 +24,8 @@ C:\Users\pudgy\Documents\Tango\Mobile Terminal Unity Project\Temp\bin\Debug\Unit
 C:\Users\pudgy\Documents\Tango\Mobile Terminal Unity Project\Temp\bin\Debug\UnityEngine.TestRunner.dll
 C:\Users\pudgy\Documents\Tango\Mobile Terminal Unity Project\Temp\bin\Debug\UnityEngine.UI.dll
 C:\Users\pudgy\Documents\Tango\Mobile Terminal Unity Project\Temp\bin\Debug\UnityEngine.VR.dll
+C:\Users\pudgy\Documents\Tango\Mobile Terminal Unity Project\Temp\bin\Debug\Vectrosity.dll
+C:\Users\pudgy\Documents\Tango\Mobile Terminal Unity Project\Temp\bin\Debug\VectrosityEditor.dll
 C:\Users\pudgy\Documents\Tango\Mobile Terminal Unity Project\Temp\bin\Debug\Mono.Cecil.dll
 C:\Users\pudgy\Documents\Tango\Mobile Terminal Unity Project\Temp\bin\Debug\Unity.SerializationLogic.dll
 C:\Users\pudgy\Documents\Tango\Mobile Terminal Unity Project\Temp\bin\Debug\Unity.DataContract.dll
@@ -53,8 +58,3 @@ C:\Users\pudgy\Documents\Tango\Mobile Terminal Unity Project\Temp\bin\Debug\Unit
 C:\Users\pudgy\Documents\Tango\Mobile Terminal Unity Project\obj\Debug\Assembly-CSharp-Editor.csprojResolveAssemblyReference.cache
 C:\Users\pudgy\Documents\Tango\Mobile Terminal Unity Project\obj\Debug\Assembly-CSharp-Editor.dll
 C:\Users\pudgy\Documents\Tango\Mobile Terminal Unity Project\obj\Debug\Assembly-CSharp-Editor.pdb
-C:\Users\pudgy\Documents\Tango\Mobile Terminal Unity Project\Temp\bin\Debug\ndn-dot-net.dll
-C:\Users\pudgy\Documents\Tango\Mobile Terminal Unity Project\Temp\bin\Debug\TextMeshPro-1.0.55.56.0b12-Editor.dll
-C:\Users\pudgy\Documents\Tango\Mobile Terminal Unity Project\Temp\bin\Debug\TextMeshPro-1.0.55.56.0b12.dll
-C:\Users\pudgy\Documents\Tango\Mobile Terminal Unity Project\Temp\bin\Debug\Vectrosity.dll
-C:\Users\pudgy\Documents\Tango\Mobile Terminal Unity Project\Temp\bin\Debug\VectrosityEditor.dll

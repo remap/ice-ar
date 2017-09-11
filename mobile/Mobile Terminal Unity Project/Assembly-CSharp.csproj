@@ -48,8 +48,10 @@
   <ItemGroup>
      <Compile Include="Assets\Google-Unity\Scripts\AndroidHelper.cs" />
      <Compile Include="Assets\Google-Unity\Scripts\AndroidLifecycle.cs" />
+     <Compile Include="Assets\Scripts\AnnotationsFetcher.cs" />
      <Compile Include="Assets\Scripts\BoundingBoxObjectData.cs" />
      <Compile Include="Assets\Scripts\BoundingBoxPoolManager.cs" />
+     <Compile Include="Assets\Scripts\ConcurrentQueue.cs" />
      <Compile Include="Assets\Scripts\FrameObjectData.cs" />
      <Compile Include="Assets\Scripts\FramePoolManager.cs" />
      <Compile Include="Assets\Scripts\LabelBackground.cs" />
@@ -59,6 +61,7 @@
      <Compile Include="Assets\Scripts\OnCameraFrame.cs" />
      <Compile Include="Assets\Scripts\PointCloudGUI.cs" />
      <Compile Include="Assets\Scripts\PooledObject.cs" />
+     <Compile Include="Assets\Scripts\RingBuffer.cs" />
      <Compile Include="Assets\Scripts\cnl\content-meta-info.cs" />
      <Compile Include="Assets\Scripts\cnl\generalized-content.cs" />
      <Compile Include="Assets\Scripts\cnl\namespace.cs" />
@@ -251,14 +254,14 @@
  <Reference Include="UnityEngine.VR">
  <HintPath>C:/Program Files/Unity/Editor/Data/UnityExtensions/Unity/UnityVR/RuntimeEditor/UnityEngine.VR.dll</HintPath>
  </Reference>
+ <Reference Include="ndn-dot-net">
+ <HintPath>C:/Users/pudgy/Documents/Tango/Mobile Terminal Unity Project/Assets/ndn-dot-net.dll</HintPath>
+ </Reference>
  <Reference Include="TextMeshPro-1.0.55.56.0b12">
  <HintPath>C:/Users/pudgy/Documents/Tango/Mobile Terminal Unity Project/Assets/TextMesh Pro/Plugins/TextMeshPro-1.0.55.56.0b12.dll</HintPath>
  </Reference>
  <Reference Include="Vectrosity">
  <HintPath>C:/Users/pudgy/Documents/Tango/Mobile Terminal Unity Project/Assets/Vectrosity/Plugins/Vectrosity.dll</HintPath>
- </Reference>
- <Reference Include="ndn-dot-net">
- <HintPath>C:/Users/pudgy/Documents/Tango/Mobile Terminal Unity Project/Assets/ndn-dot-net.dll</HintPath>
  </Reference>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />

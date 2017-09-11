@@ -702,7 +702,7 @@ image load_raw_image_cv(char *filename, int w, int h, int channels, uint32_t *fr
     printf("Reading frame...\n");
 
     int c = -1;
-    while (c < 0){
+    while (c <= 0){
 	c  = read(frame_pipe_, frameNo, sizeof(uint32_t));
     	c = read(frame_pipe_, imagedata, frame_size);
     }
