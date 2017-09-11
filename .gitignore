@@ -68,3 +68,10 @@ ndnrtc/peter-build
 *.lai
 *.la
 *.a
+edge/darknet/yolo.weights.*
+edge/darknet/yolo.weights
+edge/darknet/darknet
+edge/ndnrtc/cpp/.libs/
+edge/ndnrtc/cpp/build/
+edge/ndnrtc/cpp/client/src/.deps/
+edge/ndnrtc/cpp/peter-build/
