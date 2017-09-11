@@ -29,3 +29,42 @@ obj/
 .Trashes
 ehthumbs.db
 Thumbs.db
+
+# ====================== #
+# ICE-AR Project-related #
+# ====================== #
+edge/darknet/obj/
+edge/ndnrtc/cpp/Makefile
+edge/ndnrtc/cpp/src/obj/Makefile
+edge/ndnrtc/cpp/include/Makefile
+edge/ndnrtc/cpp/autom4te.cache
+edge/ndnrtc/cpp/config.log
+edge/ndnrtc/cpp/config.status
+edge/ndnrtc/cpp/include/config.h
+edge/ndnrtc/cpp/_configs.sed
+edge/ndnrtc/cpp/stamp-h1
+edge/ndnrtc/cpp/include/stamp-h1
+edge/ndnrtc/cpp/aclocal.m4
+edge/ndnrtc/cpp/libtool
+edge/ndnrtc/cpp/condefs.h
+edge/ndnrtc/cpp/conftest.cpp
+edge/ndnrtc/cpp/conftest.err
+edge/ndnrtc/cpp/test-suite.log
+edge/ndnrtc/cpp/m4/libtool.m4
+edge/ndnrtc/cpp/m4/ltoptions.m4
+edge/ndnrtc/cpp/m4/ltsugar.m4
+edge/ndnrtc/cpp/m4/ltversion.m4
+edge/ndnrtc/cpp/m4/lt~obsolete.m4
+
+ndnrtc/build
+ndnrtc/peter-build
+
+# Compiled files
+*.slo
+*.lo
+*.o
+*.so
+*.dylib
+*.lai
+*.la
+*.a
