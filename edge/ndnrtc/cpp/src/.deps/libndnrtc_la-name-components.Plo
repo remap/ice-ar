@@ -582,13 +582,11 @@ src/libndnrtc_la-name-components.lo: src/name-components.cpp \
  /usr/include/boost/algorithm/string/classification.hpp \
  /usr/include/boost/algorithm/string/detail/classification.hpp \
  /usr/include/boost/algorithm/string/predicate_facade.hpp \
- include/name-components.hpp \
- /home/yuanjie/ice-ar/edge/ndn-cpp/build/include/ndn-cpp/name.hpp \
- /home/yuanjie/ice-ar/edge/ndn-cpp/build/include/ndn-cpp/util/blob.hpp \
- /usr/include/c++/5/iostream \
- /home/yuanjie/ice-ar/edge/ndn-cpp/build/include/ndn-cpp/util/../common.hpp \
- /home/yuanjie/ice-ar/edge/ndn-cpp/build/include/ndn-cpp/util/../c/common.h \
- /home/yuanjie/ice-ar/edge/ndn-cpp/build/include/ndn-cpp/util/../c/../ndn-cpp-config.h \
+ include/name-components.hpp /usr/local/include/ndn-cpp/name.hpp \
+ /usr/local/include/ndn-cpp/util/blob.hpp /usr/include/c++/5/iostream \
+ /usr/local/include/ndn-cpp/common.hpp \
+ /usr/local/include/ndn-cpp/c/common.h \
+ /usr/local/include/ndn-cpp/ndn-cpp-config.h \
  /usr/include/boost/shared_ptr.hpp \
  /usr/include/boost/smart_ptr/shared_ptr.hpp \
  /usr/include/boost/smart_ptr/detail/shared_count.hpp \
@@ -741,19 +739,19 @@ src/libndnrtc_la-name-components.lo: src/name-components.cpp \
  /usr/include/boost/bind/bind_mf_cc.hpp \
  /usr/include/boost/bind/bind_mf2_cc.hpp \
  /usr/include/boost/bind/placeholders.hpp \
- /home/yuanjie/ice-ar/edge/ndn-cpp/build/include/ndn-cpp/util/../c/util/blob-types.h \
- /home/yuanjie/ice-ar/edge/ndn-cpp/build/include/ndn-cpp/util/../c/util/../common.h \
- /home/yuanjie/ice-ar/edge/ndn-cpp/build/include/ndn-cpp/util/../lite/util/blob-lite.hpp \
- /home/yuanjie/ice-ar/edge/ndn-cpp/build/include/ndn-cpp/util/../lite/util/../../c/util/blob-types.h \
- /home/yuanjie/ice-ar/edge/ndn-cpp/build/include/ndn-cpp/encoding/wire-format.hpp \
- /home/yuanjie/ice-ar/edge/ndn-cpp/build/include/ndn-cpp/encoding/../common.hpp \
- /home/yuanjie/ice-ar/edge/ndn-cpp/build/include/ndn-cpp/encoding/../util/blob.hpp \
- /home/yuanjie/ice-ar/edge/ndn-cpp/build/include/ndn-cpp/lite/name-lite.hpp \
- /home/yuanjie/ice-ar/edge/ndn-cpp/build/include/ndn-cpp/lite/../c/errors.h \
- /home/yuanjie/ice-ar/edge/ndn-cpp/build/include/ndn-cpp/lite/util/blob-lite.hpp \
- /home/yuanjie/ice-ar/edge/ndn-cpp/build/include/ndn-cpp/lite/../c/name-types.h \
- /home/yuanjie/ice-ar/edge/ndn-cpp/build/include/ndn-cpp/lite/../c/util/blob-types.h \
- include/params.hpp include/ndnrtc-defines.hpp include/ndnrtc-common.hpp \
+ /usr/local/include/ndn-cpp/c/util/blob-types.h \
+ /usr/local/include/ndn-cpp/c/common.h \
+ /usr/local/include/ndn-cpp/lite/util/blob-lite.hpp \
+ /usr/local/include/ndn-cpp/c/util/blob-types.h \
+ /usr/local/include/ndn-cpp/encoding/wire-format.hpp \
+ /usr/local/include/ndn-cpp/common.hpp \
+ /usr/local/include/ndn-cpp/util/blob.hpp \
+ /usr/local/include/ndn-cpp/lite/name-lite.hpp \
+ /usr/local/include/ndn-cpp/c/errors.h \
+ /usr/local/include/ndn-cpp/lite/util/blob-lite.hpp \
+ /usr/local/include/ndn-cpp/c/name-types.h \
+ /usr/local/include/ndn-cpp/c/util/blob-types.h include/params.hpp \
+ include/ndnrtc-defines.hpp include/ndnrtc-common.hpp \
  /usr/include/c++/5/bitset
 
 /usr/include/stdc-predef.h:
@@ -2074,17 +2072,17 @@ src/libndnrtc_la-name-components.lo: src/name-components.cpp \
 
 include/name-components.hpp:
 
-/home/yuanjie/ice-ar/edge/ndn-cpp/build/include/ndn-cpp/name.hpp:
+/usr/local/include/ndn-cpp/name.hpp:
 
-/home/yuanjie/ice-ar/edge/ndn-cpp/build/include/ndn-cpp/util/blob.hpp:
+/usr/local/include/ndn-cpp/util/blob.hpp:
 
 /usr/include/c++/5/iostream:
 
-/home/yuanjie/ice-ar/edge/ndn-cpp/build/include/ndn-cpp/util/../common.hpp:
+/usr/local/include/ndn-cpp/common.hpp:
 
-/home/yuanjie/ice-ar/edge/ndn-cpp/build/include/ndn-cpp/util/../c/common.h:
+/usr/local/include/ndn-cpp/c/common.h:
 
-/home/yuanjie/ice-ar/edge/ndn-cpp/build/include/ndn-cpp/util/../c/../ndn-cpp-config.h:
+/usr/local/include/ndn-cpp/ndn-cpp-config.h:
 
 /usr/include/boost/shared_ptr.hpp:
 
@@ -2416,29 +2414,29 @@ include/name-components.hpp:
 
 /usr/include/boost/bind/placeholders.hpp:
 
-/home/yuanjie/ice-ar/edge/ndn-cpp/build/include/ndn-cpp/util/../c/util/blob-types.h:
+/usr/local/include/ndn-cpp/c/util/blob-types.h:
 
-/home/yuanjie/ice-ar/edge/ndn-cpp/build/include/ndn-cpp/util/../c/util/../common.h:
+/usr/local/include/ndn-cpp/c/common.h:
 
-/home/yuanjie/ice-ar/edge/ndn-cpp/build/include/ndn-cpp/util/../lite/util/blob-lite.hpp:
+/usr/local/include/ndn-cpp/lite/util/blob-lite.hpp:
 
-/home/yuanjie/ice-ar/edge/ndn-cpp/build/include/ndn-cpp/util/../lite/util/../../c/util/blob-types.h:
+/usr/local/include/ndn-cpp/c/util/blob-types.h:
 
-/home/yuanjie/ice-ar/edge/ndn-cpp/build/include/ndn-cpp/encoding/wire-format.hpp:
+/usr/local/include/ndn-cpp/encoding/wire-format.hpp:
 
-/home/yuanjie/ice-ar/edge/ndn-cpp/build/include/ndn-cpp/encoding/../common.hpp:
+/usr/local/include/ndn-cpp/common.hpp:
 
-/home/yuanjie/ice-ar/edge/ndn-cpp/build/include/ndn-cpp/encoding/../util/blob.hpp:
+/usr/local/include/ndn-cpp/util/blob.hpp:
 
-/home/yuanjie/ice-ar/edge/ndn-cpp/build/include/ndn-cpp/lite/name-lite.hpp:
+/usr/local/include/ndn-cpp/lite/name-lite.hpp:
 
-/home/yuanjie/ice-ar/edge/ndn-cpp/build/include/ndn-cpp/lite/../c/errors.h:
+/usr/local/include/ndn-cpp/c/errors.h:
 
-/home/yuanjie/ice-ar/edge/ndn-cpp/build/include/ndn-cpp/lite/util/blob-lite.hpp:
+/usr/local/include/ndn-cpp/lite/util/blob-lite.hpp:
 
-/home/yuanjie/ice-ar/edge/ndn-cpp/build/include/ndn-cpp/lite/../c/name-types.h:
+/usr/local/include/ndn-cpp/c/name-types.h:
 
-/home/yuanjie/ice-ar/edge/ndn-cpp/build/include/ndn-cpp/lite/../c/util/blob-types.h:
+/usr/local/include/ndn-cpp/c/util/blob-types.h:
 
 include/params.hpp:
 

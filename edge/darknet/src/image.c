@@ -272,12 +272,12 @@ void draw_detections_ndnrtc(image im, int num, float thresh, box *boxes, float *
             float json_left = b.x - b.w/2.0;
             float json_right = b.x+b.w/2.0;
             float json_top   = b.y-b.h/2.0;
-            int json_bot   = b.y+b.h/2.0;
+            float json_bot   = b.y+b.h/2.0;
 
             if(json_left < 0) json_left = 0;
             if(json_right > 1) json_right = 1;
-            if(json_top < 0) top = 0;
-            if(json_bot > 1) bot = 1;
+            if(json_top < 0) json_top = 0;
+            if(json_bot > 1) json_bot = 1;
 
             //printf("draw_detection: %s left=%d right=%d top=%d bot=%d\n", names[class], left, right, top, bot);
             cJSON *item;
@@ -698,7 +698,9 @@ image load_raw_image_cv(char *filename, int w, int h, int channels, uint32_t *fr
 {
     if(frame_pipe_ == -1)
         printf("Waiting for the frame pipe (from ndnrtc)...\n");
-        frame_pipe_ = open(filename, O_RDONLY | O_NONBLOCK);
+    frame_pipe_ = open(filename, O_RDONLY | O_NONBLOCK);
+    //frame_pipe_ = open(filename, O_RDONLY);
+    printf("%s\n",filename);
     if (frame_pipe_ == -1){
         printf("Fail to create the frame pipe\n");
     }
@@ -712,13 +714,18 @@ image load_raw_image_cv(char *filename, int w, int h, int channels, uint32_t *fr
     char *imagedata = (char*)malloc(frame_size);
     printf("Reading frame...\n");
 
-    int c = -1;
-    while (c <= 0){
-	c  = read(frame_pipe_, frameNo, sizeof(uint32_t));
-    	c = read(frame_pipe_, imagedata, frame_size);
+    int c = 0, total_bytes = 0;
+    while (c<=0)
+        c = read(frame_pipe_, frameNo, sizeof(uint32_t));
+    c = 0;
+    while (total_bytes < frame_size){
+    	c = read(frame_pipe_+total_bytes, imagedata, frame_size);
+        if(c>=0)
+            total_bytes+=c;
+        printf("total_bytes=%d frame_size=%d\n", total_bytes, frame_size);
     }
     reverse_argb(imagedata, frame_size);
-    printf("New frame %u read: %d bytes\n", *frameNo, c);
+    printf("New frame %u read: %d bytes\n", *frameNo, total_bytes);
 
 
     IplImage* src= cvCreateImageHeader(size,IPL_DEPTH_8U,4);

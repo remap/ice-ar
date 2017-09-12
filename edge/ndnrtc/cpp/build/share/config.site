@@ -1,5 +1,0 @@
-CPPFLAGS="-DWEBRTC_POSIX -DBOOST_ASIO_DISABLE_STD_CHRONO" CXXFLAGS="-DWEBRTC_POSIX -DBOOST_ASIO_DISABLE_STD_CHRONO"
-NDNCPPDIR=/home/yuanjieli/Desktop/ndn-cpp/build/include
-NDNCPPLIB=/home/yuanjieli/Desktop/ndn-cpp/build/lib
-OPENFECDIR=/home/yuanjieli/Desktop/openfec_v1.4.2
-WEBRTCDIR=/home/yuanjieli/Desktop/webrtc/webrtc-checkout/src

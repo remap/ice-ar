@@ -57,11 +57,12 @@ RemoteStreamImpl(io, face, keyChain, streamPrefix)
     // Create the frame pipe between ndnrtc-client and YOLO
     char * frame_fifo_name = "/tmp/frame_fifo";
     mkfifo(frame_fifo_name, 0777); 
-    frame_pipe_ = open(frame_fifo_name, O_WRONLY | O_NONBLOCK);
+    // frame_pipe_ = open(frame_fifo_name, O_WRONLY | O_NONBLOCK);
+    frame_pipe_ = open(frame_fifo_name, O_WRONLY);
     if (frame_pipe_ == -1){
         LogErrorC<<"Fail to create the frame pipe"<<std::endl;
     }
-    //fcntl(frame_pipe_, F_SETPIPE_SZ, 1024*1024);
+    fcntl(frame_pipe_, F_SETPIPE_SZ, 20000000); //20MB frame pipe
 
     frameNo_ = 0;
 }
@@ -135,6 +136,7 @@ RemoteVideoStreamImpl::feedFrame(const WebRtcVideoFrame& frame)
         /* Write the frame to the frame FIFO in the following form
          * | frameNo (int) | ARGB raw data |
          */
+        
         LogInfo("")<<"Writing frame "<<frameNo_<<"..."<<std::endl;
         int c = -1;
         while (c<=0)
@@ -144,6 +146,7 @@ RemoteVideoStreamImpl::feedFrame(const WebRtcVideoFrame& frame)
         while (c<frame.width()*frame.height()*4)
             c = write(frame_pipe_, rgbFrameBuffer, frame.width()*frame.height()*4);
         LogInfo("")<<"Frame written: "<<c<<" bytes"<<std::endl;
+        
     }
 }
 
