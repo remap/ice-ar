@@ -28,7 +28,7 @@ The edge node includes the communication plane (using `ndnrtc` and `nfd`) and th
 	echo "save" >> libwebrtc-all.mri && echo "end" >> libwebrtc-all.mri
 	ar -M <libwebrtc-all.mri
 
-4.  Compile `ndn-cpp` as follows:
+4.  Compile `ndn-cpp` as follows (more instructions here: <https://github.com/named-data/ndn-cpp/blob/master/INSTALL.md#ubuntu-1204-64-bit-and-32-bit-ubuntu-1404-64-bit-and-32-bit-ubuntu-1504-64-bit>):
 
 		cd ndn-cpp	
 		mkdir -p build
