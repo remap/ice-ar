@@ -75,3 +75,5 @@ edge/ndnrtc/cpp/.libs/
 edge/ndnrtc/cpp/build/
 edge/ndnrtc/cpp/client/src/.deps/
 edge/ndnrtc/cpp/peter-build/
+edge/ndnrtc/cpp/src/.libs
+edge/ndnrtc/cpp/src/.deps
