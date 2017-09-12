@@ -1357,25 +1357,24 @@ src/libndnrtc_la-video-decoder.lo: src/video-decoder.cpp \
  /usr/include/x86_64-linux-gnu/c++/5/bits/c++io.h \
  /usr/include/c++/5/bits/fstream.tcc include/params.hpp \
  include/ndnrtc-defines.hpp include/statistics.hpp src/jitter-timing.hpp \
- src/frame-buffer.hpp \
- /home/yuanjie/ice-ar/edge/ndn-cpp/build/include/ndn-cpp/name.hpp \
- /home/yuanjie/ice-ar/edge/ndn-cpp/build/include/ndn-cpp/util/blob.hpp \
- /home/yuanjie/ice-ar/edge/ndn-cpp/build/include/ndn-cpp/util/../common.hpp \
- /home/yuanjie/ice-ar/edge/ndn-cpp/build/include/ndn-cpp/util/../c/common.h \
- /home/yuanjie/ice-ar/edge/ndn-cpp/build/include/ndn-cpp/util/../c/../ndn-cpp-config.h \
+ src/frame-buffer.hpp /usr/local/include/ndn-cpp/name.hpp \
+ /usr/local/include/ndn-cpp/util/blob.hpp \
+ /usr/local/include/ndn-cpp/common.hpp \
+ /usr/local/include/ndn-cpp/c/common.h \
+ /usr/local/include/ndn-cpp/ndn-cpp-config.h \
  /usr/include/boost/weak_ptr.hpp \
- /home/yuanjie/ice-ar/edge/ndn-cpp/build/include/ndn-cpp/util/../c/util/blob-types.h \
- /home/yuanjie/ice-ar/edge/ndn-cpp/build/include/ndn-cpp/util/../c/util/../common.h \
- /home/yuanjie/ice-ar/edge/ndn-cpp/build/include/ndn-cpp/util/../lite/util/blob-lite.hpp \
- /home/yuanjie/ice-ar/edge/ndn-cpp/build/include/ndn-cpp/util/../lite/util/../../c/util/blob-types.h \
- /home/yuanjie/ice-ar/edge/ndn-cpp/build/include/ndn-cpp/encoding/wire-format.hpp \
- /home/yuanjie/ice-ar/edge/ndn-cpp/build/include/ndn-cpp/encoding/../common.hpp \
- /home/yuanjie/ice-ar/edge/ndn-cpp/build/include/ndn-cpp/encoding/../util/blob.hpp \
- /home/yuanjie/ice-ar/edge/ndn-cpp/build/include/ndn-cpp/lite/name-lite.hpp \
- /home/yuanjie/ice-ar/edge/ndn-cpp/build/include/ndn-cpp/lite/../c/errors.h \
- /home/yuanjie/ice-ar/edge/ndn-cpp/build/include/ndn-cpp/lite/util/blob-lite.hpp \
- /home/yuanjie/ice-ar/edge/ndn-cpp/build/include/ndn-cpp/lite/../c/name-types.h \
- /home/yuanjie/ice-ar/edge/ndn-cpp/build/include/ndn-cpp/lite/../c/util/blob-types.h \
+ /usr/local/include/ndn-cpp/c/util/blob-types.h \
+ /usr/local/include/ndn-cpp/c/common.h \
+ /usr/local/include/ndn-cpp/lite/util/blob-lite.hpp \
+ /usr/local/include/ndn-cpp/c/util/blob-types.h \
+ /usr/local/include/ndn-cpp/encoding/wire-format.hpp \
+ /usr/local/include/ndn-cpp/common.hpp \
+ /usr/local/include/ndn-cpp/util/blob.hpp \
+ /usr/local/include/ndn-cpp/lite/name-lite.hpp \
+ /usr/local/include/ndn-cpp/c/errors.h \
+ /usr/local/include/ndn-cpp/lite/util/blob-lite.hpp \
+ /usr/local/include/ndn-cpp/c/name-types.h \
+ /usr/local/include/ndn-cpp/c/util/blob-types.h \
  include/name-components.hpp include/ndnrtc-common.hpp \
  src/slot-buffer.hpp src/video-coder.hpp src/clock.hpp
 
@@ -4375,41 +4374,41 @@ src/jitter-timing.hpp:
 
 src/frame-buffer.hpp:
 
-/home/yuanjie/ice-ar/edge/ndn-cpp/build/include/ndn-cpp/name.hpp:
+/usr/local/include/ndn-cpp/name.hpp:
 
-/home/yuanjie/ice-ar/edge/ndn-cpp/build/include/ndn-cpp/util/blob.hpp:
+/usr/local/include/ndn-cpp/util/blob.hpp:
 
-/home/yuanjie/ice-ar/edge/ndn-cpp/build/include/ndn-cpp/util/../common.hpp:
+/usr/local/include/ndn-cpp/common.hpp:
 
-/home/yuanjie/ice-ar/edge/ndn-cpp/build/include/ndn-cpp/util/../c/common.h:
+/usr/local/include/ndn-cpp/c/common.h:
 
-/home/yuanjie/ice-ar/edge/ndn-cpp/build/include/ndn-cpp/util/../c/../ndn-cpp-config.h:
+/usr/local/include/ndn-cpp/ndn-cpp-config.h:
 
 /usr/include/boost/weak_ptr.hpp:
 
-/home/yuanjie/ice-ar/edge/ndn-cpp/build/include/ndn-cpp/util/../c/util/blob-types.h:
+/usr/local/include/ndn-cpp/c/util/blob-types.h:
 
-/home/yuanjie/ice-ar/edge/ndn-cpp/build/include/ndn-cpp/util/../c/util/../common.h:
+/usr/local/include/ndn-cpp/c/common.h:
 
-/home/yuanjie/ice-ar/edge/ndn-cpp/build/include/ndn-cpp/util/../lite/util/blob-lite.hpp:
+/usr/local/include/ndn-cpp/lite/util/blob-lite.hpp:
 
-/home/yuanjie/ice-ar/edge/ndn-cpp/build/include/ndn-cpp/util/../lite/util/../../c/util/blob-types.h:
+/usr/local/include/ndn-cpp/c/util/blob-types.h:
 
-/home/yuanjie/ice-ar/edge/ndn-cpp/build/include/ndn-cpp/encoding/wire-format.hpp:
+/usr/local/include/ndn-cpp/encoding/wire-format.hpp:
 
-/home/yuanjie/ice-ar/edge/ndn-cpp/build/include/ndn-cpp/encoding/../common.hpp:
+/usr/local/include/ndn-cpp/common.hpp:
 
-/home/yuanjie/ice-ar/edge/ndn-cpp/build/include/ndn-cpp/encoding/../util/blob.hpp:
+/usr/local/include/ndn-cpp/util/blob.hpp:
 
-/home/yuanjie/ice-ar/edge/ndn-cpp/build/include/ndn-cpp/lite/name-lite.hpp:
+/usr/local/include/ndn-cpp/lite/name-lite.hpp:
 
-/home/yuanjie/ice-ar/edge/ndn-cpp/build/include/ndn-cpp/lite/../c/errors.h:
+/usr/local/include/ndn-cpp/c/errors.h:
 
-/home/yuanjie/ice-ar/edge/ndn-cpp/build/include/ndn-cpp/lite/util/blob-lite.hpp:
+/usr/local/include/ndn-cpp/lite/util/blob-lite.hpp:
 
-/home/yuanjie/ice-ar/edge/ndn-cpp/build/include/ndn-cpp/lite/../c/name-types.h:
+/usr/local/include/ndn-cpp/c/name-types.h:
 
-/home/yuanjie/ice-ar/edge/ndn-cpp/build/include/ndn-cpp/lite/../c/util/blob-types.h:
+/usr/local/include/ndn-cpp/c/util/blob-types.h:
 
 include/name-components.hpp:
 

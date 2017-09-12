@@ -329,7 +329,9 @@ int main(int argc, char** argv)
     char feature_buf[4096];
     int frame_num = 0;
     while(true){
-      int feature_len = read(feature_pipe, feature_buf, 4096);
+      int feature_len = -1;
+      while(feature_len<=0)
+          feature_len  = read(feature_pipe, feature_buf, 4096);
       string feature(feature_buf, feature_len);
       std::cout << "Feature read: "<<feature<<std::endl;
       AnnotationArray aa(feature);

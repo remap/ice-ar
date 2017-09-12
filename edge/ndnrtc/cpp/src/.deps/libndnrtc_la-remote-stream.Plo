@@ -1162,12 +1162,11 @@ src/libndnrtc_la-remote-stream.lo: src/remote-stream.cpp \
  /usr/include/x86_64-linux-gnu/c++/5/bits/basic_file.h \
  /usr/include/x86_64-linux-gnu/c++/5/bits/c++io.h \
  /usr/include/c++/5/bits/fstream.tcc include/params.hpp \
- include/ndnrtc-defines.hpp \
- /home/yuanjie/ice-ar/edge/ndn-cpp/build/include/ndn-cpp/name.hpp \
- /home/yuanjie/ice-ar/edge/ndn-cpp/build/include/ndn-cpp/util/blob.hpp \
- /home/yuanjie/ice-ar/edge/ndn-cpp/build/include/ndn-cpp/util/../common.hpp \
- /home/yuanjie/ice-ar/edge/ndn-cpp/build/include/ndn-cpp/util/../c/common.h \
- /home/yuanjie/ice-ar/edge/ndn-cpp/build/include/ndn-cpp/util/../c/../ndn-cpp-config.h \
+ include/ndnrtc-defines.hpp /usr/local/include/ndn-cpp/name.hpp \
+ /usr/local/include/ndn-cpp/util/blob.hpp \
+ /usr/local/include/ndn-cpp/common.hpp \
+ /usr/local/include/ndn-cpp/c/common.h \
+ /usr/local/include/ndn-cpp/ndn-cpp-config.h \
  /usr/include/boost/weak_ptr.hpp /usr/include/boost/function.hpp \
  /usr/include/boost/preprocessor/iterate.hpp \
  /usr/include/boost/function/detail/prologue.hpp \
@@ -1195,18 +1194,18 @@ src/libndnrtc_la-remote-stream.lo: src/remote-stream.cpp \
  /usr/include/boost/bind/bind_mf_cc.hpp \
  /usr/include/boost/bind/bind_mf2_cc.hpp \
  /usr/include/boost/bind/placeholders.hpp \
- /home/yuanjie/ice-ar/edge/ndn-cpp/build/include/ndn-cpp/util/../c/util/blob-types.h \
- /home/yuanjie/ice-ar/edge/ndn-cpp/build/include/ndn-cpp/util/../c/util/../common.h \
- /home/yuanjie/ice-ar/edge/ndn-cpp/build/include/ndn-cpp/util/../lite/util/blob-lite.hpp \
- /home/yuanjie/ice-ar/edge/ndn-cpp/build/include/ndn-cpp/util/../lite/util/../../c/util/blob-types.h \
- /home/yuanjie/ice-ar/edge/ndn-cpp/build/include/ndn-cpp/encoding/wire-format.hpp \
- /home/yuanjie/ice-ar/edge/ndn-cpp/build/include/ndn-cpp/encoding/../common.hpp \
- /home/yuanjie/ice-ar/edge/ndn-cpp/build/include/ndn-cpp/encoding/../util/blob.hpp \
- /home/yuanjie/ice-ar/edge/ndn-cpp/build/include/ndn-cpp/lite/name-lite.hpp \
- /home/yuanjie/ice-ar/edge/ndn-cpp/build/include/ndn-cpp/lite/../c/errors.h \
- /home/yuanjie/ice-ar/edge/ndn-cpp/build/include/ndn-cpp/lite/util/blob-lite.hpp \
- /home/yuanjie/ice-ar/edge/ndn-cpp/build/include/ndn-cpp/lite/../c/name-types.h \
- /home/yuanjie/ice-ar/edge/ndn-cpp/build/include/ndn-cpp/lite/../c/util/blob-types.h \
+ /usr/local/include/ndn-cpp/c/util/blob-types.h \
+ /usr/local/include/ndn-cpp/c/common.h \
+ /usr/local/include/ndn-cpp/lite/util/blob-lite.hpp \
+ /usr/local/include/ndn-cpp/c/util/blob-types.h \
+ /usr/local/include/ndn-cpp/encoding/wire-format.hpp \
+ /usr/local/include/ndn-cpp/common.hpp \
+ /usr/local/include/ndn-cpp/util/blob.hpp \
+ /usr/local/include/ndn-cpp/lite/name-lite.hpp \
+ /usr/local/include/ndn-cpp/c/errors.h \
+ /usr/local/include/ndn-cpp/lite/util/blob-lite.hpp \
+ /usr/local/include/ndn-cpp/c/name-types.h \
+ /usr/local/include/ndn-cpp/c/util/blob-types.h \
  src/remote-stream-impl.hpp src/ndnrtc-object.hpp include/simple-log.hpp \
  src/meta-fetcher.hpp src/segment-fetcher.hpp src/data-validator.hpp \
  src/frame-data.hpp /usr/include/boost/crc.hpp \
@@ -1298,31 +1297,30 @@ src/libndnrtc_la-remote-stream.lo: src/remote-stream.cpp \
  /home/yuanjie/webrtc-checkout/src/webrtc/base/array_view.h \
  /home/yuanjie/webrtc-checkout/src/webrtc/base/sanitizer.h \
  /home/yuanjie/webrtc-checkout/src/webrtc/common_video/libyuv/include/webrtc_libyuv.h \
- /home/yuanjie/ice-ar/edge/ndn-cpp/build/include/ndn-cpp/data.hpp \
- /home/yuanjie/ice-ar/edge/ndn-cpp/build/include/ndn-cpp/name.hpp \
- /home/yuanjie/ice-ar/edge/ndn-cpp/build/include/ndn-cpp/signature.hpp \
- /home/yuanjie/ice-ar/edge/ndn-cpp/build/include/ndn-cpp/common.hpp \
- /home/yuanjie/ice-ar/edge/ndn-cpp/build/include/ndn-cpp/lite/signature-lite.hpp \
- /home/yuanjie/ice-ar/edge/ndn-cpp/build/include/ndn-cpp/lite/key-locator-lite.hpp \
- /home/yuanjie/ice-ar/edge/ndn-cpp/build/include/ndn-cpp/lite/name-lite.hpp \
- /home/yuanjie/ice-ar/edge/ndn-cpp/build/include/ndn-cpp/lite/../c/key-types.h \
- /home/yuanjie/ice-ar/edge/ndn-cpp/build/include/ndn-cpp/lite/../c/name-types.h \
- /home/yuanjie/ice-ar/edge/ndn-cpp/build/include/ndn-cpp/lite/security/validity-period-lite.hpp \
- /home/yuanjie/ice-ar/edge/ndn-cpp/build/include/ndn-cpp/lite/security/../../c/security/validity-period-types.h \
- /home/yuanjie/ice-ar/edge/ndn-cpp/build/include/ndn-cpp/lite/security/../../c/security/../common.h \
- /home/yuanjie/ice-ar/edge/ndn-cpp/build/include/ndn-cpp/lite/../c/data-types.h \
- /home/yuanjie/ice-ar/edge/ndn-cpp/build/include/ndn-cpp/lite/../c/key-types.h \
- /home/yuanjie/ice-ar/edge/ndn-cpp/build/include/ndn-cpp/lite/../c/security/validity-period-types.h \
- /home/yuanjie/ice-ar/edge/ndn-cpp/build/include/ndn-cpp/meta-info.hpp \
- /home/yuanjie/ice-ar/edge/ndn-cpp/build/include/ndn-cpp/c/data-types.h \
- /home/yuanjie/ice-ar/edge/ndn-cpp/build/include/ndn-cpp/lite/meta-info-lite.hpp \
- /home/yuanjie/ice-ar/edge/ndn-cpp/build/include/ndn-cpp/lite/common-lite.hpp \
- /home/yuanjie/ice-ar/edge/ndn-cpp/build/include/ndn-cpp/util/signed-blob.hpp \
- /home/yuanjie/ice-ar/edge/ndn-cpp/build/include/ndn-cpp/util/blob.hpp \
- /home/yuanjie/ice-ar/edge/ndn-cpp/build/include/ndn-cpp/util/change-counter.hpp \
- /home/yuanjie/ice-ar/edge/ndn-cpp/build/include/ndn-cpp/lite/data-lite.hpp \
- /home/yuanjie/ice-ar/edge/ndn-cpp/build/include/ndn-cpp/lite/meta-info-lite.hpp \
- /home/yuanjie/ice-ar/edge/ndn-cpp/build/include/ndn-cpp/lite/signature-lite.hpp \
+ /usr/local/include/ndn-cpp/data.hpp /usr/local/include/ndn-cpp/name.hpp \
+ /usr/local/include/ndn-cpp/signature.hpp \
+ /usr/local/include/ndn-cpp/common.hpp \
+ /usr/local/include/ndn-cpp/lite/signature-lite.hpp \
+ /usr/local/include/ndn-cpp/lite/key-locator-lite.hpp \
+ /usr/local/include/ndn-cpp/lite/name-lite.hpp \
+ /usr/local/include/ndn-cpp/c/key-types.h \
+ /usr/local/include/ndn-cpp/c/name-types.h \
+ /usr/local/include/ndn-cpp/lite/security/validity-period-lite.hpp \
+ /usr/local/include/ndn-cpp/c/security/validity-period-types.h \
+ /usr/local/include/ndn-cpp/c/common.h \
+ /usr/local/include/ndn-cpp/c/data-types.h \
+ /usr/local/include/ndn-cpp/c/key-types.h \
+ /usr/local/include/ndn-cpp/c/security/validity-period-types.h \
+ /usr/local/include/ndn-cpp/meta-info.hpp \
+ /usr/local/include/ndn-cpp/c/data-types.h \
+ /usr/local/include/ndn-cpp/lite/meta-info-lite.hpp \
+ /usr/local/include/ndn-cpp/lite/common-lite.hpp \
+ /usr/local/include/ndn-cpp/util/signed-blob.hpp \
+ /usr/local/include/ndn-cpp/util/blob.hpp \
+ /usr/local/include/ndn-cpp/util/change-counter.hpp \
+ /usr/local/include/ndn-cpp/lite/data-lite.hpp \
+ /usr/local/include/ndn-cpp/lite/meta-info-lite.hpp \
+ /usr/local/include/ndn-cpp/lite/signature-lite.hpp \
  /usr/include/boost/move/move.hpp /usr/include/boost/move/iterator.hpp \
  /usr/include/boost/move/detail/iterator_traits.hpp \
  /usr/include/boost/move/algorithm.hpp src/webrtc.hpp include/params.hpp \
@@ -4023,15 +4021,15 @@ include/params.hpp:
 
 include/ndnrtc-defines.hpp:
 
-/home/yuanjie/ice-ar/edge/ndn-cpp/build/include/ndn-cpp/name.hpp:
+/usr/local/include/ndn-cpp/name.hpp:
 
-/home/yuanjie/ice-ar/edge/ndn-cpp/build/include/ndn-cpp/util/blob.hpp:
+/usr/local/include/ndn-cpp/util/blob.hpp:
 
-/home/yuanjie/ice-ar/edge/ndn-cpp/build/include/ndn-cpp/util/../common.hpp:
+/usr/local/include/ndn-cpp/common.hpp:
 
-/home/yuanjie/ice-ar/edge/ndn-cpp/build/include/ndn-cpp/util/../c/common.h:
+/usr/local/include/ndn-cpp/c/common.h:
 
-/home/yuanjie/ice-ar/edge/ndn-cpp/build/include/ndn-cpp/util/../c/../ndn-cpp-config.h:
+/usr/local/include/ndn-cpp/ndn-cpp-config.h:
 
 /usr/include/boost/weak_ptr.hpp:
 
@@ -4103,29 +4101,29 @@ include/ndnrtc-defines.hpp:
 
 /usr/include/boost/bind/placeholders.hpp:
 
-/home/yuanjie/ice-ar/edge/ndn-cpp/build/include/ndn-cpp/util/../c/util/blob-types.h:
+/usr/local/include/ndn-cpp/c/util/blob-types.h:
 
-/home/yuanjie/ice-ar/edge/ndn-cpp/build/include/ndn-cpp/util/../c/util/../common.h:
+/usr/local/include/ndn-cpp/c/common.h:
 
-/home/yuanjie/ice-ar/edge/ndn-cpp/build/include/ndn-cpp/util/../lite/util/blob-lite.hpp:
+/usr/local/include/ndn-cpp/lite/util/blob-lite.hpp:
 
-/home/yuanjie/ice-ar/edge/ndn-cpp/build/include/ndn-cpp/util/../lite/util/../../c/util/blob-types.h:
+/usr/local/include/ndn-cpp/c/util/blob-types.h:
 
-/home/yuanjie/ice-ar/edge/ndn-cpp/build/include/ndn-cpp/encoding/wire-format.hpp:
+/usr/local/include/ndn-cpp/encoding/wire-format.hpp:
 
-/home/yuanjie/ice-ar/edge/ndn-cpp/build/include/ndn-cpp/encoding/../common.hpp:
+/usr/local/include/ndn-cpp/common.hpp:
 
-/home/yuanjie/ice-ar/edge/ndn-cpp/build/include/ndn-cpp/encoding/../util/blob.hpp:
+/usr/local/include/ndn-cpp/util/blob.hpp:
 
-/home/yuanjie/ice-ar/edge/ndn-cpp/build/include/ndn-cpp/lite/name-lite.hpp:
+/usr/local/include/ndn-cpp/lite/name-lite.hpp:
 
-/home/yuanjie/ice-ar/edge/ndn-cpp/build/include/ndn-cpp/lite/../c/errors.h:
+/usr/local/include/ndn-cpp/c/errors.h:
 
-/home/yuanjie/ice-ar/edge/ndn-cpp/build/include/ndn-cpp/lite/util/blob-lite.hpp:
+/usr/local/include/ndn-cpp/lite/util/blob-lite.hpp:
 
-/home/yuanjie/ice-ar/edge/ndn-cpp/build/include/ndn-cpp/lite/../c/name-types.h:
+/usr/local/include/ndn-cpp/c/name-types.h:
 
-/home/yuanjie/ice-ar/edge/ndn-cpp/build/include/ndn-cpp/lite/../c/util/blob-types.h:
+/usr/local/include/ndn-cpp/c/util/blob-types.h:
 
 src/remote-stream-impl.hpp:
 
@@ -4321,55 +4319,55 @@ src/frame-data.hpp:
 
 /home/yuanjie/webrtc-checkout/src/webrtc/common_video/libyuv/include/webrtc_libyuv.h:
 
-/home/yuanjie/ice-ar/edge/ndn-cpp/build/include/ndn-cpp/data.hpp:
+/usr/local/include/ndn-cpp/data.hpp:
 
-/home/yuanjie/ice-ar/edge/ndn-cpp/build/include/ndn-cpp/name.hpp:
+/usr/local/include/ndn-cpp/name.hpp:
 
-/home/yuanjie/ice-ar/edge/ndn-cpp/build/include/ndn-cpp/signature.hpp:
+/usr/local/include/ndn-cpp/signature.hpp:
 
-/home/yuanjie/ice-ar/edge/ndn-cpp/build/include/ndn-cpp/common.hpp:
+/usr/local/include/ndn-cpp/common.hpp:
 
-/home/yuanjie/ice-ar/edge/ndn-cpp/build/include/ndn-cpp/lite/signature-lite.hpp:
+/usr/local/include/ndn-cpp/lite/signature-lite.hpp:
 
-/home/yuanjie/ice-ar/edge/ndn-cpp/build/include/ndn-cpp/lite/key-locator-lite.hpp:
+/usr/local/include/ndn-cpp/lite/key-locator-lite.hpp:
 
-/home/yuanjie/ice-ar/edge/ndn-cpp/build/include/ndn-cpp/lite/name-lite.hpp:
+/usr/local/include/ndn-cpp/lite/name-lite.hpp:
 
-/home/yuanjie/ice-ar/edge/ndn-cpp/build/include/ndn-cpp/lite/../c/key-types.h:
+/usr/local/include/ndn-cpp/c/key-types.h:
 
-/home/yuanjie/ice-ar/edge/ndn-cpp/build/include/ndn-cpp/lite/../c/name-types.h:
+/usr/local/include/ndn-cpp/c/name-types.h:
 
-/home/yuanjie/ice-ar/edge/ndn-cpp/build/include/ndn-cpp/lite/security/validity-period-lite.hpp:
+/usr/local/include/ndn-cpp/lite/security/validity-period-lite.hpp:
 
-/home/yuanjie/ice-ar/edge/ndn-cpp/build/include/ndn-cpp/lite/security/../../c/security/validity-period-types.h:
+/usr/local/include/ndn-cpp/c/security/validity-period-types.h:
 
-/home/yuanjie/ice-ar/edge/ndn-cpp/build/include/ndn-cpp/lite/security/../../c/security/../common.h:
+/usr/local/include/ndn-cpp/c/common.h:
 
-/home/yuanjie/ice-ar/edge/ndn-cpp/build/include/ndn-cpp/lite/../c/data-types.h:
+/usr/local/include/ndn-cpp/c/data-types.h:
 
-/home/yuanjie/ice-ar/edge/ndn-cpp/build/include/ndn-cpp/lite/../c/key-types.h:
+/usr/local/include/ndn-cpp/c/key-types.h:
 
-/home/yuanjie/ice-ar/edge/ndn-cpp/build/include/ndn-cpp/lite/../c/security/validity-period-types.h:
+/usr/local/include/ndn-cpp/c/security/validity-period-types.h:
 
-/home/yuanjie/ice-ar/edge/ndn-cpp/build/include/ndn-cpp/meta-info.hpp:
+/usr/local/include/ndn-cpp/meta-info.hpp:
 
-/home/yuanjie/ice-ar/edge/ndn-cpp/build/include/ndn-cpp/c/data-types.h:
+/usr/local/include/ndn-cpp/c/data-types.h:
 
-/home/yuanjie/ice-ar/edge/ndn-cpp/build/include/ndn-cpp/lite/meta-info-lite.hpp:
+/usr/local/include/ndn-cpp/lite/meta-info-lite.hpp:
 
-/home/yuanjie/ice-ar/edge/ndn-cpp/build/include/ndn-cpp/lite/common-lite.hpp:
+/usr/local/include/ndn-cpp/lite/common-lite.hpp:
 
-/home/yuanjie/ice-ar/edge/ndn-cpp/build/include/ndn-cpp/util/signed-blob.hpp:
+/usr/local/include/ndn-cpp/util/signed-blob.hpp:
 
-/home/yuanjie/ice-ar/edge/ndn-cpp/build/include/ndn-cpp/util/blob.hpp:
+/usr/local/include/ndn-cpp/util/blob.hpp:
 
-/home/yuanjie/ice-ar/edge/ndn-cpp/build/include/ndn-cpp/util/change-counter.hpp:
+/usr/local/include/ndn-cpp/util/change-counter.hpp:
 
-/home/yuanjie/ice-ar/edge/ndn-cpp/build/include/ndn-cpp/lite/data-lite.hpp:
+/usr/local/include/ndn-cpp/lite/data-lite.hpp:
 
-/home/yuanjie/ice-ar/edge/ndn-cpp/build/include/ndn-cpp/lite/meta-info-lite.hpp:
+/usr/local/include/ndn-cpp/lite/meta-info-lite.hpp:
 
-/home/yuanjie/ice-ar/edge/ndn-cpp/build/include/ndn-cpp/lite/signature-lite.hpp:
+/usr/local/include/ndn-cpp/lite/signature-lite.hpp:
 
 /usr/include/boost/move/move.hpp:
 
