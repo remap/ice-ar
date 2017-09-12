@@ -28,17 +28,20 @@ The edge node includes the communication plane (using `ndnrtc` and `nfd`) and th
 	echo "save" >> libwebrtc-all.mri && echo "end" >> libwebrtc-all.mri
 	ar -M <libwebrtc-all.mri
 
-**NOTE 2:** In compiling `ndn-cpp`, please use the following version instead of the official ones:
+4.  Compile `ndn-cpp` as follows:
 
-	git clone -b peter-dev https://github.com/peetonn/ndn-cpp.git
+		cd ndn-cpp	
+		mkdir -p build
+		./configure --with-std-shared-ptr=no --with-std-function=no --prefix=$(pwd)/build
+		make && make install
 
-4. In the `darknet` folder, compile `YOLO`:
+5. In the `darknet` folder, compile `YOLO`:
 
 		cd darknet
 		wget https://pjreddie.com/media/files/yolo.weights
 		make
 
-5. Now it's ready to run the edge. 
+6. Now it's ready to run the edge. 
 
 	(1) Run `ndnrtc-client` consumers and producers:
 	
