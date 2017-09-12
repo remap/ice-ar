@@ -23,6 +23,9 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 
+#include <errno.h>
+#include <stdlib.h>
+
 using namespace ndnrtc;
 using namespace ndn;
 using namespace boost;
@@ -56,14 +59,16 @@ RemoteStreamImpl(io, face, keyChain, streamPrefix)
 
     // Create the frame pipe between ndnrtc-client and YOLO
     char * frame_fifo_name = "/tmp/frame_fifo";
-    mkfifo(frame_fifo_name, 0777); 
-    // frame_pipe_ = open(frame_fifo_name, O_WRONLY | O_NONBLOCK);
+    std::remove(frame_fifo_name);
+    mkfifo(frame_fifo_name, 0777);
+    LogInfo("")<<"Creating the pipe... "<<std::endl; 
+    //frame_pipe_ = open(frame_fifo_name, O_WRONLY | O_NONBLOCK | O_CREAT);
     frame_pipe_ = open(frame_fifo_name, O_WRONLY);
     if (frame_pipe_ == -1){
         LogErrorC<<"Fail to create the frame pipe"<<std::endl;
+        LogInfo("")<<"FAIL TO CREATE PIPE: "<<strerror(errno)<<std::endl;
     }
-    fcntl(frame_pipe_, F_SETPIPE_SZ, 20000000); //20MB frame pipe
-
+    LogInfo("")<<"Frame pipe opened "<<frame_fifo_name<<" "<<frame_pipe_<<std::endl; 
     frameNo_ = 0;
 }
 
@@ -138,13 +143,23 @@ RemoteVideoStreamImpl::feedFrame(const WebRtcVideoFrame& frame)
          */
         
         LogInfo("")<<"Writing frame "<<frameNo_<<"..."<<std::endl;
-        int c = -1;
-        while (c<=0)
+        int c = -1, total_bytes = 0;
+        while (c<=0){
+            //LogInfo("")<<"c="<<c<<" errno"<<strerror(errno)<<std::endl;
             c = write(frame_pipe_, &frameNo_, sizeof(uint32_t));
+        }
         LogInfo("")<<"frameNo_: c="<<c<<" &frameNo_="<<&frameNo_<<" frameNo="<<frameNo_<<std::endl;
-        c = -1;
-        while (c<frame.width()*frame.height()*4)
-            c = write(frame_pipe_, rgbFrameBuffer, frame.width()*frame.height()*4);
+        c = 0;
+        int frame_size = frame.width()*frame.height()*4;
+        while (total_bytes<frame_size) {
+            c = write(frame_pipe_, rgbFrameBuffer + total_bytes, frame_size-total_bytes);
+            if(c<=0) {
+                 LogInfo("")<<"c="<<c<<" errno"<<strerror(errno)<<std::endl; 
+                 continue;
+            }
+            total_bytes += c;
+            LogInfo("")<<"total_bytes="<<total_bytes<<" frame_size="<<frame_size<<std::endl;
+        }
         LogInfo("")<<"Frame written: "<<c<<" bytes"<<std::endl;
         
     }

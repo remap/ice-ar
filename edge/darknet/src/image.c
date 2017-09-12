@@ -16,6 +16,7 @@
 #include <unistd.h>
 #include <string.h>
 #include "cJSON.h"
+#include <errno.h>
 
 int windows = 0;
 
@@ -700,12 +701,12 @@ image load_raw_image_cv(char *filename, int w, int h, int channels, uint32_t *fr
         printf("Waiting for the frame pipe (from ndnrtc)...\n");
     frame_pipe_ = open(filename, O_RDONLY | O_NONBLOCK);
     //frame_pipe_ = open(filename, O_RDONLY);
-    printf("%s\n",filename);
+    //printf("%s\n",filename);
     if (frame_pipe_ == -1){
         printf("Fail to create the frame pipe\n");
     }
     else{
-        //printf("Frame pipe created\n");
+        printf("Frame pipe created\n");
     }
 
     int width = w, height = h;
@@ -715,14 +716,17 @@ image load_raw_image_cv(char *filename, int w, int h, int channels, uint32_t *fr
     printf("Reading frame...\n");
 
     int c = 0, total_bytes = 0;
-    while (c<=0)
+    while (c<=0){
+        //printf("c=%d errno:%s\n", c,strerror(errno));
         c = read(frame_pipe_, frameNo, sizeof(uint32_t));
+    }
+    printf("DEBUG: frameNo=%d\n", frameNo);
     c = 0;
     while (total_bytes < frame_size){
-    	c = read(frame_pipe_+total_bytes, imagedata, frame_size);
-        if(c>=0)
-            total_bytes+=c;
-        printf("total_bytes=%d frame_size=%d\n", total_bytes, frame_size);
+    	c = read(frame_pipe_+total_bytes, imagedata, frame_size-total_bytes);
+        if(c<=0) {printf("c=%d errno:%s\n", c,strerror(errno)); continue;}
+        total_bytes+=c;
+        printf(" Reading frame: total_bytes=%d frame_size=%d\n", total_bytes, frame_size);
     }
     reverse_argb(imagedata, frame_size);
     printf("New frame %u read: %d bytes\n", *frameNo, total_bytes);

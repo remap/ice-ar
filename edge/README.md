@@ -43,8 +43,8 @@ The edge node includes the communication plane (using `ndnrtc` and `nfd`) and th
 	(1) Run `ndnrtc-client` consumers and producers:
 	
 		cd ndnrtc/cpp
-		./ndnrtc-client -c ./sample-producer.cfg -p ./rule.conf -t 300 -s CERT_FILE
-		./ndnrtc-client -c ./sample-consumer.cfg -p ./rule.conf -t 300 -s CERT_FILE
+		./ndnrtc-client -c ./sample-producer.cfg -p ./rule.conf -t 1800 -s CERT_FILE
+		./ndnrtc-client -c ./sample-consumer.cfg -p ./rule.conf -t 1800 -s CERT_FILE
 
 	**NOTE:** Please copy the test videos (e.g., *test-source-320x240.argb*) into `ndnrtc/cpp`.
 		
