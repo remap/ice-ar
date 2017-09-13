@@ -52,6 +52,43 @@ TEST(TestSink, TestSink)
 	remove(fname.c_str());
 }
 
+TEST(TestSink, TestWriteFrameNo)
+{
+	std::string fname = "/tmp/test-sink1.argb";
+	boost::shared_ptr<FileSink> sink(new FileSink(fname));
+	ArgbFrame frame(640, 480);
+	uint8_t *b = frame.getBuffer().get();
+
+	for (int i = 0; i < frame.getFrameSizeInBytes(); ++i)
+		b[i] = (i%256);
+
+	frame.setFrameNumber(111);
+	sink->setShouldWriteFrameNo(true);
+
+	*sink << frame;
+	sink.reset();
+
+	FILE *f = fopen(fname.c_str(), "rb");
+	fseek (f , 0 , SEEK_END);
+	long lSize = ftell(f);
+	rewind (f);
+
+
+	ASSERT_EQ(lSize-sizeof(unsigned int), frame.getFrameSizeInBytes());
+	uint8_t *buf = (uint8_t*)malloc(sizeof(uint8_t)*lSize);
+	unsigned int frameNo;
+
+	fread(&frameNo, sizeof(unsigned int), 1, f);
+	fread(buf, sizeof(uint8_t), lSize, f);
+
+	ASSERT_EQ(111, frameNo);
+
+	for (int i = 0; i < lSize-sizeof(unsigned int); ++i)
+		ASSERT_EQ(buf[i], (i%256));
+
+	remove(fname.c_str());
+}
+
 TEST(TestSink, TestSinkThrowOnCreation)
 {
 	EXPECT_ANY_THROW(FileSink(""));

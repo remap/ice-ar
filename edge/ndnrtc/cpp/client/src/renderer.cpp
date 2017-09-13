@@ -63,6 +63,7 @@ void RendererInternal::renderBGRAFrame(int64_t timestamp, uint frameNo, int widt
     LogDebug("") << "received frame (" << width << "x" << height << ") at " 
     << timestamp << " ms"<<", frame count: "<< frameCount_ << std::endl;
 
+    frame_->setFrameNumber(frameNo);
     dumpFrame();
     frameCount_++;
 }

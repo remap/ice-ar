@@ -69,6 +69,12 @@ void FileFrameStorage::closeFile()
 //******************************************************************************
 IFrameSink& FileSink::operator<<(const RawFrame& frame)
 {
+    if (writeFrameNo_)
+    {
+        unsigned int fNo = frame.getFrameNumber();
+        fwrite(&fNo, sizeof(unsigned int), 1, file_);
+    }
+    
 	fwrite(frame.getBuffer().get(), sizeof(uint8_t), frame.getFrameSizeInBytes(), file_);
     return *this;
 }
@@ -80,7 +86,7 @@ FILE* FileSink::openFile_impl(string path)
 
 //******************************************************************************
 PipeSink::PipeSink(const std::string& path):pipePath_(path), pipe_(-1), 
-isLastWriteSuccessful_(false), isWriting_(false)
+isLastWriteSuccessful_(false), isWriting_(false), writeFrameNo_(false)
 { 
     createPipe(pipePath_);
     openPipe(pipePath_);
@@ -103,6 +109,12 @@ IFrameSink& PipeSink::operator<<(const RawFrame& frame)
         bool continueWrite = false;
 
         do {
+            if (writeFrameNo_)
+            {
+                unsigned int fNo = frame.getFrameNumber();
+                r = write(pipe_, &fNo, sizeof(fNo));
+            }
+
             r = write(pipe_, buf+written, frame.getFrameSizeInBytes()-written);
             if (r > 0) written += r;
             isLastWriteSuccessful_ = (r > 0);

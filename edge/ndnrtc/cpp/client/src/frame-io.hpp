@@ -23,8 +23,12 @@ public:
 	virtual void getFrameResolution(unsigned int& width, unsigned int& height) const = 0;
 	boost::shared_ptr<uint8_t> getBuffer() const { return buffer_; }
 
+	void setFrameNumber(unsigned int fNo) { frameNo_ = fNo; }
+	unsigned int getFrameNumber() const { return frameNo_; }
+
 protected:
 	unsigned int width_, height_;
+	unsigned int frameNo_;
 
 	virtual void setBuffer(const long& bufSize, boost::shared_ptr<uint8_t> buf) 
 	{ bufferSize_ = bufSize; buffer_ = buf; }
@@ -68,6 +72,7 @@ public:
 	virtual IFrameSink& operator<<(const RawFrame& frame) = 0;
 	virtual std::string getName() = 0;
 	virtual bool isBusy() = 0;
+	virtual void setShouldWriteFrameNo(bool) = 0;
 };
 
 /**
@@ -75,15 +80,17 @@ public:
  */
 class FileSink : public IFrameSink, public FileFrameStorage {
 public:
-	FileSink(const std::string& path):FileFrameStorage(path){ openFile(); }
+	FileSink(const std::string& path):FileFrameStorage(path),writeFrameNo_(false){ openFile(); }
 	IFrameSink& operator<<(const RawFrame& frame);
 	std::string getName() { return path_; }
 
 	// TODO: whether file writing can be busy, probably, need to be tested
 	bool isBusy() { return false; }
+	void setShouldWriteFrameNo(bool b) { writeFrameNo_ = b; }
 
 private:
     FILE* openFile_impl(std::string path);
+    bool writeFrameNo_;
 };
 
 /**
@@ -102,10 +109,12 @@ public:
 
 	bool isLastWriteSuccessful() { return isLastWriteSuccessful_; }
 	bool isBusy() { return isWriting_; }
+	void setShouldWriteFrameNo(bool b) { writeFrameNo_ = b; }
 
 private:
 	std::string pipePath_;
 	int pipe_;
+	bool writeFrameNo_;
 	std::atomic<bool> isLastWriteSuccessful_, isWriting_;
 
 	void createPipe(const std::string& path);
