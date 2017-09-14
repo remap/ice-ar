@@ -11,21 +11,14 @@ public class OnCameraFrame : MonoBehaviour, ITangoVideoOverlay {
 
 	TangoApplication tango;
 	public UnityEngine.UI.Text textbox;
-	//public FrameObjectData prefab;
 	public int frameNumber;
-	//public FrameObjectData spawn;
 	public double timestamp;
 	public Tango.TangoUnityImageData imgBuffer;
 	public TangoPoseController poseData;
 	public TangoARScreen offset;
-	//public Dictionary<long, FrameObjectData> frameObjects;
 	public FramePoolManager frameMgr;
 	public BoundingBoxPoolManager boxMgr;
 	private AnnotationsFetcher aFetcher_;
-	//public AnnotationData[] data;
-	//public AnnotationDataList dataList;
-	//public AnnotationData data;
-	VectorLine line;
 	private TangoPointCloud m_pointcloud;
 	//private ConcurrentQueue<FrameObjectData> frameBuffer;
 	//private ConcurrentQueue<CreateBoxData> boundingBoxBuffer;
@@ -33,6 +26,7 @@ public class OnCameraFrame : MonoBehaviour, ITangoVideoOverlay {
 	public static RingBuffer<BoxData> boxBufferToCalc;
 	public static RingBuffer<CreateBoxData> boxBufferToUpdate;
 	public List<Color> colors;
+	Camera camForCalcThread;
 	Thread calc;
 
 	void Awake () {
@@ -53,15 +47,13 @@ public class OnCameraFrame : MonoBehaviour, ITangoVideoOverlay {
 		boxMgr = GameObject.FindObjectOfType<BoundingBoxPoolManager>();
 		timestamp = 0;
 		imgBuffer = null;
-		//data = gameObject.GetComponent<AnnotationData> ();
-		//dataList = new AnnotationDataList();
-		//data = new AnnotationData();
 		m_pointcloud = PointCloudGUI.FindObjectOfType<TangoPointCloud>();
 		//frameBuffer = new ConcurrentQueue<FrameObjectData> ();
 		//boundingBoxBuffer = new ConcurrentQueue<CreateBoxData> ();
 		frameObjectBuffer = new RingBuffer<FrameObjectData> (100000);
 		boxBufferToCalc = new RingBuffer<BoxData> (100000);
 		boxBufferToUpdate = new RingBuffer<CreateBoxData> (100000);
+		camForCalcThread = GameObject.Find("Camera").GetComponent("Camera") as Camera;
 		calc = new Thread (calculationsForBoundingBox);
 		calc.Start ();
 
@@ -91,7 +83,6 @@ public class OnCameraFrame : MonoBehaviour, ITangoVideoOverlay {
 
 	public void OnDestroy()
 	{
-		VectorLine.Destroy (ref line);
 		tango.Unregister(this);
 	}
 
@@ -102,12 +93,14 @@ public class OnCameraFrame : MonoBehaviour, ITangoVideoOverlay {
 			//spawnBox();
 		}
 
+
 		int max = boxBufferToUpdate.Count;
 		for(int i = 0; i < max; i++) {
 			CreateBoxData temp;
 			bool success = boxBufferToUpdate.TryDequeue (out temp);
-			if(success)
+			if (success) {
 				boxMgr.CreateBoundingBoxObject (temp.position, temp.x, temp.y, temp.z, temp.label, colors [Random.Range (0, colors.Count)]);
+			}
 		}
 
 			
@@ -118,13 +111,13 @@ public class OnCameraFrame : MonoBehaviour, ITangoVideoOverlay {
 
 		timestamp = offset.m_screenUpdateTime;
 		imgBuffer = imageBuffer;
-		Camera main = Camera.main;
+
 
 
 		int publishedFrameNo = NdnRtc.videoStream.processIncomingFrame (imageBuffer);
 
 		if (publishedFrameNo >= 0) {
-			frameMgr.CreateFrameObject (imgBuffer, publishedFrameNo, timestamp, poseData.finalPosition, poseData.finalRotation, offset.m_uOffset, offset.m_vOffset, main);
+			frameMgr.CreateFrameObject (imgBuffer, publishedFrameNo, timestamp, poseData.finalPosition, poseData.finalRotation, offset.m_uOffset, offset.m_vOffset, camForCalcThread);
 			frameObjectBuffer.Enqueue (frameMgr.frameObjects [publishedFrameNo]);
 			//frameBuffer.Enqueue (frameMgr.frameObjects [publishedFrameNo]);
 
@@ -164,6 +157,8 @@ public class OnCameraFrame : MonoBehaviour, ITangoVideoOverlay {
 				annoData.points = temp.points;
 				annoData.numPoints = temp.numPoints;
 				annoData.cam = temp.cam;
+				annoData.camPos = temp.camPos;
+				annoData.camRot = temp.camRot;
 				annoData.label = new string[boxCount];
 				annoData.xleft = new float[boxCount];
 				annoData.xright = new float[boxCount];
@@ -175,8 +170,8 @@ public class OnCameraFrame : MonoBehaviour, ITangoVideoOverlay {
 					annoData.label[i] = data.annotationData[i].label;
 					annoData.xleft[i] = data.annotationData[i].xleft;
 					annoData.xright[i] = data.annotationData[i].xright;
-					annoData.ytop[i] = data.annotationData[i].ytop;
-					annoData.ybottom[i] = data.annotationData[i].ybottom;
+					annoData.ytop[i] = data.annotationData[i].ybottom;
+					annoData.ybottom[i] = data.annotationData[i].ytop;
 				}
 
 				Debug.Log("box enqueue");
@@ -204,15 +199,26 @@ public class OnCameraFrame : MonoBehaviour, ITangoVideoOverlay {
 			if (success) {
 				int boxCount = temp.count;
 
-				Vector3[] min = new Vector3[boxCount];
+				//Vector3[] min = new Vector3[boxCount];
+				float[] averageZ = new float[boxCount];
+				int[] numWithinBox = new int[boxCount];
 
 				for (int i = 0; i < boxCount; i++) {
-					min [i] = new Vector3 (100, 100, 100);
+					//min [i] = new Vector3 (100, 100, 100);
+					averageZ [i] = 0;
+					numWithinBox [i] = 0;
 				}
 
 				Vector3[] points = temp.points;
 				int count = temp.numPoints;
 
+				temp.cam.transform.position = temp.camPos;
+				temp.cam.transform.rotation = temp.camRot;
+
+				Debug.Log ("Camera log: cam position" + temp.cam.transform.position.ToString());
+				Debug.Log ("Camera log: frame cam position" + temp.camPos.ToString());
+				Debug.Log ("Camera log: cam rotation" + temp.cam.transform.rotation.ToString());
+				Debug.Log ("Camera log: frame cam rotation" + temp.camRot.ToString());
 
 				Vector2[] centerPosXY = new Vector2[boxCount];
 				Vector2[] worldCenter = new Vector2[boxCount];
@@ -232,6 +238,7 @@ public class OnCameraFrame : MonoBehaviour, ITangoVideoOverlay {
 				float[] y = new float[boxCount];
 				float[] z = new float[boxCount];
 
+
 				for (int i = 0; i < boxCount; i++) {
 
 
@@ -244,53 +251,78 @@ public class OnCameraFrame : MonoBehaviour, ITangoVideoOverlay {
 
 					//calculate center of box in viewport coords
 					centerPosXY [i] = new Vector2 (temp.xleft [i] + Mathf.Abs (viewportTopLeft [i].x - viewportTopRight [i].x) / 2,
-						temp.ytop [i] + Mathf.Abs (viewportTopLeft [i].y - viewportBottomLeft [i].y) / 2);
+						temp.ybottom [i] + Mathf.Abs (viewportTopLeft [i].y - viewportBottomLeft [i].y) / 2);
 
 				}
 
 				//search points[]
-				//todo: search with 2d coords and take the average z
 				for (int i = 0; i < count; i++) {
 					for (int j = 0; j < boxCount; j++) {
-						//calculate center of box in world coords
-						worldCenter [j] = temp.cam.ViewportToWorldPoint (new Vector2 (centerPosXY [j].x, centerPosXY [j].y));
-						//find point in points[] that most nearly matches center position
-						if (Vector2.Distance (new Vector2 (points [i].x, points [i].y), worldCenter [j]) < Vector2.Distance (new Vector2 (min [j].x, min [j].y), worldCenter [j])) {
-							min [j] = points [i];
+//						//calculate center of box in world coords
+//						worldCenter [j] = temp.cam.ViewportToWorldPoint (new Vector2 (centerPosXY [j].x, centerPosXY [j].y));
+//						//find point in points[] that most nearly matches center position
+//						if (Vector2.Distance (new Vector2 (points [i].x, points [i].y), worldCenter [j]) < Vector2.Distance (new Vector2 (min [j].x, min [j].y), worldCenter [j])) {
+//							min [j] = points [i];
+//						}
+						//find if points[i] is outside of the bounding box
+						Vector3 viewportPoint = temp.cam.WorldToViewportPoint(points[i]);
+						if (viewportPoint.x < temp.xleft[j] || viewportPoint.x > temp.xright[j] || viewportPoint.y < temp.ybottom[j] || viewportPoint.y > temp.ytop[j]) {
+							//points[i] is out of the limits of the bounding box
+						} else {
+							//points[i] is in the bounding box
+							averageZ[j] += points[i].z;
+							numWithinBox[j]++;
 						}
 					}
 				}
 
 				for (int i = 0; i < boxCount; i++) {
-					if (Mathf.Abs (min [i].z) < 0.5f)
-						min [i].z = 0.5f;
-					//calculate center of box in world coords w/ z = min.z
-					position [i] = temp.cam.ViewportToWorldPoint (new Vector3 (centerPosXY [i].x, centerPosXY [i].y, Mathf.Abs (min [i].z)));
+					averageZ [i] /= numWithinBox [i];
 
-					Debug.Log ("box position: " + position.ToString ());
-					Debug.Log ("box: found min " + min.ToString ());
+					if (!float.IsNaN (averageZ [i])) {
+						//float depth = Mathf.Abs(min [i].z);
+						float depth = Mathf.Abs (averageZ [i]);
+						if (depth < 0.5f)
+							depth = 0.5f;
+						
+						//calculate center of box in world coords
+						position [i] = temp.cam.ViewportToWorldPoint (new Vector3 (centerPosXY [i].x, centerPosXY [i].y, depth));
 
-					//calculate Z value for world corners
-					worldTopLeft [i] = temp.cam.ViewportToWorldPoint (new Vector3 (viewportTopLeft [i].x, viewportTopLeft [i].y, Mathf.Abs (min [i].z)));
-					worldTopRight [i] = temp.cam.ViewportToWorldPoint (new Vector3 (viewportTopRight [i].x, viewportTopRight [i].y, Mathf.Abs (min [i].z)));
-					worldBottomLeft [i] = temp.cam.ViewportToWorldPoint (new Vector3 (viewportBottomLeft [i].x, viewportBottomLeft [i].y, Mathf.Abs (min [i].z)));
-					worldBottomRight [i] = temp.cam.ViewportToWorldPoint (new Vector3 (viewportBottomRight [i].x, viewportBottomRight [i].y, Mathf.Abs (min [i].z)));
+						Debug.Log ("box position: " + position.ToString ());
+						//Debug.Log ("box: found min " + min.ToString ());
+
+						//calculate Z value for world corners
+						worldTopLeft [i] = temp.cam.ViewportToWorldPoint (new Vector3 (viewportTopLeft [i].x, viewportTopLeft [i].y, depth));
+						worldTopRight [i] = temp.cam.ViewportToWorldPoint (new Vector3 (viewportTopRight [i].x, viewportTopRight [i].y, depth));
+						worldBottomLeft [i] = temp.cam.ViewportToWorldPoint (new Vector3 (viewportBottomLeft [i].x, viewportBottomLeft [i].y, depth));
+						worldBottomRight [i] = temp.cam.ViewportToWorldPoint (new Vector3 (viewportBottomRight [i].x, viewportBottomRight [i].y, depth));
 
 
-					//calculate x, y, z size values
-					x [i] = Mathf.Abs (Vector3.Distance (worldTopLeft [i], worldTopRight [i]));
-					y [i] = Mathf.Abs (Vector3.Distance (worldTopLeft [i], worldBottomLeft [i]));
-					z [i] = 0;
+						//calculate x, y, z size values
+						x [i] = Mathf.Abs (Vector3.Distance (worldTopLeft [i], worldTopRight [i]));
+						y [i] = Mathf.Abs (Vector3.Distance (worldTopLeft [i], worldBottomLeft [i]));
+						z [i] = 0;
 
-					CreateBoxData boxData = new CreateBoxData ();
-					boxData.label = temp.label [i];
-					boxData.position = position [i];
-					boxData.x = x [i];
-					boxData.y = y [i];
-					boxData.z = z [i];
+						CreateBoxData boxData = new CreateBoxData ();
+						boxData.label = temp.label [i];
+						boxData.position = position [i];
+						boxData.x = x [i];
+						boxData.y = y [i];
+						boxData.z = z [i];
+						boxData.cam = temp.cam;
 
-					boxBufferToUpdate.Enqueue (boxData);
+						boxBufferToUpdate.Enqueue (boxData);
+					}
 				}
+
+				//string debugMin = "";
+				string debugAve = "";
+				for (int i = 0; i < boxCount; i++) {
+					//debugMin = debugMin + ", "+ min [i].z;
+					debugAve = debugAve + ", "+ averageZ[i];
+				}
+				//Debug.Log ("Depth: min " + debugMin);
+				Debug.Log ("Depth: average " + debugAve);
 			}
 		}
 	}
@@ -320,6 +352,7 @@ public struct CreateBoxData
 	public float y;
 	public float z;
 	public string label;
+	public Camera cam;
 }
 
 public struct BoxData
@@ -329,6 +362,8 @@ public struct BoxData
 	public Vector3[] points;
 	public int numPoints;
 	public Camera cam;
+	public Vector3 camPos;
+	public Quaternion camRot;
 	public float[] xleft;
 	public float[] xright;
 	public float[] ytop;
