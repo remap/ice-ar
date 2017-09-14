@@ -10,6 +10,7 @@
 
 #include <stdlib.h>
 #include <boost/shared_ptr.hpp>
+#include <atomic>
 
 //******************************************************************************
 class RawFrame {
@@ -71,6 +72,7 @@ class IFrameSink {
 public:
 	virtual IFrameSink& operator<<(const RawFrame& frame) = 0;
 	virtual std::string getName() = 0;
+	virtual bool isLastWriteSuccessful() = 0;
 	virtual bool isBusy() = 0;
 	virtual void setShouldWriteFrameNo(bool) = 0;
 };
@@ -80,10 +82,11 @@ public:
  */
 class FileSink : public IFrameSink, public FileFrameStorage {
 public:
-	FileSink(const std::string& path):FileFrameStorage(path),writeFrameNo_(false){ openFile(); }
+	FileSink(const std::string& path):FileFrameStorage(path),writeFrameNo_(false),isLastWriteSuccessful_(false){ openFile(); }
 	IFrameSink& operator<<(const RawFrame& frame);
 	std::string getName() { return path_; }
 
+	bool isLastWriteSuccessful() { return isLastWriteSuccessful_; }
 	// TODO: whether file writing can be busy, probably, need to be tested
 	bool isBusy() { return false; }
 	void setShouldWriteFrameNo(bool b) { writeFrameNo_ = b; }
@@ -91,6 +94,7 @@ public:
 private:
     FILE* openFile_impl(std::string path);
     bool writeFrameNo_;
+    std::atomic<bool> isLastWriteSuccessful_;
 };
 
 /**

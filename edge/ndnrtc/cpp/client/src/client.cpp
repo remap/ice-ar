@@ -277,6 +277,7 @@ RendererInternal *Client::setupRenderer(const ConsumerStreamParams& p)
 				[](const std::string& s)->boost::shared_ptr<IFrameSink>{
 					boost::shared_ptr<IFrameSink> sink = boost::make_shared<PipeSink>(s);
 					sink->setShouldWriteFrameNo(true);
+					return sink;
 				});
 		else
 			return new RendererInternal(p.streamSink_, 

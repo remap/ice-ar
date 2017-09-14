@@ -75,7 +75,9 @@ IFrameSink& FileSink::operator<<(const RawFrame& frame)
         fwrite(&fNo, sizeof(unsigned int), 1, file_);
     }
     
-	fwrite(frame.getBuffer().get(), sizeof(uint8_t), frame.getFrameSizeInBytes(), file_);
+	int r = fwrite(frame.getBuffer().get(), sizeof(uint8_t), frame.getFrameSizeInBytes(), file_);
+    isLastWriteSuccessful_ = (r == frame.getFrameSizeInBytes());
+    
     return *this;
 }
 

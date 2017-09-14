@@ -60,8 +60,8 @@ void RendererInternal::renderBGRAFrame(int64_t timestamp, uint frameNo, int widt
         throw runtime_error("wrong frame size supplied");
 
     // do whatever we need, i.e. drop frame, render it, write to file, etc.
-    LogDebug("") << "received frame (" << width << "x" << height << ") at " 
-    << timestamp << " ms"<<", frame count: "<< frameCount_ << std::endl;
+    LogDebug("") << "received frame " << frameNo << " (" << width << "x" << height << ") at " 
+        << timestamp << " ms"<<", frame count: "<< frameCount_ << std::endl;
 
     frame_->setFrameNumber(frameNo);
     dumpFrame();
@@ -108,5 +108,16 @@ void RendererInternal::dumpFrame()
         return;
     
     if (!sink_->isBusy())
+    {
         *sink_ << *frame_;
+        
+        if (sink_->isLastWriteSuccessful())
+            LogDebug("") << "dumped frame " << frame_->getFrameNumber() 
+                << " (" << frame_->getFrameSizeInBytes() 
+                << " bytes)" << std::endl;
+        else
+            LogWarn("") << "couldn't dump frame " << frame_->getFrameNumber() 
+                << "(" << frame_->getFrameSizeInBytes() 
+                << " bytes). disk space issues/pipe is not open?" << std::endl;
+    }
 }
