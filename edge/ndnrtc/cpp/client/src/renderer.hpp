@@ -45,7 +45,7 @@ public:
      *                          throw is this is false or ignore otherwise.  
      */ 
     RendererInternal(const std::string sinkName, SinkFactoryCreate sinkFactoryCreate, 
-        bool suppressBadSink = false);
+        boost::asio::io_service& io, bool suppressBadSink = false);
     ~RendererInternal();
     
     virtual uint8_t* getFrameBuffer(int width, int height);
@@ -53,6 +53,7 @@ public:
                          const uint8_t* buffer);
     
 private:
+    boost::asio::io_service &io_;
     SinkFactoryCreate createSink_;
     boost::shared_ptr<IFrameSink> sink_;
     boost::shared_ptr<ArgbFrame> frame_;

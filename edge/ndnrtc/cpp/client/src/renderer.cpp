@@ -15,8 +15,8 @@
 using namespace std;
 
 RendererInternal::RendererInternal(const std::string sinkName, SinkFactoryCreate sinkFactoryCreate, 
-        bool suppressBadSink)
-:sinkName_(sinkName), createSink_(sinkFactoryCreate), 
+        boost::asio::io_service& io, bool suppressBadSink)
+:sinkName_(sinkName), createSink_(sinkFactoryCreate), io_(io), 
 frameCount_(0), isDumping_(true), suppressBadSink_(suppressBadSink),
 frame_(new ArgbFrame(0,0))
 {
@@ -99,7 +99,13 @@ string RendererInternal::openSink(unsigned int width, unsigned int height)
 void RendererInternal::closeSink()
 {
     if (isDumping_ && sink_.get())
-        sink_.reset();
+    {
+        isDumping_ = false;
+        while (sink_->isBusy()) usleep(10);
+        io_.dispatch([this](){
+            sink_.reset();
+        });
+    }
 }
 
 void RendererInternal::dumpFrame()
@@ -109,15 +115,16 @@ void RendererInternal::dumpFrame()
     
     if (!sink_->isBusy())
     {
-        *sink_ << *frame_;
-        
-        if (sink_->isLastWriteSuccessful())
-            LogDebug("") << "dumped frame " << frame_->getFrameNumber() 
-                << " (" << frame_->getFrameSizeInBytes() 
-                << " bytes)" << std::endl;
-        else
-            LogWarn("") << "couldn't dump frame " << frame_->getFrameNumber() 
-                << "(" << frame_->getFrameSizeInBytes() 
-                << " bytes). disk space issues/pipe is not open?" << std::endl;
+        io_.dispatch([this]{
+            *sink_ << *frame_;
+            if (sink_->isLastWriteSuccessful())
+                LogDebug("") << "dumped frame " << frame_->getFrameNumber() 
+                    << " (" << frame_->getFrameSizeInBytes() 
+                    << " bytes)" << std::endl;
+            else
+                LogWarn("") << "couldn't dump frame " << frame_->getFrameNumber() 
+                    << "(" << frame_->getFrameSizeInBytes() 
+                    << " bytes). disk space issues/pipe is not open?" << std::endl;
+    });
     }
 }

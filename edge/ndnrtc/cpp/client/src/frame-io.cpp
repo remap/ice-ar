@@ -102,7 +102,7 @@ PipeSink::~PipeSink()
 IFrameSink& PipeSink::operator<<(const RawFrame& frame)
 {
     if (pipe_ < 0) openPipe(pipePath_);
-    if (pipe > 0) 
+    if (pipe_ > 0) 
     {
         isWriting_ = true;
 
@@ -116,7 +116,8 @@ IFrameSink& PipeSink::operator<<(const RawFrame& frame)
         }
 
         r = writeExactly(buf, frame.getFrameSizeInBytes(), pipe_);
-        isLastWriteSuccessful_ = (r > 0);
+
+        isLastWriteSuccessful_ = (r == frame.getFrameSizeInBytes());
 
         isWriting_ = false;
     }
@@ -137,7 +138,16 @@ int PipeSink::writeExactly(uint8_t *buffer, size_t bufSize, int pipe)
         keepWriting = (r > 0 && written != bufSize) || (r < 0 && errno == EAGAIN);
     } while (keepWriting);
 
-    return r;
+    if (written != bufSize)
+    {
+        std::stringstream ss;
+        ss << "something bad happened when writing to pipe "
+           << pipePath_ << ": " 
+           << strerror(errno) << "(" << errno << ")" << std::endl;
+        throw std::runtime_error(ss.str());
+    }
+
+    return written;
 }
 
 void PipeSink::createPipe(const std::string& path)

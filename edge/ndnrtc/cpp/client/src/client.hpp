@@ -22,10 +22,10 @@ namespace ndn {
 
 class Client {
 public: 
-	Client(boost::asio::io_service& io,
+	Client(boost::asio::io_service& io, boost::asio::io_service& rendererIo,
 		const boost::shared_ptr<ndn::Face>& face,
-		const boost::shared_ptr<ndn::KeyChain>& keyChain):io_(io),
-		face_(face), keyChain_(keyChain){}
+		const boost::shared_ptr<ndn::KeyChain>& keyChain):io_(io), 
+		rendererIo_(rendererIo), face_(face), keyChain_(keyChain){}
 	~Client(){}
 
 	// blocking call. will return after runTimeSec seconds
@@ -33,7 +33,7 @@ public:
              const ClientParams& params, const std::string& instanceName);
 
 private:
-	boost::asio::io_service& io_;
+	boost::asio::io_service &io_, &rendererIo_;
 	unsigned int runTimeSec_, statSampleIntervalMs_;
 	ClientParams params_;
 
