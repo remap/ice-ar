@@ -77,7 +77,7 @@ IFrameSink& FileSink::operator<<(const RawFrame& frame)
     
 	int r = fwrite(frame.getBuffer().get(), sizeof(uint8_t), frame.getFrameSizeInBytes(), file_);
     isLastWriteSuccessful_ = (r == frame.getFrameSizeInBytes());
-    
+
     return *this;
 }
 
@@ -107,25 +107,16 @@ IFrameSink& PipeSink::operator<<(const RawFrame& frame)
         isWriting_ = true;
 
         uint8_t *buf = frame.getBuffer().get();
-        int written = 0, r = 0;
-        bool continueWrite = false;
+        int r = 0;
 
-        do {
-            if (writeFrameNo_)
-            {
-                unsigned int fNo = frame.getFrameNumber();
-                r = write(pipe_, &fNo, sizeof(fNo));
-            }
+        if (writeFrameNo_)
+        {
+            unsigned int fNo = frame.getFrameNumber();
+            r = writeExactly((uint8_t*)&fNo, sizeof(fNo), pipe_);
+        }
 
-            r = write(pipe_, buf+written, frame.getFrameSizeInBytes()-written);
-            if (r > 0) written += r;
-            isLastWriteSuccessful_ = (r > 0);
-
-            // keep writing if has not written all buffer and no errors occured or
-            // there was an error and this error is EAGAIN
-            continueWrite =  (r > 0 && written != frame.getFrameSizeInBytes()) ||
-                    (r < 0 && errno == EAGAIN);
-        } while (continueWrite);
+        r = writeExactly(buf, frame.getFrameSizeInBytes(), pipe_);
+        isLastWriteSuccessful_ = (r > 0);
 
         isWriting_ = false;
     }
@@ -133,6 +124,20 @@ IFrameSink& PipeSink::operator<<(const RawFrame& frame)
         isLastWriteSuccessful_ = false;
 
     return *this;
+}
+
+int PipeSink::writeExactly(uint8_t *buffer, size_t bufSize, int pipe)
+{   
+    int written = 0, r = 0; 
+    bool keepWriting = false;
+
+    do {
+        r = write(pipe, buffer+written, bufSize-written);
+        if (r > 0) written += r;
+        keepWriting = (r > 0 && written != bufSize) || (r < 0 && errno == EAGAIN);
+    } while (keepWriting);
+
+    return r;
 }
 
 void PipeSink::createPipe(const std::string& path)

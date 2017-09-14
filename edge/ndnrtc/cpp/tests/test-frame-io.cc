@@ -262,6 +262,64 @@ TEST(TestPipeSink, TestWriteAndRead)
 	remove(fname.c_str());
 }
 
+TEST(TestPipeSink, TestWriteAndReadFrameNo)
+{
+	std::string fname = "/tmp/test-pipe.argb";
+	boost::shared_ptr<PipeSink> sink(new PipeSink(fname));
+	ArgbFrame frame(1280, 720);
+	uint8_t *b = frame.getBuffer().get();
+	int frameNo = 111, nFrames = 100;
+	sink->setShouldWriteFrameNo(true);
+	frame.setFrameNumber(frameNo);
+
+	for (int i = 0; i < frame.getFrameSizeInBytes(); ++i)
+		b[i] = (i%256);
+
+	boost::thread t([&sink, &frame, &frameNo, nFrames]{
+		int nWritten = 0;
+		do {
+			EXPECT_NO_THROW(*sink << frame);
+			if (sink->isLastWriteSuccessful())
+			{
+				nWritten++;
+				frame.setFrameNumber(++frameNo);
+			}
+		} while(nWritten < nFrames);
+	});
+
+	int pipe = open(fname.c_str(), O_RDONLY);
+	ASSERT_TRUE(pipe > 0);
+
+	int checkFrameNo = 111;
+
+	for (int i = 0; i < nFrames; ++i)
+	{
+		size_t bufSz = frame.getFrameSizeInBytes();
+		uint8_t *buf = (uint8_t*)malloc(sizeof(uint8_t)*bufSz);
+		int readBytes = 0;
+		int frameNo = 0;
+
+		int r = read(pipe, &frameNo, sizeof(unsigned int));
+		assert(r == sizeof(unsigned int));
+
+		do {
+			int r = read(pipe, buf+readBytes, bufSz-readBytes);
+			if (r > 0) readBytes += r;
+		} while (readBytes != bufSz);
+
+		EXPECT_EQ(checkFrameNo, frameNo);
+		checkFrameNo++;
+
+		free(buf);
+	}
+
+	EXPECT_TRUE(sink->isLastWriteSuccessful());
+	t.join(); 
+	sink.reset();
+
+	remove(fname.c_str());
+}
+
 #if 0
 TEST(TestSource, TestTemp)
 {

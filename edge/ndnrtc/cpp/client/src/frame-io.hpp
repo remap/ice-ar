@@ -123,6 +123,7 @@ private:
 
 	void createPipe(const std::string& path);
 	void openPipe(const std::string& path);
+	int writeExactly(uint8_t *buffer, size_t bufSize, int pipe);
 };
 
 //******************************************************************************
