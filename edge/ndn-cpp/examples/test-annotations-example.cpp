@@ -32,6 +32,7 @@
 #include <time.h>
 #include <stdlib.h>
 #include <ndn-cpp-tools/usersync/generalized-content.hpp>
+#include <ndn-cpp/threadsafe-face.hpp>
 #include <execinfo.h>
 #include <set>
 #include <ctime>
@@ -40,6 +41,9 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <fcntl.h>
+#include <boost/asio.hpp>
+#include <boost/thread/mutex.hpp>
+#include <boost/thread.hpp>
 
 #define RUN_FOREVER
 
@@ -291,118 +295,161 @@ AnnotationArray generateAnnotationArray(int nAnnotations)
   return AnnotationArray(ss.str());
 }
 
+//******************************************************************************
+static const char *pipeName = "/tmp/yolo-annotations";
+static int feature_pipe;
+
+int create_pipe(const char* fname)
+{
+  int res = 0;
+  do {
+    res = mkfifo(fname, 0644);
+    if (res < 0 && errno != EEXIST)
+    {
+      printf("error creating pipe (%d): %s\n", errno, strerror(errno));
+      sleep(1);
+    }
+    else res = 0;
+  } while (res < 0);
+
+  return 0;
+}
+
+void reopen_readpipe(const char* fname, int* pipe)
+{
+    do {
+        if (*pipe > 0) 
+            close(*pipe);
+
+        *pipe = open(fname, O_RDONLY);
+
+        if (*pipe < 0)
+            printf("> error opening pipe: %s (%d)\n",
+                strerror(errno), errno);
+    } while (*pipe < 0);
+}
+
+std::string readAnnotations(int pipe, unsigned int &frameNo)
+{
+  bool hasFrameNo = false;
+  bool completeRead = false;
+  int c = 0, nIter = 0; 
+  int bufSize = 16*1024;
+  static char buf[16*1024];
+  int nBraces = 0;
+
+  cout << "> reading annotations..." << std::endl;
+
+  do {
+    if (!hasFrameNo)
+    {
+      int r = read(pipe, (uint8_t*)&frameNo, sizeof(unsigned int));
+      if (r < 0)
+        std::cout << "> error reading frameNo from pipe: " 
+          << strerror(errno) << std::endl;
+      else if (r == 0)
+        reopen_readpipe(pipeName, &feature_pipe);
+      else
+      {
+        if (r != sizeof(unsigned int))
+          std::cout << "frameNo read " << r << " bytes ONLY. will crash =(" << std::endl;
+        hasFrameNo = true;
+      }
+    } // !hasFrameNo
+
+    int r = read(pipe, buf+c, 1);
+
+    if (buf[c] == '[') nBraces++;
+    if (buf[c] == ']') nBraces--;
+
+    if (r > 0)
+      c += r;
+    else if (r < 0)
+      std::cout << "> error reading from pipe: " 
+    << strerror(errno) << std::endl;
+    else
+      reopen_readpipe(pipeName, &feature_pipe);
+
+    completeRead = (nBraces == 0);
+
+    assert(nBraces >= 0);
+    assert(c < bufSize-1);
+
+  } while(!completeRead);
+
+  buf[c+1] = '\0';
+
+  cout << "> read annotaitons (frame " << frameNo << "): " << buf << std::endl;
+
+  return std::string(buf);
+}
+//******************************************************************************
+
 int main(int argc, char** argv)
 {
   signal(SIGABRT, handler);
   std::srand(std::time(0));
 
   try {
+    boost::asio::io_service io;
+    boost::shared_ptr<boost::asio::io_service::work> work(boost::make_shared<boost::asio::io_service::work>(io));
+    boost::thread t([&io](){ 
+      try {
+        io.run();
+      }
+      catch (std::exception &e)
+      {
+        std::cout << "caught exception on main thread: " << e.what() << std::endl;
+      }
+    });
+
     KeyChain keyChain;
     Name certificateName = keyChain.getDefaultCertificateName();
     // The default Face will connect using a Unix socket, or to "localhost".
-    Face producerFace;
+    ThreadsafeFace producerFace(io);
     producerFace.setCommandSigningInfo(keyChain, certificateName);
     MemoryContentCache contentCache(&producerFace);
-    bool enabled = true;
-    Face consumerFace;
-
     std::string userId = "peter";
     std::string service = "object_recognizer";
     std::string serviceInstance = "yolo-mock";
     
-    
     Name servicePrefix("/icear/user");
     servicePrefix.append(userId).append(service);
     
+    bool enabled = true;
+    bool registrationResultSuccess = false;
+
+    contentCache.registerPrefix(servicePrefix, 
+      bind(&onRegisterFailed, _1, &enabled), 
+      (OnRegisterSuccess)bind(&onRegisterSuccess, _1, _2, &registrationResultSuccess),
+      contentCache.getStorePendingInterest());
+
     AnnotationPublisher apub(servicePrefix, contentCache, &keyChain, certificateName);
     unsigned int n = 10, npublished = 0, frameNo = 0;
     std::set<int> publishedFrames;
-    bool registrationResultSuccess = false;
 
     // Open the feature pipe (from YOLO)
-    std::string feature_pipe_name = "/tmp/feature_fifo";
-    int feature_pipe = open(feature_pipe_name.c_str(), O_RDONLY);
-    if(feature_pipe == -1){
-      std::cout<<"Fail to open the feature pipe"<<std::endl;
+    cout << "> opening pipe..." << std::endl;
+    create_pipe(pipeName);
+    reopen_readpipe(pipeName, &feature_pipe);
+
+    if(feature_pipe < 0) {
+      std::cout << "> failed to open the feature pipe" << std::endl;
+      work.reset();
+      t.join();
       return -1;
     }
-    char feature_buf[4096];
-    int frame_num = 0;
-    while(true){
-      int feature_len = -1;
-      while(feature_len<=0)
-          feature_len  = read(feature_pipe, feature_buf, 4096);
-      string feature(feature_buf, feature_len);
-      std::cout << "Feature read: "<<feature<<std::endl;
-      AnnotationArray aa(feature);
-      
-      //contentCache.storePendingInterest(interest, face);
-      apub.publish(frame_num, aa, serviceInstance);
-      frame_num++;
-
-    }
-      
     
-   
-    // contentCache.registerPrefix
-    //   (servicePrefix, bind(&onRegisterFailed, _1, &enabled), 
-    //    (OnRegisterSuccess)bind
-    //     (&onRegisterSuccess, _1, _2, &registrationResultSuccess),
-    //     [&apub, &publishedFrames, &contentCache, serviceInstance](const ptr_lib::shared_ptr<const Name>& prefix,
-    //         const ptr_lib::shared_ptr<const Interest>& interest, Face& face, 
-    //         uint64_t interestFilterId,
-    //         const ptr_lib::shared_ptr<const InterestFilter>& filter)
-    //     {
-    //           try {
-    //             int frameNo = interest->getName()[-3].toSequenceNumber();
-    //             std::cout << " +  will generate annotations for frame " << frameNo << std::endl;
-                
-    //             assert(publishedFrames.find(frameNo) == publishedFrames.end());
+    while(enabled){
+      unsigned int frameNo;
+      std::string annotations = readAnnotations(feature_pipe, frameNo);
+      AnnotationArray aa(annotations);
 
-    //             publishedFrames.insert(frameNo);
-                
-    //             int nAnnotations = std::rand()%7+1;
-    //             AnnotationArray aa = generateAnnotationArray(nAnnotations);
+      apub.publish(frameNo, AnnotationArray(aa), serviceInstance);
 
-    //             //contentCache.storePendingInterest(interest, face);
-    //             apub.publish(frameNo, aa, serviceInstance);
-    //           }
-    //           catch (std::runtime_error &e)
-    //           {
-    //             std::cout << "ERROR! invalid interest: " << e.what() << std::endl;
-    //           }
-    //     });
-
-    unsigned int nFetched = 0, nFailed = 0;
-    AnnotationConsumer acon(servicePrefix, serviceInstance, &consumerFace);
-
-    srand (time(NULL));
-    while (enabled) {
-      if (registrationResultSuccess && npublished < n)
-      {
-        if (0)
-        { // spawn annotations fetching process
-          acon.fetch(frameNo, [&nFetched](unsigned int frameNo, const AnnotationArray&){
-            nFetched++;
-          }, 
-          [&nFailed](unsigned int frameNo, GeneralizedContent::ErrorCode errorCode, const string& message){
-            nFailed++;
-          });
-        }
-
-        frameNo++;
-        npublished++;
-      }
-
-      producerFace.processEvents();
-      consumerFace.processEvents();
-      // We need to sleep for a few milliseconds so we don't use 100% of the CPU.
-      usleep(10000);
-
-#ifndef RUN_FOREVER
-      enabled = (nFetched+nFailed < n);
-#endif
-    }
+      if (!registrationResultSuccess)
+        cout << "> prefix registration failed. data won't be served" << std::endl;
+    } // while true
   } catch (std::exception& e) {
     cout << "exception: " << e.what() << endl;
   }
@@ -419,7 +466,7 @@ static void
 onRegisterFailed(const ptr_lib::shared_ptr<const Name>& prefix, bool* enabled)
 {
   *enabled = false;
-  cout << "Failed to register prefix " << prefix->toUri() << endl;
+  cout << "> Failed to register prefix " << prefix->toUri() << endl;
 }
 
 static void
@@ -428,6 +475,7 @@ onRegisterSuccess
    uint64_t registeredPrefixId, bool* result)
 {
   *result = true;
+  cout << "> Successfully registered prefix " << *registeredPrefix << std::endl;
 }
 
 #else // NDN_CPP_HAVE_PROTOBUF

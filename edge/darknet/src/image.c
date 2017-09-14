@@ -57,6 +57,50 @@ void reopen_readpipe(const char* fname, int* pipe)
     } while (*pipe < 0);
 }
 
+int writeExactly(uint8_t *buffer, size_t bufSize, int pipe)
+{   
+    int written = 0, r = 0; 
+    int keepWriting = 0;
+
+    do {
+        r = write(pipe, buffer+written, bufSize-written);
+        if (r > 0) written += r;
+        keepWriting = (r > 0 && written != bufSize) || (r < 0 && errno == EAGAIN);
+    } while (keepWriting == 1);
+
+    return written;
+}
+
+void dump_annotations(unsigned int frameNo, cJSON *array)
+{
+    // Write the features to the pipe
+    const char *annotationsPipe = "/tmp/yolo-annotations";
+
+    if(feature_pipe < 0)
+    {
+        create_pipe("/tmp/yolo-annotations");
+        feature_pipe = open(annotationsPipe, O_WRONLY|O_NONBLOCK|O_EXCL);
+    }
+
+    if (feature_pipe < 0)
+    {
+        printf("couldn't open pipe %s: %s (%d). continue\n", 
+            annotationsPipe, strerror(errno), errno);
+    }
+    else
+    {
+        char *jsonString = cJSON_Print(array);
+        printf("> json: %s\n",jsonString);
+
+        writeExactly((char*)&frameNo, sizeof(frameNo), feature_pipe);
+        writeExactly(jsonString, strlen(jsonString), feature_pipe);
+
+        free(jsonString);
+    }
+}
+
+//******************************************************************************
+
 int create_feature_pipe()
 {
     if (feature_pipe != -1) return 0;
@@ -73,9 +117,6 @@ int create_feature_pipe()
     // fcntl(feature_pipe, F_SETPIPE_SZ, 1024*1024);
     return 0;
 }
-
-//******************************************************************************
-
 
 float get_color(int c, int x, int max)
 {
@@ -256,10 +297,11 @@ image **load_alphabet()
 void draw_detections_ndnrtc(image im, int num, float thresh, box *boxes, float **probs, float **masks, char **names, image **alphabet, int classes, unsigned int frameNo)
 {
     int i;
-    cJSON *features = cJSON_CreateObject();
+    cJSON *annotations = cJSON_CreateArray();
+
     // cJSON *root = cJSON_CreateObject();
     // cJSON_AddItemToObject(root,"name", cJSON_CreateString("Darknet_YOLO"));
-    cJSON_AddItemToObject(features,"frame_number", cJSON_CreateNumber(frameNo));
+    // cJSON_AddItemToObject(features,"frame_number", cJSON_CreateNumber(frameNo));
     // cJSON_AddItemToObject(root,"features", features);
 
     for(i = 0; i < num; ++i){
@@ -318,47 +360,32 @@ void draw_detections_ndnrtc(image im, int num, float thresh, box *boxes, float *
             cJSON_AddItemToObject(item, "ybottom", cJSON_CreateNumber(json_bot));
             cJSON_AddItemToObject(item, "label",cJSON_CreateString(names[class]));
             cJSON_AddItemToObject(item, "prob", cJSON_CreateNumber(prob));
-            cJSON_AddItemToArray(features, item);
+            cJSON_AddItemToArray(annotations, item);
 
-            draw_box_width(im, left, top, right, bot, width, red, green, blue);
-            if (alphabet) {
-                image label = get_label(alphabet, names[class], (im.h*.03)/10);
-                draw_label(im, top + width, left, label, rgb);
-                free_image(label);
-            }
-            if (masks){
-                image mask = float_to_image(14, 14, 1, masks[i]);
-                image resized_mask = resize_image(mask, b.w*im.w, b.h*im.h);
-                image tmask = threshold_image(resized_mask, .5);
-                embed_image(tmask, im, left, top);
-                free_image(mask);
-                free_image(resized_mask);
-                free_image(tmask);
-            }
+            // draw_box_width(im, left, top, right, bot, width, red, green, blue);
+            // if (alphabet) {
+            //     image label = get_label(alphabet, names[class], (im.h*.03)/10);
+            //     draw_label(im, top + width, left, label, rgb);
+            //     free_image(label);
+            // }
+            // if (masks){
+            //     image mask = float_to_image(14, 14, 1, masks[i]);
+            //     image resized_mask = resize_image(mask, b.w*im.w, b.h*im.h);
+            //     image tmask = threshold_image(resized_mask, .5);
+            //     embed_image(tmask, im, left, top);
+            //     free_image(mask);
+            //     free_image(resized_mask);
+            //     free_image(tmask);
+            // }
         }
-    }
-    printf("> json: %s\n", cJSON_Print(features));
-return ;
-    // Write the features to the pipe
-    const char *annotationsPipe = "/tmp/yolo-annotations";
+    }    
 
-    if(feature_pipe < 0)
+    if (cJSON_GetArraySize(annotations) > 0)
     {
-        create_pipe("/tmp/yolo-annotations");
-
-        printf("> trying to open the pipe (%s)...\n", annotationsPipe);
-        feature_pipe = open(annotationsPipe, O_WRONLY|O_NONBLOCK|O_EXCL);
-    }
-
-    if (feature_pipe < 0)
-    {
-        printf("couldn't open pipe %s: %s (%d). continue\n", 
-            annotationsPipe, strerror(errno), errno);
+        dump_annotations(frameNo, annotations);
     }
     else
-    {
-        int c = write(feature_pipe, cJSON_Print(features), strlen(cJSON_Print(features)));
-    }
+        printf("> nothing detected\n");
 }
 
 void draw_detections(image im, int num, float thresh, box *boxes, float **probs, float **masks, char **names, image **alphabet, int classes)
@@ -796,22 +823,6 @@ image load_raw_image_cv(char *filename, int w, int h, int channels, unsigned int
         printf("> read frame #%u (%d bytes total, %d iterations)\n",
             *frameNo, c, nIter);
     } // read frame block
-
-    // int c = 0, total_bytes = 0;
-    // while (c<=0){
-    //     //printf("c=%d errno:%s\n", c,strerror(errno));
-    //     c = read(frame_pipe_, frameNo, sizeof(uint32_t));
-    // }
-    // printf("> DEBUG: frameNo=%d\n", frameNo);
-
-
-    // c = 0;
-    // while (total_bytes < frame_size){
-    //  c = read(frame_pipe_+total_bytes, imagedata, frame_size-total_bytes);
-    //     if(c<=0) {printf("c=%d errno:%s\n", c,strerror(errno)); continue;}
-    //     total_bytes+=c;
-    //     printf(" Reading frame: total_bytes=%d frame_size=%d\n", total_bytes, frame_size);
-    // }
 
     reverse_argb(buffer, bufferSize);
     
