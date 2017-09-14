@@ -22,6 +22,61 @@ int windows = 0;
 
 float colors[6][3] = { {1,0,1}, {0,0,1},{0,1,1},{0,1,0},{1,1,0},{1,0,0} };
 
+//******************************************************************************
+
+static int frame_pipe_ = -1; // ndnrtc->yolo: consume frames
+static int feature_pipe = -1; // yolo->ndnrtc: publish features
+
+int create_pipe(const char* fname)
+{
+    int res = 0;
+    do {
+        res = mkfifo(fname, 0644);
+        if (res < 0 && errno != EEXIST)
+        {
+            printf("error creating pipe %s (%d): %s\n", fname, errno, strerror(errno));
+            sleep(1);
+        }
+        else res = 0;
+    } while (res < 0);
+
+    return 0;
+}
+
+void reopen_readpipe(const char* fname, int* pipe)
+{
+    do {
+        if (*pipe > 0) 
+            close(*pipe);
+
+        *pipe = open(fname, O_RDONLY);
+
+        if (*pipe < 0)
+            printf("> error opening pipe: %s (%d)\n",
+                strerror(errno), errno);
+    } while (*pipe < 0);
+}
+
+int create_feature_pipe()
+{
+    if (feature_pipe != -1) return 0;
+    // Create the feature pipe between ndnrtc-client and YOLO
+    char * feature_fifo_name = "/tmp/feature_fifo";
+    mkfifo(feature_fifo_name, 0777); 
+    printf("Waiting for the feature publisher...\n");
+    feature_pipe = open(feature_fifo_name, O_WRONLY);
+    printf("The feature publisher is online now.\n");
+    if (feature_pipe == -1){
+        printf("Fail to create the feature pipe\n");
+        return -1;
+    }
+    // fcntl(feature_pipe, F_SETPIPE_SZ, 1024*1024);
+    return 0;
+}
+
+//******************************************************************************
+
+
 float get_color(int c, int x, int max)
 {
     float ratio = ((float)x/max)*5;
@@ -198,35 +253,9 @@ image **load_alphabet()
     return alphabets;
 }
 
-static int frame_pipe_ = -1; // ndnrtc->yolo: consume frames
-static int feature_pipe = -1; // yolo->ndnrtc: publish features
-
-int create_feature_pipe()
+void draw_detections_ndnrtc(image im, int num, float thresh, box *boxes, float **probs, float **masks, char **names, image **alphabet, int classes, unsigned int frameNo)
 {
-    if (feature_pipe != -1) return 0;
-    // Create the feature pipe between ndnrtc-client and YOLO
-    char * feature_fifo_name = "/tmp/feature_fifo";
-    mkfifo(feature_fifo_name, 0777); 
-    printf("Waiting for the feature publisher...\n");
-    feature_pipe = open(feature_fifo_name, O_WRONLY);
-    printf("The feature publisher is online now.\n");
-    if (feature_pipe == -1){
-        printf("Fail to create the feature pipe\n");
-        return -1;
-    }
-    // fcntl(feature_pipe, F_SETPIPE_SZ, 1024*1024);
-    return 0;
-}
-
-void draw_detections_ndnrtc(image im, int num, float thresh, box *boxes, float **probs, float **masks, char **names, image **alphabet, int classes, uint32_t frameNo)
-{
-
     int i;
-
-    
-    if(feature_pipe==-1)
-        create_feature_pipe();
-
     cJSON *features = cJSON_CreateObject();
     // cJSON *root = cJSON_CreateObject();
     // cJSON_AddItemToObject(root,"name", cJSON_CreateString("Darknet_YOLO"));
@@ -308,10 +337,28 @@ void draw_detections_ndnrtc(image im, int num, float thresh, box *boxes, float *
             }
         }
     }
-    printf("%s\n", cJSON_Print(features));
-
+    printf("> json: %s\n", cJSON_Print(features));
+return ;
     // Write the features to the pipe
-    int c = write(feature_pipe, cJSON_Print(features), strlen(cJSON_Print(features)));
+    const char *annotationsPipe = "/tmp/yolo-annotations";
+
+    if(feature_pipe < 0)
+    {
+        create_pipe("/tmp/yolo-annotations");
+
+        printf("> trying to open the pipe (%s)...\n", annotationsPipe);
+        feature_pipe = open(annotationsPipe, O_WRONLY|O_NONBLOCK|O_EXCL);
+    }
+
+    if (feature_pipe < 0)
+    {
+        printf("couldn't open pipe %s: %s (%d). continue\n", 
+            annotationsPipe, strerror(errno), errno);
+    }
+    else
+    {
+        int c = write(feature_pipe, cJSON_Print(features), strlen(cJSON_Print(features)));
+    }
 }
 
 void draw_detections(image im, int num, float thresh, box *boxes, float **probs, float **masks, char **names, image **alphabet, int classes)
@@ -695,54 +742,94 @@ void reverse_argb(char* buf, int size){
 
 }
 
-image load_raw_image_cv(char *filename, int w, int h, int channels, uint32_t *frameNo)
+image load_raw_image_cv(char *filename, int w, int h, int channels, unsigned int *frameNo)
 {
-    if(frame_pipe_ == -1)
-        printf("Waiting for the frame pipe (from ndnrtc)...\n");
-    frame_pipe_ = open(filename, O_RDONLY | O_NONBLOCK);
-    //frame_pipe_ = open(filename, O_RDONLY);
-    //printf("%s\n",filename);
-    if (frame_pipe_ == -1){
-        printf("Fail to create the frame pipe\n");
-    }
-    else{
-        printf("Frame pipe created\n");
+    if (frame_pipe_ < 0)
+    {
+        create_pipe(filename);
+        reopen_readpipe(filename, &frame_pipe_);
+
+        if (frame_pipe_ < 0)
+        {
+            printf("> failed to create pipe %s: %s (%d)\n",
+                filename, strerror(errno), errno);
+            exit(1);
+        }
     }
 
-    int width = w, height = h;
-    CvSize size; size.width = width, size.height = height;
-    int frame_size = sizeof(char)*4*width*height;
-    char *imagedata = (char*)malloc(frame_size);
-    printf("Reading frame...\n");
+    int bufferSize = sizeof(char)*w*h*4;
+    char *buffer = (char*)malloc(bufferSize);
 
-    int c = 0, total_bytes = 0;
-    while (c<=0){
-        //printf("c=%d errno:%s\n", c,strerror(errno));
-        c = read(frame_pipe_, frameNo, sizeof(uint32_t));
-    }
-    printf("DEBUG: frameNo=%d\n", frameNo);
-    c = 0;
-    while (total_bytes < frame_size){
-    	c = read(frame_pipe_+total_bytes, imagedata, frame_size-total_bytes);
-        if(c<=0) {printf("c=%d errno:%s\n", c,strerror(errno)); continue;}
-        total_bytes+=c;
-        printf(" Reading frame: total_bytes=%d frame_size=%d\n", total_bytes, frame_size);
-    }
-    reverse_argb(imagedata, frame_size);
-    printf("New frame %u read: %d bytes\n", *frameNo, total_bytes);
+    { // read frame block
+        int c = 0;
+        int nIter = 0;
+        int hasFrameNo = 0;
+
+        do { // read frame number and frame data until all frame data read
+            if (hasFrameNo == 0)
+            {
+                int r = read(frame_pipe_, frameNo, sizeof(unsigned int));
+                if (r < 0)
+                    printf("> error reading frameNo from pipe (%s): %s (%d)\n",
+                        filename, strerror(errno), errno);
+                else if (r == 0)
+                    reopen_readpipe(filename, &frame_pipe_);
+                else
+                {
+                    if (r != sizeof(unsigned int))
+                        printf("READ %d bytes ONLY. will crash\n", r);
+                    hasFrameNo = 1;
+                }
+            }
+
+            int r = read(frame_pipe_, buffer, bufferSize-c);
+            if (r > 0)
+                c += r;
+            else if (r < 0)
+                printf("> error reading from pipe (%s): %s (%d)\n",
+                        filename, strerror(errno), errno);
+            else 
+                reopen_readpipe(filename, &frame_pipe_);
+            nIter++;
+        } while (c < bufferSize);
+
+        printf("> read frame #%u (%d bytes total, %d iterations)\n",
+            *frameNo, c, nIter);
+    } // read frame block
+
+    // int c = 0, total_bytes = 0;
+    // while (c<=0){
+    //     //printf("c=%d errno:%s\n", c,strerror(errno));
+    //     c = read(frame_pipe_, frameNo, sizeof(uint32_t));
+    // }
+    // printf("> DEBUG: frameNo=%d\n", frameNo);
 
 
+    // c = 0;
+    // while (total_bytes < frame_size){
+    //  c = read(frame_pipe_+total_bytes, imagedata, frame_size-total_bytes);
+    //     if(c<=0) {printf("c=%d errno:%s\n", c,strerror(errno)); continue;}
+    //     total_bytes+=c;
+    //     printf(" Reading frame: total_bytes=%d frame_size=%d\n", total_bytes, frame_size);
+    // }
+
+    reverse_argb(buffer, bufferSize);
+    
+    CvSize size; size.width = w; size.height = h;
     IplImage* src= cvCreateImageHeader(size,IPL_DEPTH_8U,4);
-    src->imageData = imagedata;
+    
+    src->imageData = buffer;
+    
     image out = ipl_to_image(src);
+
     cvReleaseImage(&src);
     rgbgr_image(out);
-
-    free(imagedata);
+    free(buffer);
+    
     return out;
 }
 
-image load_raw_image(char *filename, int w, int h, int c, uint32_t *frameNo)
+image load_raw_image(char *filename, int w, int h, int c, unsigned int *frameNo)
 {
     image out = load_raw_image_cv(filename, w, h, c, frameNo);
     if((h && w) && (h != out.h || w != out.w)){

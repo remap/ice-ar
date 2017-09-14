@@ -674,12 +674,13 @@ void ndnrtc_detector(char *datacfg, char *cfgfile, char *weightfile, char *filen
     if(!filename) {
     	return;
     }
-    strncpy(input, filename, 256);
-
+    // strncpy(input, filename, 256);
+    sprintf(input, "%s.%dx%d", filename, frame_width, frame_height);
+    printf("> listening for incoming raw frames on %s\n", input);
 
     while(1){
 
-        uint32_t frameNo;
+        unsigned int frameNo;
         image im = load_raw_image(input,frame_width,frame_height,0, &frameNo);
         image sized = letterbox_image(im, net.w, net.h);
         layer l = net.layers[net.n-1];
@@ -696,7 +697,7 @@ void ndnrtc_detector(char *datacfg, char *cfgfile, char *weightfile, char *filen
         float *X = sized.data;
         time=what_time_is_it_now();
         network_predict(net, X);
-        printf("%s: Predicted in %f seconds.\n", input, what_time_is_it_now()-time);
+        printf("> %s: Predicted in %f seconds.\n", input, what_time_is_it_now()-time);
         get_region_boxes(l, im.w, im.h, net.w, net.h, thresh, probs, boxes, masks, 0, 0, hier_thresh, 1);
         if (nms) do_nms_obj(boxes, probs, l.w*l.h*l.n, l.classes, nms);
         //else if (nms) do_nms_sort(boxes, probs, l.w*l.h*l.n, l.classes, nms);
