@@ -159,7 +159,7 @@ public class NdnRtc : MonoBehaviour {
 				p.frameHeight = 240;
 				p.frameWidth = 320;
 				p.gop = 30;
-				p.startBitrate = 700;
+				p.startBitrate = 300;
 				p.maxBitrate = 7000;
 				p.ndnDataFreshnessPeriodMs = 2000;
 				p.ndnSegmentSize = 8000;
