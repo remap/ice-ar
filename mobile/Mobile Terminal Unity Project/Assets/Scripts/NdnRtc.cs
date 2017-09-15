@@ -156,16 +156,16 @@ public class NdnRtc : MonoBehaviour {
 				p.signingOn = 1;
 				p.dropFrames = 1;
 				p.fecOn = 1;
-				p.frameHeight = 720;
-				p.frameWidth = 1280;
+				p.frameHeight = 240;
+				p.frameWidth = 320;
 				p.gop = 30;
-				p.startBitrate = 3000;
+				p.startBitrate = 700;
 				p.maxBitrate = 7000;
 				p.ndnDataFreshnessPeriodMs = 2000;
 				p.ndnSegmentSize = 8000;
 				p.typeIsVideo = 1;
 				p.streamName = "back_camera";
-				p.threadName = "720p";
+				p.threadName = "vp9";
 
 				videoStream = new LocalVideoStream(p);
 			}
