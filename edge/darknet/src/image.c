@@ -385,7 +385,7 @@ void draw_detections_ndnrtc(image im, int num, float thresh, box *boxes, float *
         dump_annotations(frameNo, annotations);
     }
     else
-        printf("> nothing detected\n");
+        printf("> nothing passed threshold %.2f (%d detected)\n", thresh, num);
 }
 
 void draw_detections(image im, int num, float thresh, box *boxes, float **probs, float **masks, char **names, image **alphabet, int classes)

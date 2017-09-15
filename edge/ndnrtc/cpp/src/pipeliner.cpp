@@ -249,8 +249,13 @@ Pipeliner::VideoNameScheme::rightmostInterest(const ndn::Name threadPrefix,
                                                                       lifetime));
     interest->setMustBeFresh(true);
     interest->setChildSelector(1);
-    interest->getExclude().appendAny();
-    interest->getExclude().appendComponent(Name::Component::fromSequenceNumber(seqCounter.key_));
+
+    if (seqCounter.key_ > 0)
+    {
+        interest->getExclude().appendAny();
+        // set to previous keyframe to speed up bootstrapping
+        interest->getExclude().appendComponent(Name::Component::fromSequenceNumber(seqCounter.key_-1)); 
+    }
     return interest;
 }
 
