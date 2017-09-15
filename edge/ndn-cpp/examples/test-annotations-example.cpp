@@ -218,7 +218,7 @@ public:
     annotationName.appendSequenceNumber(frameNo).append(instance);
 
     GeneralizedContent::publish
-      (cache_, annotationName, 2000, keyChain_, certName_, metaInfo,
+      (cache_, annotationName, 10000, keyChain_, certName_, metaInfo,
        Blob((const uint8_t*)&content[0], content.size()), contentSegmentSize);
 
     std::cout << "*   published " << annotationName 
@@ -418,14 +418,27 @@ int main(int argc, char** argv)
     
     bool enabled = true;
     bool registrationResultSuccess = false;
+    unsigned int frameNo;
 
     contentCache.registerPrefix(servicePrefix, 
       bind(&onRegisterFailed, _1, &enabled), 
       (OnRegisterSuccess)bind(&onRegisterSuccess, _1, _2, &registrationResultSuccess),
-      contentCache.getStorePendingInterest());
+      [&contentCache, &frameNo](const ptr_lib::shared_ptr<const Name>& prefix,
+            const ptr_lib::shared_ptr<const Interest>& interest, Face& face, 
+            uint64_t interestFilterId,
+            const ptr_lib::shared_ptr<const InterestFilter>& filter){
+        int receivedFrameNo = interest->getName()[-3].toSequenceNumber();
+
+        cout << "!!! -> incoming interest: " << interest->getName() 
+          << " frame no " << receivedFrameNo << "(latest read " << frameNo 
+            << " diff " << (int)frameNo-(int)receivedFrameNo << ")" << endl;
+
+        contentCache.storePendingInterest(interest, face);
+      });
+      // contentCache.getStorePendingInterest());
 
     AnnotationPublisher apub(servicePrefix, contentCache, &keyChain, certificateName);
-    unsigned int n = 10, npublished = 0, frameNo = 0;
+    unsigned int n = 10, npublished = 0;
     std::set<int> publishedFrames;
 
     // Open the feature pipe (from YOLO)
@@ -441,11 +454,14 @@ int main(int argc, char** argv)
     }
     
     while(enabled){
-      unsigned int frameNo;
+      
       std::string annotations = readAnnotations(feature_pipe, frameNo);
       AnnotationArray aa(annotations);
 
-      apub.publish(frameNo, AnnotationArray(aa), serviceInstance);
+      io.dispatch([&apub, frameNo, aa, serviceInstance](){
+        apub.publish(frameNo, AnnotationArray(aa), serviceInstance);  
+      });
+      
 
       if (!registrationResultSuccess)
         cout << "> prefix registration failed. data won't be served" << std::endl;
