@@ -809,7 +809,7 @@ image load_raw_image_cv(char *filename, int w, int h, int channels, unsigned int
                 }
             }
 
-            int r = read(frame_pipe_, buffer, bufferSize-c);
+            int r = read(frame_pipe_, buffer+c, bufferSize-c);
             if (r > 0)
                 c += r;
             else if (r < 0)
@@ -836,7 +836,7 @@ image load_raw_image_cv(char *filename, int w, int h, int channels, unsigned int
     cvReleaseImage(&src);
     rgbgr_image(out);
     free(buffer);
-    
+
     return out;
 }
 
