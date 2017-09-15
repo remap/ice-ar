@@ -14,7 +14,7 @@ public class BoundingBoxObjectData : PooledObject {
 
 	// Use this for initialization
 	void Start () {
-		frameCount = 5;
+		frameCount = 30;
 
 		//vertices for bounding box lines
 		var vertices = new Vector3[8];
@@ -84,7 +84,7 @@ public class BoundingBoxObjectData : PooledObject {
 			Camera.main.transform.rotation * Vector3.up);
 			frameCount--;
 			if (frameCount == 0) {
-				frameCount = 5;
+				frameCount = 30;
 				Release();
 			}
 	}

@@ -34,8 +34,21 @@ public class BoundingBoxPoolManager : MonoBehaviour {
 		spawnText.text.transform.position = spawn.box.transform.position + new Vector3(0, y/2, -z/2);
 
 
-		//set label text
-		spawnText.mesh.SetText(label);
+		//set text size and label text
+		float depth = Mathf.Abs(position.z);
+		if(depth < 0.5f)
+			spawnText.mesh.fontSize = 0.2f;
+		else if(depth < 1.0f)
+			spawnText.mesh.fontSize = 0.5f;
+		else if(depth < 1.5f)
+			spawnText.mesh.fontSize = 1.0f;
+		else
+			spawnText.mesh.fontSize = 1.5f;
+
+		Debug.Log ("fontsize: " + spawnText.mesh.fontSize + "; depth: " + depth.ToString("F2"));
+
+
+		spawnText.mesh.SetText(label + " - " + depth.ToString("F2") + "m");
 
 		//set rect transform to size of text
 		spawnText.rect.sizeDelta = new Vector2 (spawnText.mesh.preferredWidth, spawnText.mesh.preferredHeight);
