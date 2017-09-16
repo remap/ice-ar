@@ -75,6 +75,7 @@ public:
   AnnotationArray(string jsonString):jsonString_(jsonString){}
   AnnotationArray(const Blob& b):
     jsonString_(b.toRawStr()) {}
+  AnnotationArray(const AnnotationArray& aa) : jsonString_(aa.jsonString_){}
 
   ~AnnotationArray(){}
 
@@ -221,9 +222,9 @@ public:
       (cache_, annotationName, 10000, keyChain_, certName_, metaInfo,
        Blob((const uint8_t*)&content[0], content.size()), contentSegmentSize);
 
-    std::cout << "*   published " << annotationName 
-      << " (has segments: " << (metaInfo.getHasSegments() ? "YES, content size: " : "NO, content size: ") 
-      << content.size()  << ")" << std::endl;
+    // std::cout << "*   published " << annotationName 
+    //   << " (has segments: " << (metaInfo.getHasSegments() ? "YES, content size: " : "NO, content size: ") 
+    //   << content.size()  << ")" << std::endl;
   }
 
 private:
@@ -338,7 +339,7 @@ std::string readAnnotations(int pipe, unsigned int &frameNo)
   static char buf[16*1024];
   int nBraces = 0;
 
-  cout << "> reading annotations..." << std::endl;
+  // cout << "> reading annotations..." << std::endl;
 
   do {
     if (!hasFrameNo)
@@ -366,7 +367,7 @@ std::string readAnnotations(int pipe, unsigned int &frameNo)
       c += r;
     else if (r < 0)
       std::cout << "> error reading from pipe: " 
-    << strerror(errno) << std::endl;
+        << strerror(errno) << std::endl;
     else
       reopen_readpipe(pipeName, &feature_pipe);
 
@@ -379,12 +380,12 @@ std::string readAnnotations(int pipe, unsigned int &frameNo)
 
   buf[c+1] = '\0';
 
-  cout << "> read annotaitons (frame " << frameNo << "): " << buf << std::endl;
+  // cout << "> read annotaitons (frame " << frameNo << "): " << buf << std::endl;
 
   return std::string(buf);
 }
 //******************************************************************************
-
+#define DEBUG
 int main(int argc, char** argv)
 {
   signal(SIGABRT, handler);
@@ -412,7 +413,6 @@ int main(int argc, char** argv)
     std::string userId = "peter";
     std::string service = "object_recognizer";
     std::string serviceInstance = "yolo-mock";
-    
     Name servicePrefix("/icear/user");
     servicePrefix.append(userId).append(service);
     
@@ -420,24 +420,46 @@ int main(int argc, char** argv)
     bool registrationResultSuccess = false;
     unsigned int frameNo;
 
+#ifdef DEBUG
+    std::map<unsigned int, AnnotationArray> acquiredAnnotations;
+#endif
+
+    AnnotationPublisher apub(servicePrefix, contentCache, &keyChain, certificateName);
     contentCache.registerPrefix(servicePrefix, 
       bind(&onRegisterFailed, _1, &enabled), 
       (OnRegisterSuccess)bind(&onRegisterSuccess, _1, _2, &registrationResultSuccess),
-      [&contentCache, &frameNo](const ptr_lib::shared_ptr<const Name>& prefix,
+      [&contentCache, &frameNo, &io, &acquiredAnnotations, serviceInstance, &apub]
+      (const ptr_lib::shared_ptr<const Name>& prefix,
             const ptr_lib::shared_ptr<const Interest>& interest, Face& face, 
             uint64_t interestFilterId,
             const ptr_lib::shared_ptr<const InterestFilter>& filter){
         int receivedFrameNo = interest->getName()[-3].toSequenceNumber();
 
-        cout << "!!! -> incoming interest: " << interest->getName() 
+        cout << "---> incoming interest: " 
           << " frame no " << receivedFrameNo << "(latest read " << frameNo 
-            << " diff " << (int)frameNo-(int)receivedFrameNo << ")" << endl;
-
+            << " diff " << (int)frameNo-(int)receivedFrameNo << ") annotations queue:\t" << acquiredAnnotations.size() << endl ;
+#ifdef DEBUG
+        io.dispatch([&acquiredAnnotations, frameNo, &apub, serviceInstance, &contentCache, interest, &face, receivedFrameNo]()
+        {
+          // check if we have annotation for this frame
+          if (acquiredAnnotations.find(receivedFrameNo) != acquiredAnnotations.end())
+          {
+            apub.publish(frameNo, acquiredAnnotations.at(receivedFrameNo), serviceInstance);
+            cout << "  * published " << receivedFrameNo << endl;
+            acquiredAnnotations.erase(acquiredAnnotations.find(receivedFrameNo));
+          }
+          else
+          {
+            contentCache.storePendingInterest(interest, face);
+            cout << "  * stored interest for " << receivedFrameNo << endl;
+          }
+        });
+#else
         contentCache.storePendingInterest(interest, face);
+#endif
       });
       // contentCache.getStorePendingInterest());
 
-    AnnotationPublisher apub(servicePrefix, contentCache, &keyChain, certificateName);
     unsigned int n = 10, npublished = 0;
     std::set<int> publishedFrames;
 
@@ -456,12 +478,15 @@ int main(int argc, char** argv)
     while(enabled){
       
       std::string annotations = readAnnotations(feature_pipe, frameNo);
-      AnnotationArray aa(annotations);
-
-      io.dispatch([&apub, frameNo, aa, serviceInstance](){
-        apub.publish(frameNo, AnnotationArray(aa), serviceInstance);  
+#ifdef DEBUG
+      io.dispatch([frameNo, annotations, &acquiredAnnotations](){
+        acquiredAnnotations.insert(std::pair<unsigned int, AnnotationArray>(frameNo, AnnotationArray(annotations)));
       });
-      
+#else
+      io.dispatch([&apub, frameNo, annotations, serviceInstance](){
+        apub.publish(frameNo, AnnotationArray(annotations), serviceInstance);
+      });
+#endif
 
       if (!registrationResultSuccess)
         cout << "> prefix registration failed. data won't be served" << std::endl;
