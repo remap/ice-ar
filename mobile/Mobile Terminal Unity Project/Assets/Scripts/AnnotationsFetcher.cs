@@ -41,25 +41,33 @@ public class AnnotationsFetcher
 	public AnnotationsFetcher (string servicePrefix, string instance)
 	{
 		serviceInstance_ = instance;
-		face_ = new Face ("localhost");
 		serviceNamespace = new Namespace (new Name (servicePrefix));
+		start();
+	}
+
+	~AnnotationsFetcher(){
+		runThread_ = false;
+		faceThread_.Join();
+	}
+
+	private void start() {
+		face_ = new Face ("localhost");
+
 		serviceNamespace.setFace (face_);
 
 		runThread_ = true;
 		faceThread_ = new Thread(new ThreadStart(delegate() {
 			while (runThread_)
 			{
-				face_.processEvents();
-				//Thread.Sleep(2); // sleep for few milliseconds
-				//Debug.Log ("process events" );
+				processFace();
 			}
 		}));
+		faceThread_.Priority = System.Threading.ThreadPriority.Highest;
 		faceThread_.Start ();
 	}
 
-	~AnnotationsFetcher(){
-		runThread_ = false;
-		faceThread_.Join();
+	public void processFace(){
+		face_.processEvents();
 	}
 
 	public void fetchAnnotation(int frameNo, FrameAnnotationsHandler onAnnotationsFetched)

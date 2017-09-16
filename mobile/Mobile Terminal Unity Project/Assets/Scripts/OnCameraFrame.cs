@@ -168,10 +168,10 @@ public class OnCameraFrame : MonoBehaviour, ITangoVideoOverlay {
 				for(int i = 0; i < boxCount; i++)
 				{
 					annoData.label[i] = data.annotationData[i].label;
-					annoData.xleft[i] = data.annotationData[i].xleft;
-					annoData.xright[i] = data.annotationData[i].xright;
-					annoData.ytop[i] = 1 - data.annotationData[i].ytop;
-					annoData.ybottom[i] = 1 - data.annotationData[i].ybottom;
+					annoData.xleft[i] = 1-data.annotationData[i].xright;
+					annoData.xright[i] = 1-data.annotationData[i].xleft;
+					annoData.ytop[i] = data.annotationData[i].ybottom;
+					annoData.ybottom[i] = data.annotationData[i].ytop;
 				}
 
 				Debug.Log("box enqueue");
