@@ -43,7 +43,7 @@ public class FrameObjectData : PooledObject {
 	void Start () {
 		frameObj = GameObject.FindObjectOfType<FramePoolManager>().frameObjects;
 		//frame objects live for 2 seconds
-		lifeTime = 60;
+		lifeTime = 200;
 	}
 	
 	// Update is called once per frame

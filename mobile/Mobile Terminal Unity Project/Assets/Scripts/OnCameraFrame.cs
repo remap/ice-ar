@@ -120,7 +120,7 @@ public class OnCameraFrame : MonoBehaviour, ITangoVideoOverlay {
 			frameMgr.CreateFrameObject (imgBuffer, publishedFrameNo, timestamp, poseData.finalPosition, poseData.finalRotation, offset.m_uOffset, offset.m_vOffset, camForCalcThread);
 			frameObjectBuffer.Enqueue (frameMgr.frameObjects [publishedFrameNo]);
 			//frameBuffer.Enqueue (frameMgr.frameObjects [publishedFrameNo]);
-
+			Debug.Log("frame number: " + publishedFrameNo);
 			// spawn fetching task for annotations of this frame
 			// once successfully received, delegate callback will be called
 			aFetcher_.fetchAnnotation (publishedFrameNo, delegate(string jsonArrayString) {
@@ -170,8 +170,8 @@ public class OnCameraFrame : MonoBehaviour, ITangoVideoOverlay {
 					annoData.label[i] = data.annotationData[i].label;
 					annoData.xleft[i] = data.annotationData[i].xleft;
 					annoData.xright[i] = data.annotationData[i].xright;
-					annoData.ytop[i] = data.annotationData[i].ybottom;
-					annoData.ybottom[i] = data.annotationData[i].ytop;
+					annoData.ytop[i] = 1 - data.annotationData[i].ytop;
+					annoData.ybottom[i] = 1 - data.annotationData[i].ybottom;
 				}
 
 				Debug.Log("box enqueue");
@@ -202,9 +202,11 @@ public class OnCameraFrame : MonoBehaviour, ITangoVideoOverlay {
 				//Vector3[] min = new Vector3[boxCount];
 				float[] averageZ = new float[boxCount];
 				int[] numWithinBox = new int[boxCount];
+				//List<float>[] pointsInBounds = new List<float>[boxCount];
 
 				for (int i = 0; i < boxCount; i++) {
 					//min [i] = new Vector3 (100, 100, 100);
+					//pointsInBounds[i] = new List<float>();
 					averageZ [i] = 0;
 					numWithinBox [i] = 0;
 				}
@@ -270,6 +272,7 @@ public class OnCameraFrame : MonoBehaviour, ITangoVideoOverlay {
 							//points[i] is out of the limits of the bounding box
 						} else {
 							//points[i] is in the bounding box
+							//pointsInBounds[j].Add(points[i].z);
 							averageZ[j] += points[i].z;
 							numWithinBox[j]++;
 						}
@@ -277,10 +280,13 @@ public class OnCameraFrame : MonoBehaviour, ITangoVideoOverlay {
 				}
 
 				for (int i = 0; i < boxCount; i++) {
+					//pointsInBounds [i].Sort ();
+					//float median = pointsInBounds [i][pointsInBounds.Length / 2];
 					averageZ [i] /= numWithinBox [i];
 
-					if (!float.IsNaN (averageZ [i])) {
+					if (!float.IsNaN (averageZ[i])) {
 						//float depth = Mathf.Abs(min [i].z);
+						//float depth = Mathf.Abs (median);
 						float depth = Mathf.Abs (averageZ [i]);
 						if (depth < 0.5f)
 							depth = 0.5f;

@@ -50,8 +50,8 @@ public class AnnotationsFetcher
 			while (runThread_)
 			{
 				face_.processEvents();
-				Thread.Sleep(2); // sleep for few milliseconds
-				Debug.Log ("process events" );
+				//Thread.Sleep(2); // sleep for few milliseconds
+				//Debug.Log ("process events" );
 			}
 		}));
 		faceThread_.Start ();
