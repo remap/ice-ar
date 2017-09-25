@@ -135,8 +135,12 @@ public class OnCameraFrame : MonoBehaviour, ITangoVideoOverlay {
 			// spawn fetching task for annotations of this frame
 			// once successfully received, delegate callback will be called
 			aFetcher_.fetchAnnotation (publishedFrameNo, delegate(string jsonArrayString) {
-				Debug.Log("Received annotations JSON (frame " + publishedFrameNo + "): " + jsonArrayString);
-
+				string debuglog = jsonArrayString.Replace(System.Environment.NewLine, " ");
+				Debug.Log("exception caught string: " + debuglog);
+				Debug.Log("Received annotations JSON (frame " + publishedFrameNo + "): " + debuglog);
+				//Debug.Log("annotations string length: " + jsonArrayString.Length);
+				string[] testDebug = jsonArrayString.Split(']');
+				string formatDebug = testDebug[0] + "]";
 				try{
 				Dictionary<int, FrameObjectData> frameObjects = frameBuffer.Dequeue();
 				FrameObjectData temp;
@@ -144,7 +148,8 @@ public class OnCameraFrame : MonoBehaviour, ITangoVideoOverlay {
 				{
 
 					//AnnotationData[] data = JsonHelper.FromJson<AnnotationData>(jsonArrayString);
-					string format = "{ \"annotationData\": " + jsonArrayString + "}";
+						//try to print out how many characters the jsonArrayString has
+					string format = "{ \"annotationData\": " + formatDebug + "}";
 					AnnotationData data = JsonUtility.FromJson<AnnotationData>(format);
 					for (int i = 0; i < data.annotationData.Length; i++)
 					{
@@ -177,7 +182,7 @@ public class OnCameraFrame : MonoBehaviour, ITangoVideoOverlay {
 					Debug.Log ("Frame info camera rotation: " + temp.camRot);
 					//Debug.Log ("Frame info points number: " + temp.numPoints);
 					Debug.Log ("Frame info points: " + temp.points.ToString());
-					Debug.Log("test time difference: " + (Mathf.Abs((float)(temp.timestamp - offset.m_screenUpdateTime))));
+						Debug.Log("test time difference: " + (Mathf.Abs((float)(temp.timestamp - offset.m_screenUpdateTime))) + " frame number: " + publishedFrameNo);
 
 					//int boxCount = Mathf.Min(data.annotationData.Length, 2);
 					int boxCount = data.annotationData.Length;
@@ -221,6 +226,10 @@ public class OnCameraFrame : MonoBehaviour, ITangoVideoOverlay {
 				catch(System.Exception e)
 				{
 					Debug.Log("exception caught annotations: " + e);
+					string debug = jsonArrayString.Replace(System.Environment.NewLine, " ");
+					Debug.Log("exception caught string: " + debug);
+					string format = "{ \"annotationData\": " + debug + "}";
+					Debug.Log("exception caught string with format: " + format);
 				}
 
 
@@ -334,9 +343,9 @@ public class OnCameraFrame : MonoBehaviour, ITangoVideoOverlay {
 					float median;
 					float depth;
 					pointsInBounds [i].Sort ();
-					median = pointsInBounds [i][pointsInBounds[i].Count / 2];
+					//median = pointsInBounds [i][pointsInBounds[i].Count / 2];
 						//Debug.Log("median = " + median);
-					averageZ [i] /= numWithinBox [i];
+					//averageZ [i] /= numWithinBox [i];
 
 					if (!(pointsInBounds[i].Count == 0)) {
 						//float depth = Mathf.Abs(min [i].z);
