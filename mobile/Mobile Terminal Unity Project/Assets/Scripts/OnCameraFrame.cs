@@ -79,6 +79,10 @@ public class OnCameraFrame : MonoBehaviour, ITangoVideoOverlay {
 		// AnnotationsFetcher instance might also be a singleton class
 		// and initialized/created somewhere else. here just as an example
 		aFetcher_ = new AnnotationsFetcher (servicePrefix, serviceInstance);
+
+		// setup CNL logging 
+		ILOG.J2CsMapping.Util.Logging.Logger.getLogger("").setLevel(ILOG.J2CsMapping.Util.Logging.Level.FINE);
+		ILOG.J2CsMapping.Util.Logging.Logger.Write = delegate(string message) { Debug.Log (System.DateTime.Now + ": " + message); };
 	}
 
 	public void OnDestroy()
