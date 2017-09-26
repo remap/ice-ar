@@ -57,7 +57,7 @@ public class BoundingBoxPoolManager : MonoBehaviour {
 		//set label background
 		spawnText.plane.transform.position = spawnText.rect.transform.position;
 		//move background slightly back for readability
-		spawnText.plane.transform.localPosition = new Vector3 (0, 0, 0.05f);
+		spawnText.plane.transform.localPosition = new Vector3 (0, 0, 0.01f);
 
 		//label faces the camera
 		spawnText.rect.transform.LookAt (spawnText.rect.transform.position + Camera.main.transform.rotation * Vector3.forward,

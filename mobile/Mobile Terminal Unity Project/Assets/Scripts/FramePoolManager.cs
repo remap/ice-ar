@@ -30,7 +30,7 @@ public class FramePoolManager : MonoBehaviour, ITangoPointCloud {
 		spawn.uOffset = uOffset;
 		spawn.vOffset = vOffset;
 		spawn.cam = cam;
-		spawn.lifeTime = 60;
+		spawn.lifeTime = 120;
 //		Debug.Log ("Frame info time: " + timestamp);
 //		Debug.Log ("Frame info camera position: " + cameraPos);
 //		Debug.Log ("Frame info camera rotation: " + cameraRot);
