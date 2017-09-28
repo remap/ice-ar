@@ -19,6 +19,7 @@
 
 using System;
 using System.Collections.Generic;
+using ILOG.J2CsMapping.Util.Logging;
 using net.named_data.jndn;
 using net.named_data.jndn.util;
 
@@ -53,6 +54,14 @@ namespace net.named_data.cnl_dot_net {
       defaultInterestTemplate_ = new Interest();
       defaultInterestTemplate_.setInterestLifetimeMilliseconds(4000.0);
     }
+
+    /// <summary>
+    /// Create a Namespace object with the given name, and with no parent. This
+    /// is the root of the name tree. To create child nodes, use
+    /// myNamespace.getChild("foo") or myNamespace["foo"].
+    /// </summary>
+    /// <param name="uri">The name URI string.</param>
+    public Namespace(string uri) : this(new Name(uri)) {}
 
     /// <summary>
     /// Get the name of this node in the name tree. This includes the name
@@ -356,9 +365,10 @@ namespace net.named_data.cnl_dot_net {
 
       if (interestTemplate == null)
         interestTemplate = defaultInterestTemplate_;
+      logger_.log(Level.FINE, "Namespace: Express interest " + name_.toUri());
       face.expressInterest
         (name_, interestTemplate, this,
-         ExponentialReExpress.makeOnTimeout(face, this, null));
+         ExponentialReExpress.makeOnTimeout(face, this, null, 0));
     }
 
     /// <summary>
@@ -538,5 +548,7 @@ namespace net.named_data.cnl_dot_net {
     private static long lastCallbackId_ = 0;
     private static object lastCallbackIdLock_ = new object();
     public bool debugSegmentStreamDidExpressInterest_ = false;
+    private static Logger logger_ = ILOG.J2CsMapping.Util.Logging.Logger
+      .getLogger(typeof(Namespace).FullName);
   }
 }
