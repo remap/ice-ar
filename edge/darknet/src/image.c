@@ -90,7 +90,7 @@ void dump_annotations(unsigned int frameNo, cJSON *array)
     else
     {
         char *jsonString = cJSON_Print(array);
-        printf("> json: %s\n",jsonString);
+        // printf("> json: %s\n",jsonString);
 
         writeExactly((char*)&frameNo, sizeof(frameNo), feature_pipe);
         writeExactly(jsonString, strlen(jsonString), feature_pipe);
@@ -316,7 +316,7 @@ void draw_detections_ndnrtc(image im, int num, float thresh, box *boxes, float *
             }
 
             //printf("%d %s: %.0f%%\n", i, names[class], prob*100);
-            printf("%s: %.0f%%\n", names[class], prob*100);
+            printf("detected %s: %.0f%%\n", names[class], prob*100);
             int offset = class*123457 % classes;
             float red = get_color(2,offset,classes);
             float green = get_color(1,offset,classes);
@@ -351,7 +351,7 @@ void draw_detections_ndnrtc(image im, int num, float thresh, box *boxes, float *
             if(json_top < 0) json_top = 0;
             if(json_bot > 1) json_bot = 1;
 
-            //printf("draw_detection: %s left=%d right=%d top=%d bot=%d\n", names[class], left, right, top, bot);
+            // printf("detected: %s left=%d right=%d top=%d bot=%d\n", names[class], left, right, top, bot);
             cJSON *item;
             item = cJSON_CreateObject();
             cJSON_AddItemToObject(item, "xleft", cJSON_CreateNumber(json_left));

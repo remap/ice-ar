@@ -337,6 +337,7 @@ std::string readAnnotations(int pipe, unsigned int &frameNo)
   int c = 0, nIter = 0; 
   int bufSize = 16*1024;
   static char buf[16*1024];
+  memset(buf,0,bufSize);
   int nBraces = 0;
 
   // cout << "> reading annotations..." << std::endl;
@@ -380,12 +381,12 @@ std::string readAnnotations(int pipe, unsigned int &frameNo)
 
   buf[c+1] = '\0';
 
-  // cout << "> read annotaitons (frame " << frameNo << "): " << buf << std::endl;
+  cout << "> read annotaitons (frame " << frameNo << "): " << buf << std::endl;
 
   return std::string(buf);
 }
 //******************************************************************************
-#define DEBUG
+//#define DEBUG
 int main(int argc, char** argv)
 {
   signal(SIGABRT, handler);
@@ -420,9 +421,7 @@ int main(int argc, char** argv)
     bool registrationResultSuccess = false;
     unsigned int frameNo;
 
-#ifdef DEBUG
     std::map<unsigned int, AnnotationArray> acquiredAnnotations;
-#endif
 
     AnnotationPublisher apub(servicePrefix, contentCache, &keyChain, certificateName);
     contentCache.registerPrefix(servicePrefix, 
