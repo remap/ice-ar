@@ -139,16 +139,17 @@ public class OnCameraFrame : MonoBehaviour, ITangoVideoOverlay {
 			// spawn fetching task for annotations of this frame
 			// once successfully received, delegate callback will be called
 			aFetcher_.fetchAnnotation (publishedFrameNo, delegate(string jsonArrayString) {
+				int frameNumber = publishedFrameNo; // storing frame number locally
 				string debuglog = jsonArrayString.Replace(System.Environment.NewLine, " ");
 				Debug.Log("exception caught string: " + debuglog);
-				Debug.Log("Received annotations JSON (frame " + publishedFrameNo + "): " + debuglog);
+				Debug.Log("Received annotations JSON (frame " + frameNumber + "): " + debuglog);
 				//Debug.Log("annotations string length: " + jsonArrayString.Length);
 				string[] testDebug = jsonArrayString.Split(']');
 				string formatDebug = testDebug[0] + "]";
 				try{
 				Dictionary<int, FrameObjectData> frameObjects = frameBuffer.Dequeue();
 				FrameObjectData temp;
-				if(frameObjects.TryGetValue(publishedFrameNo, out temp))
+				if(frameObjects.TryGetValue(frameNumber, out temp))
 				{
 
 					//AnnotationData[] data = JsonHelper.FromJson<AnnotationData>(jsonArrayString);
@@ -173,7 +174,7 @@ public class OnCameraFrame : MonoBehaviour, ITangoVideoOverlay {
 		//				if(success)
 		//				//FrameObjectData temp = frameBuffer.Dequeue();
 		//				{
-		//					Debug.Log("Frame info: " + publishedFrameNo);
+		//					Debug.Log("Frame info: " + frameNumber);
 		//					Debug.Log ("Frame info camera position: " + temp.camPos);
 		//					Debug.Log ("Frame info camera rotation: " + temp.camRot);
 		//					Debug.Log ("Frame info points number: " + temp.numPoints);
@@ -181,7 +182,7 @@ public class OnCameraFrame : MonoBehaviour, ITangoVideoOverlay {
 		//				}
 
 
-					Debug.Log("Frame number annotations: " + publishedFrameNo);
+					Debug.Log("Frame number annotations: " + frameNumber);
 					Debug.Log ("Frame info camera position: " + temp.camPos);
 					Debug.Log ("Frame info camera rotation: " + temp.camRot);
 					//Debug.Log ("Frame info points number: " + temp.numPoints);
@@ -193,7 +194,7 @@ public class OnCameraFrame : MonoBehaviour, ITangoVideoOverlay {
 
 					BoxData annoData = new BoxData();
 					Debug.Log("box created boxdata");
-					annoData.frameNumber = publishedFrameNo;
+					annoData.frameNumber = frameNumber;
 					annoData.count = boxCount;
 					annoData.points = temp.points;
 					annoData.numPoints = temp.numPoints;
