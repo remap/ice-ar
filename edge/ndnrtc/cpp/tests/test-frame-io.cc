@@ -325,39 +325,75 @@ TEST(TestPipeSink, TestWriteAndReadFrameNo)
 }
 
 #ifdef HAVE_NANOMSG
-// TEST(TestNanoSink, TestWriteAndRead)
-// {
-// 	std::string handle = "testnano";
-// 	boost::shared_ptr<NanoMsgSink> sink;
-// 	EXPECT_NO_THROW(sink.reset(new NanoMsgSink(handle)));
+TEST(TestNanoSink, TestWriteAndRead)
+{
+	std::string handle = "testnano";
+	boost::shared_ptr<NanoMsgSink> sink;
+	EXPECT_NO_THROW(sink.reset(new NanoMsgSink(handle)));
 
-// 	ArgbFrame frame(1280, 720);
-// 	uint8_t *b = frame.getBuffer().get();
+	ArgbFrame frame(1280, 720);
+	uint8_t *b = frame.getBuffer().get();
 
-// 	for (int i = 0; i < frame.getFrameSizeInBytes(); ++i)
-// 		b[i] = (i%256);
+	for (int i = 0; i < frame.getFrameSizeInBytes(); ++i)
+		b[i] = (i%256);
 
-// 	boost::thread t([&sink, &frame]{
-// 		EXPECT_NO_THROW(*sink << frame);
-// 		std::cout << "wrote" << std::endl;
-// 		EXPECT_TRUE(sink->isLastWriteSuccessful());
-// 	});
+	boost::thread t([&sink, &frame]{
+		EXPECT_NO_THROW(*sink << frame);
+		EXPECT_TRUE(sink->isLastWriteSuccessful());
+	});
 
-// 	int socket = ipc_setupSubSinkSocket(handle.c_str());
-// 	ASSERT_TRUE(socket >= 0);
+	int socket = ipc_setupSubSinkSocket(handle.c_str());
+	ASSERT_TRUE(socket >= 0);
 
-// 	size_t bufSz = frame.getFrameSizeInBytes();
-// 	uint8_t *buf = (uint8_t*)malloc(sizeof(uint8_t)*bufSz);
-// 	int readBytes = 0;
+	size_t bufSz = frame.getFrameSizeInBytes();
+	uint8_t *buf = (uint8_t*)malloc(sizeof(uint8_t)*bufSz);
+	int readBytes = 0;
 	
-// 	int r = ipc_readData(socket, buf, bufSz);
+	int r = ipc_readData(socket, buf, bufSz);
 
-// 	ASSERT_EQ(r, bufSz);
-// 	EXPECT_TRUE(sink->isLastWriteSuccessful());
+	ASSERT_EQ(r, bufSz);
+	EXPECT_TRUE(sink->isLastWriteSuccessful());
 
-// 	t.join(); 
-// 	sink.reset();
-// }
+	t.join(); 
+	sink.reset();
+}
+
+TEST(TestNanoSink, TestWriteAndReadFrame)
+{
+	std::string handle = "testnano";
+	boost::shared_ptr<NanoMsgSink> sink;
+	EXPECT_NO_THROW(sink.reset(new NanoMsgSink(handle)));
+	sink->setShouldWriteFrameNo(true);
+
+	ArgbFrame frame(1280, 720);
+	uint8_t *b = frame.getBuffer().get();
+
+	for (int i = 0; i < frame.getFrameSizeInBytes(); ++i)
+		b[i] = (i%256);
+	frame.setFrameNumber(111);
+
+	boost::thread t([&sink, &frame]{
+		EXPECT_NO_THROW(*sink << frame);
+		EXPECT_TRUE(sink->isLastWriteSuccessful());
+	});
+
+	int socket = ipc_setupSubSinkSocket(handle.c_str());
+	ASSERT_TRUE(socket >= 0);
+
+	size_t bufSz = frame.getFrameSizeInBytes();
+	uint8_t *buf = (uint8_t*)malloc(sizeof(uint8_t)*bufSz);
+	int readBytes = 0;
+	unsigned int frameNo;
+
+	int r = ipc_readFrame(socket, &frameNo, buf, bufSz);
+
+	EXPECT_EQ(111, frameNo);
+	ASSERT_EQ(r, bufSz+sizeof(unsigned int));
+	EXPECT_TRUE(sink->isLastWriteSuccessful());
+
+	t.join(); 
+	sink.reset();
+}
 #endif
 
 #if 0
