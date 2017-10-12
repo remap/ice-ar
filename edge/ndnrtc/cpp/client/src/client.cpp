@@ -284,7 +284,16 @@ RendererInternal *Client::setupRenderer(const ConsumerStreamParams& p)
 			#ifdef HAVE_NANOMSG
 				return new RendererInternal(p.streamSink_,
 					[](const std::string& s)->boost::shared_ptr<IFrameSink>{
-						return boost::make_shared<NanoMsgSink>(s);
+						try {
+							boost::shared_ptr<IFrameSink> sink = boost::make_shared<NanoMsgSink>(s);
+							sink->setShouldWriteFrameNo(true);
+							return sink;
+						}
+						catch (std::exception& e)
+						{
+							LogError("") << "Error when creating nanomsg sink: " << e.what() << std::endl;
+							throw;
+						}
 					}, rendererIo_);
 			#else
 				throw std::runtime_error("Requested nano type sink, but code was not built with nanomsg library support");
