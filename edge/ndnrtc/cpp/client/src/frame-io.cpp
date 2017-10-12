@@ -189,7 +189,15 @@ NanoMsgSink::~NanoMsgSink()
 IFrameSink& NanoMsgSink::operator<<(const RawFrame& frame) 
 {
     uint8_t *buf = frame.getBuffer().get();
-    isLastWriteSuccessful_ = (ipc_sendData(nnSocket_, buf, frame.getFrameSizeInBytes()) > 0);
+
+    if (writeFrameNo_)
+    {
+        unsigned int fNo = frame.getFrameNumber();
+        isLastWriteSuccessful_ = (ipc_sendFrame(nnSocket_, fNo, buf, frame.getFrameSizeInBytes()) > 0);
+    }
+    else
+        isLastWriteSuccessful_ = (ipc_sendData(nnSocket_, buf, frame.getFrameSizeInBytes()) > 0);
+
     return *this;
 }
 

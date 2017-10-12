@@ -139,10 +139,11 @@ public:
 	virtual std::string getName() { return handle_; }
 	virtual bool isBusy() { return false; }
 	bool isLastWriteSuccessful() { return isLastWriteSuccessful_; }
+	void setShouldWriteFrameNo(bool b) { writeFrameNo_ = b; }
 
 private:
 	std::string handle_;
-	bool isLastWriteSuccessful_;
+	bool isLastWriteSuccessful_, writeFrameNo_;
 	int nnSocket_;
 
 };

@@ -99,7 +99,6 @@ else
 .PHONY: libwebrtc-all.mri libwebrtc-all.a
 
 libwebrtc-all.mri:
-  rm -f @WEBRTCLIB@/libwebrtc-all.a
   $(shell echo "create libwebrtc-all.a" > @WEBRTCLIB@/libwebrtc-all.mri && \
   for lib in $$(find @WEBRTCLIB@ -name '*.a'); do \
   echo "addlib $$lib" >> @WEBRTCLIB@/libwebrtc-all.mri; done && \
