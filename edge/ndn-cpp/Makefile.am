@@ -431,9 +431,9 @@ bin_test_encode_decode_interest_LDADD = libndn-cpp.la
 bin_test_generalized_content_SOURCES = examples/test-generalized-content.cpp
 bin_test_generalized_content_LDADD = libndn-cpp.la libndn-cpp-tools.la
 
-bin_test_annotations_example_SOURCES = examples/test-annotations-example.cpp
+bin_test_annotations_example_SOURCES = examples/test-annotations-example.cpp examples/ipc-shim.c examples/cJSON.c
 bin_test_annotations_example_LDADD = libndn-cpp.la libndn-cpp-tools.la
-bin_test_annotations_example_LDFLAGS = -lboost_thread
+bin_test_annotations_example_LDFLAGS = -lboost_thread -lnanomsg
 
 bin_test_get_async_SOURCES = examples/test-get-async.cpp
 bin_test_get_async_LDADD = libndn-cpp.la

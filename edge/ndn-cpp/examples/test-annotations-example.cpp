@@ -45,6 +45,10 @@
 #include <boost/thread/mutex.hpp>
 #include <boost/thread.hpp>
 
+#include "ipc-shim.h"
+#include "cJSON.h"
+
+#define USE_NANOMSG
 #define RUN_FOREVER
 
 using namespace std;
@@ -222,7 +226,7 @@ public:
       (cache_, annotationName, 10000, keyChain_, certName_, metaInfo,
        Blob((const uint8_t*)&content[0], content.size()), contentSegmentSize);
 
-    // std::cout << "*   published " << annotationName 
+    std::cout << "*   published " << annotationName << std::endl;
     //   << " (has segments: " << (metaInfo.getHasSegments() ? "YES, content size: " : "NO, content size: ") 
     //   << content.size()  << ")" << std::endl;
   }
@@ -298,7 +302,7 @@ AnnotationArray generateAnnotationArray(int nAnnotations)
 
 //******************************************************************************
 static const char *pipeName = "/tmp/yolo-annotations";
-static int feature_pipe;
+static int feature_pipe = -1;
 
 int create_pipe(const char* fname)
 {
@@ -330,8 +334,9 @@ void reopen_readpipe(const char* fname, int* pipe)
     } while (*pipe < 0);
 }
 
-std::string readAnnotations(int pipe, unsigned int &frameNo)
+std::string readAnnotations(int pipe, unsigned int &frameNo, std::string &engine)
 {
+#ifndef USE_NANOMSG
   bool hasFrameNo = false;
   bool completeRead = false;
   int c = 0, nIter = 0; 
@@ -383,7 +388,43 @@ std::string readAnnotations(int pipe, unsigned int &frameNo)
 
   cout << "> read annotaitons (frame " << frameNo << "): " << buf << std::endl;
 
+  engine = "yolo";
   return std::string(buf);
+#else
+  char *annotations;
+  int len = ipc_readData(feature_pipe, (void**)&annotations);
+  
+  if (len > 0)
+  {
+    cJSON *item = cJSON_Parse(annotations);
+    
+    if (item)
+    {
+      cJSON *fNo = cJSON_GetObjectItem(item, "frameNo");
+      cJSON *eng = cJSON_GetObjectItem(item, "engine");
+      cJSON *array = cJSON_GetObjectItem(item, "annotations");
+
+      if (cJSON_IsArray(array) && cJSON_IsNumber(fNo))
+      {
+        char *annStr = cJSON_Print(array);
+        engine = std::string(eng->valuestring);
+        frameNo = fNo->valueint;
+        string s(annStr);
+        free(annStr);
+
+        cout << "> read annotations (frame " << frameNo << "): " << s << std::endl;
+
+        return s;
+      }
+      else
+        cout << "JSON is poorely formatted" << endl;
+    }
+    else
+      cout << "> error parsing JSON: " << annotations << endl;
+  }
+
+  return "";
+#endif
 }
 //******************************************************************************
 //#define DEBUG
@@ -464,6 +505,7 @@ int main(int argc, char** argv)
 
     // Open the feature pipe (from YOLO)
     cout << "> opening pipe..." << std::endl;
+#ifndef USE_NANOMSG
     create_pipe(pipeName);
     reopen_readpipe(pipeName, &feature_pipe);
 
@@ -473,17 +515,32 @@ int main(int argc, char** argv)
       t.join();
       return -1;
     }
-    
+#else
+    if (feature_pipe < 0)
+    {
+        feature_pipe = ipc_setupSubSourceSocket(pipeName);
+
+        if (feature_pipe < 0)
+        {
+            printf("> failed to setup socket %s: %s (%d)\n", 
+                pipeName, ipc_lastError(), ipc_lastErrorCode());
+            exit(1);
+        }
+        else
+          printf("> opened feature socket (%s)\n", pipeName);
+    }
+#endif
     while(enabled){
       
-      std::string annotations = readAnnotations(feature_pipe, frameNo);
+      std::string engine;
+      std::string annotations = readAnnotations(feature_pipe, frameNo, engine);
 #ifdef DEBUG
       io.dispatch([frameNo, annotations, &acquiredAnnotations](){
         acquiredAnnotations.insert(std::pair<unsigned int, AnnotationArray>(frameNo, AnnotationArray(annotations)));
       });
 #else
-      io.dispatch([&apub, frameNo, annotations, serviceInstance](){
-        apub.publish(frameNo, AnnotationArray(annotations), serviceInstance);
+      io.dispatch([&apub, frameNo, annotations, engine](){
+        apub.publish(frameNo, AnnotationArray(annotations), engine);
       });
 #endif
 

@@ -18,15 +18,20 @@
 #include "cJSON.h"
 #include <errno.h>
 
+#include "ipc-shim.h"
+
+#define USE_NANOMSG
+
 int windows = 0;
 
 float colors[6][3] = { {1,0,1}, {0,0,1},{0,1,1},{0,1,0},{1,1,0},{1,0,0} };
 
 //******************************************************************************
+// #ifndef USE_NANOMSG
 
 static int frame_pipe_ = -1; // ndnrtc->yolo: consume frames
 static int feature_pipe = -1; // yolo->ndnrtc: publish features
-
+    
 int create_pipe(const char* fname)
 {
     int res = 0;
@@ -71,8 +76,16 @@ int writeExactly(uint8_t *buffer, size_t bufSize, int pipe)
     return written;
 }
 
+// #else
+
+static int frame_socket_ = -1; // ndnrtc->yolo: consume frames
+static int feature_socket_ = -1; // yolo->ndnrtc: publish features
+
+// #endif
+
 void dump_annotations(unsigned int frameNo, cJSON *array)
 {
+#ifndef USE_NANOMSG
     // Write the features to the pipe
     const char *annotationsPipe = "/tmp/yolo-annotations";
 
@@ -97,8 +110,35 @@ void dump_annotations(unsigned int frameNo, cJSON *array)
 
         free(jsonString);
     }
-}
+#else
+    const char *annotationsPipe = "/tmp/yolo-annotations";
 
+    if(feature_socket_ < 0)
+        feature_socket_ = ipc_setupPubSinkSocket("/tmp/yolo-annotations");
+
+    if (feature_socket_ < 0)
+    {
+        printf("couldn't open socket %s: %s (%d). continue\n", 
+            annotationsPipe, ipc_lastError(), ipc_lastErrorCode());
+    }
+    else
+    {
+        cJSON *item = cJSON_CreateObject();
+        
+        cJSON_AddItemToObject(item, "annotations", array);
+        cJSON_AddItemToObject(item, "frameNo", cJSON_CreateNumber(frameNo));
+        cJSON_AddItemToObject(item, "engine", cJSON_CreateString("yolo"));
+
+        char *jsonString = cJSON_Print(item);
+        // printf("> sending json: %s\n",jsonString);
+        cJSON_DetachItemFromObject(item, "annotations");
+        cJSON_Delete(item);
+
+        ipc_sendData(feature_socket_, jsonString, strlen(jsonString));
+        free(jsonString);
+    }
+#endif
+}
 //******************************************************************************
 
 int create_feature_pipe()
@@ -386,6 +426,8 @@ void draw_detections_ndnrtc(image im, int num, float thresh, box *boxes, float *
     }
     else
         printf("> nothing passed threshold %.2f (%d detected)\n", thresh, num);
+
+    cJSON_Delete(annotations);
 }
 
 void draw_detections(image im, int num, float thresh, box *boxes, float **probs, float **masks, char **names, image **alphabet, int classes)
@@ -771,6 +813,7 @@ void reverse_argb(char* buf, int size){
 
 image load_raw_image_cv(char *filename, int w, int h, int channels, unsigned int *frameNo)
 {
+#ifndef USE_NANOMSG
     if (frame_pipe_ < 0)
     {
         create_pipe(filename);
@@ -783,11 +826,25 @@ image load_raw_image_cv(char *filename, int w, int h, int channels, unsigned int
             exit(1);
         }
     }
+#else
+    if (frame_socket_ < 0)
+    {
+        frame_socket_ = ipc_setupSubSinkSocket(filename);
+
+        if (frame_socket_ < 0)
+        {
+            printf(">failed to setup socket %s: %s (%d)\n", 
+                filename, ipc_lastError(), ipc_lastErrorCode());
+            exit(1);
+        }
+    }
+#endif
 
     int bufferSize = sizeof(char)*w*h*4;
     char *buffer = (char*)malloc(bufferSize);
 
     { // read frame block
+#ifndef USE_NANOMSG
         int c = 0;
         int nIter = 0;
         int hasFrameNo = 0;
@@ -822,6 +879,17 @@ image load_raw_image_cv(char *filename, int w, int h, int channels, unsigned int
 
         printf("> read frame #%u (%d bytes total, %d iterations)\n",
             *frameNo, c, nIter);
+#else
+        int ret = ipc_readFrame(frame_socket_, frameNo, buffer, bufferSize);
+
+        if (ret < 0)
+            printf("> error reading from socket (%s): %s (%d) \n", 
+                filename, ipc_lastErrorCode(), ipc_lastError());
+        else
+            printf("> read frame #%u (%d bytes total)\n",
+                *frameNo, ret);
+#endif
+        
     } // read frame block
 
     reverse_argb(buffer, bufferSize);
