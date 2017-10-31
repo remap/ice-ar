@@ -4,14 +4,14 @@ OPENCV=1
 OPENMP=0
 DEBUG=0
 
-ARCH= -gencode arch=compute_20,code=[sm_20,sm_21] \
-      -gencode arch=compute_30,code=sm_30 \
-      -gencode arch=compute_35,code=sm_35 \
-      -gencode arch=compute_50,code=[sm_50,compute_50] \
-      -gencode arch=compute_52,code=[sm_52,compute_52]
+#ARCH= -gencode arch=compute_20,code=[sm_20,sm_21] \
+#      -gencode arch=compute_30,code=sm_30 \
+#      -gencode arch=compute_35,code=sm_35 \
+#      -gencode arch=compute_50,code=[sm_50,compute_50] \
+ #     -gencode arch=compute_52,code=[sm_52,compute_52]
 
 # This is what I use, uncomment if you know your arch and want to specify
-# ARCH= -gencode arch=compute_52,code=compute_52
+ARCH= -gencode arch=compute_52,code=compute_52
 
 VPATH=./src/:./examples
 SLIB=libdarknet.so
@@ -20,7 +20,7 @@ EXEC=darknet
 OBJDIR=./obj/
 
 CC=gcc
-NVCC=/usr/local/cuda-8.0/bin/nvcc
+NVCC=/usr/local/cuda/bin/nvcc
 AR=ar
 ARFLAGS=rcs
 OPTS=-Ofast
