@@ -909,7 +909,7 @@ image load_raw_image_cv(char *filename, int w, int h, int channels, unsigned int
 
     // save_image_jpg(out, "test-frame-rgbgr");
     // save_image_png(out, "test-frame-rgbgr");
-    exit(0);
+    // exit(0);
     return out;
 }
 
