@@ -301,7 +301,7 @@ AnnotationArray generateAnnotationArray(int nAnnotations)
 }
 
 //******************************************************************************
-static const char *pipeName = "/tmp/yolo-annotations";
+static const char *pipeName = "/tmp/ice-annotations";
 static int feature_pipe = -1;
 
 int create_pipe(const char* fname)

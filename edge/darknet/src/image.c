@@ -85,13 +85,14 @@ static int feature_socket_ = -1; // yolo->ndnrtc: publish features
 
 void dump_annotations(unsigned int frameNo, cJSON *array)
 {
+    const char *annotationsPipe = "/tmp/ice-annotations";
+
 #ifndef USE_NANOMSG
     // Write the features to the pipe
-    const char *annotationsPipe = "/tmp/yolo-annotations";
 
     if(feature_pipe < 0)
     {
-        create_pipe("/tmp/yolo-annotations");
+        create_pipe(annotationsPipe);
         feature_pipe = open(annotationsPipe, O_WRONLY|O_NONBLOCK|O_EXCL);
     }
 
@@ -111,10 +112,8 @@ void dump_annotations(unsigned int frameNo, cJSON *array)
         free(jsonString);
     }
 #else
-    const char *annotationsPipe = "/tmp/yolo-annotations";
-
     if(feature_socket_ < 0)
-        feature_socket_ = ipc_setupPubSinkSocket("/tmp/yolo-annotations");
+        feature_socket_ = ipc_setupPubSinkSocket(annotationsPipe);
 
     if (feature_socket_ < 0)
     {
@@ -901,10 +900,16 @@ image load_raw_image_cv(char *filename, int w, int h, int channels, unsigned int
     
     image out = ipl_to_image(src);
 
+    // save_image_jpg(out, "test-frame");
+    // save_image_png(out, "test-frame");
+
     cvReleaseImage(&src);
     rgbgr_image(out);
     free(buffer);
 
+    // save_image_jpg(out, "test-frame-rgbgr");
+    // save_image_png(out, "test-frame-rgbgr");
+    exit(0);
     return out;
 }
 
