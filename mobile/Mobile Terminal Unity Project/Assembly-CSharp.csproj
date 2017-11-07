@@ -62,12 +62,11 @@
      <Compile Include="Assets\Scripts\PointCloudGUI.cs" />
      <Compile Include="Assets\Scripts\PooledObject.cs" />
      <Compile Include="Assets\Scripts\RingBuffer.cs" />
-     <Compile Include="Assets\Scripts\cnl\content-meta-info.cs" />
      <Compile Include="Assets\Scripts\cnl\generalized-content.cs" />
      <Compile Include="Assets\Scripts\cnl\namespace.cs" />
      <Compile Include="Assets\Scripts\cnl\segment-stream.cs" />
      <Compile Include="Assets\Scripts\cnl\segmented-content.cs" />
-     <Compile Include="Assets\Scripts\cnl\test-generalized-content.cs" />
+     <Compile Include="Assets\Scripts\cnl\usersync\content-meta-info.cs" />
      <Compile Include="Assets\TangoPrefabs\Deprecated\TangoARPoseController.cs" />
      <Compile Include="Assets\TangoPrefabs\Deprecated\TangoDeltaPoseController.cs" />
      <Compile Include="Assets\TangoPrefabs\Scripts\ARCameraPostProcess.cs" />
@@ -263,6 +262,10 @@
  <Reference Include="Vectrosity">
  <HintPath>C:/Users/pudgy/Documents/Tango/Mobile Terminal Unity Project/Assets/Vectrosity/Plugins/Vectrosity.dll</HintPath>
  </Reference>
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="Assembly-CSharp-firstpass.csproj">
+      <Project>{BB787859-DBBF-272C-5860-6273596917FD}</Project>      <Name>Assembly-CSharp-firstpass</Name>    </ProjectReference>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
