@@ -70,7 +70,7 @@ def runClassifier(img, annotation, rect):
 	alignedImg = dlibObject.align(96, img, bb=rect, landmarkIndices=openface.AlignDlib.OUTER_EYES_AND_NOSE)
 	features = torchNn.forward(alignedImg)
 	# need to reshape features, as svc object expects 2d array, while features is 1d array
-	predictions = svc.predict_proba(features.reshap(1,-1)).ravel()
+	predictions = svc.predict_proba(features.reshape(1,-1)).ravel()
 	maxLikelihood = np.argmax(predictions)
 	label = labelEncoder.inverse_transform(maxLikelihood)
 	if maxLikelihood > 0.5:
