@@ -10,11 +10,13 @@ public class BoundingBoxObjectData : PooledObject {
 	public VectorLine line;
 	public int frameCount;
 	public Color color;
-
+	public string labelText;
+	public string guid;
+	public BoundingBoxPoolManager boxMgr;
 
 	// Use this for initialization
 	void Start () {
-		frameCount = 30;
+		frameCount = 10;
 
 		//vertices for bounding box lines
 		var vertices = new Vector3[8];
@@ -68,7 +70,7 @@ public class BoundingBoxObjectData : PooledObject {
 		line.drawTransform = box.transform;
 		line.Draw3DAuto ();
 		//line.active = false;
-
+		boxMgr = GameObject.FindObjectOfType<BoundingBoxPoolManager>();
 		//this is super slow
 		//VectorManager.ObjectSetup (box, line, Visibility.Dynamic, Brightness.None);
 
@@ -76,7 +78,7 @@ public class BoundingBoxObjectData : PooledObject {
 
 
 	// Update is called once per frame
-	void Update () {
+	void LateUpdate () {
 		//rotations for testing
 		//box.transform.RotateAround (box.transform.position, box.transform.TransformDirection(Vector3.up), 5f);
 		//box.transform.rotation = Quaternion.LookRotation (Camera.main.transform.up, -Camera.main.transform.forward) * Quaternion.Euler (90f, 0, 0);
@@ -84,7 +86,7 @@ public class BoundingBoxObjectData : PooledObject {
 			Camera.main.transform.rotation * Vector3.up);
 			frameCount--;
 			if (frameCount == 0) {
-				frameCount = 30;
+				frameCount = 10;
 				Release();
 			}
 	}
@@ -93,6 +95,22 @@ public class BoundingBoxObjectData : PooledObject {
 	public void Release()
 	{
 		line.active = false;
+		//remove bounding box from the dictionary
+//		try
+//		{
+//			List<BoundingBox> list = boxMgr.boundingBoxObjects[labelText];
+//			for(int i = 0; i < list.Count; i++)
+//			{
+//				if(list[i].guid == guid)
+//				{
+//					list.RemoveAt(i);
+//					boxMgr.boxCount--;
+//				}
+//			}
+//		}
+//		catch(KeyNotFoundException) {
+//			
+//		}
 		ReturnToPool ();
 	}
 

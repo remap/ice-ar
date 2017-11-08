@@ -11,13 +11,20 @@ public class LabelData : PooledObject {
 	public BoxCollider col;
 	public GameObject plane;
 	public LabelBackground background;
-	public MeshRenderer render;
+	//public MeshRenderer render;
 	public VectorLine textBox;
 	public TextMeshPro mesh;
 	public RectTransform rect;
 	public int frameCount;
 	public Color color;
 	public string labelText;
+	public string guid;
+	public BoundingBoxPoolManager boxMgr;
+
+	void Awake() {
+		background = gameObject.GetComponentInChildren<LabelBackground>();
+		background.render.material.color = color;
+	}
 
 	// Use this for initialization
 	void Start () {
@@ -25,11 +32,12 @@ public class LabelData : PooledObject {
 		//label
 		mesh.color = Color.black;
 
-		background = gameObject.GetComponentInChildren<LabelBackground>();
-		background.render.material.color = color;
+//		background = gameObject.GetComponentInChildren<LabelBackground>();
+//		background.render.material.color = color;
 
-		frameCount = 30;
+		frameCount = 10;
 
+		boxMgr = GameObject.FindObjectOfType<BoundingBoxPoolManager>();
 		//not using label border lines right now
 //		var thisMatrix = box.transform.localToWorldMatrix;
 //		var storedRotation = box.transform.rotation;
@@ -68,13 +76,13 @@ public class LabelData : PooledObject {
 	}
 	
 	// Update is called once per frame
-	void Update () {
+	void LateUpdate () {
 		text.transform.LookAt (text.transform.position + Camera.main.transform.rotation * Vector3.forward,
 			Camera.main.transform.rotation * Vector3.up);
 		//remove after 10 frames
 		frameCount--;
 		if (frameCount == 0) {
-			frameCount = 30;
+			frameCount = 10;
 			Release ();
 		}
 
@@ -128,7 +136,24 @@ public class LabelData : PooledObject {
 
 	public void Release()
 	{
+		Debug.Log ("remove box label = " + labelText);
 		textBox.active = false;
+		//remove label from the dictionary
+		try
+		{
+			List<BoundingBox> list = boxMgr.boundingBoxObjects[labelText];
+			for(int i = 0; i < list.Count; i++)
+			{
+				if(list[i].guid == guid)
+				{
+					Debug.Log("remove box");
+					list.RemoveAt(i);
+				}
+			}
+		}
+		catch(KeyNotFoundException) {
+			Debug.Log ("exception caught box removal: KeyNotFoundException");
+		}
 		ReturnToPool();
 	}
 }

@@ -5,11 +5,10 @@ using UnityEngine;
 public class LabelBackground : MonoBehaviour {
 
 	public MeshRenderer render;
-	public MeshFilter mesh;
 
 	// Use this for initialization
-	void Start () {
-
+	void Awake () {
+		render = gameObject.GetComponent<MeshRenderer>() as MeshRenderer;
 	}
 	
 	// Update is called once per frame

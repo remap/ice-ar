@@ -35,6 +35,7 @@ C:\Users\pudgy\Documents\Tango\Mobile Terminal Unity Project\Temp\bin\Debug\Unit
 C:\Users\pudgy\Documents\Tango\Mobile Terminal Unity Project\Temp\bin\Debug\Mono.Cecil.Mdb.dll
 C:\Users\pudgy\Documents\Tango\Mobile Terminal Unity Project\Temp\bin\Debug\Unity.CecilTools.dll
 C:\Users\pudgy\Documents\Tango\Mobile Terminal Unity Project\Temp\bin\Debug\Mono.Cecil.Pdb.dll
+C:\Users\pudgy\Documents\Tango\Mobile Terminal Unity Project\Temp\bin\Debug\Assembly-CSharp-firstpass.pdb
 C:\Users\pudgy\Documents\Tango\Mobile Terminal Unity Project\Temp\bin\Debug\Assembly-CSharp.pdb
 C:\Users\pudgy\Documents\Tango\Mobile Terminal Unity Project\Temp\bin\Debug\UnityEngine.xml
 C:\Users\pudgy\Documents\Tango\Mobile Terminal Unity Project\Temp\bin\Debug\UnityEditor.xml

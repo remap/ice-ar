@@ -6,6 +6,7 @@ using Tango;
 using System.Threading;
 using DisruptorUnity3d;
 using PlaynomicsPlugin;
+using Kalman;
 
 public class OnCameraFrame : MonoBehaviour, ITangoVideoOverlay {
 
@@ -19,16 +20,20 @@ public class OnCameraFrame : MonoBehaviour, ITangoVideoOverlay {
 	public FramePoolManager frameMgr;
 	public BoundingBoxPoolManager boxMgr;
 	private AnnotationsFetcher aFetcher_;
+	private AnnotationsFetcher openFaceFetcher_;
 	private TangoPointCloud m_pointcloud;
 	private ConcurrentQueue<Dictionary<int, FrameObjectData>> frameBuffer;
 	private static ConcurrentQueue<BoxData> boundingBoxBufferToCalc;
 	private static ConcurrentQueue<CreateBoxData> boundingBoxBufferToUpdate;
+	public List<CreateBoxData> boxData;
 	//public RingBuffer<FrameObjectData> frameObjectBuffer;
 	//public static RingBuffer<BoxData> boxBufferToCalc;
 	//public static RingBuffer<CreateBoxData> boxBufferToUpdate;
 	public List<Color> colors;
 	Camera camForCalcThread;
 	Thread calc;
+	public Dictionary<string, Color> labelColors;
+	IKalmanWrapper kalman;
 
 	void Awake () {
 		QualitySettings.vSyncCount = 0;  // VSync must be disabled
@@ -52,12 +57,16 @@ public class OnCameraFrame : MonoBehaviour, ITangoVideoOverlay {
 		frameBuffer = new ConcurrentQueue<Dictionary<int, FrameObjectData>> ();
 		boundingBoxBufferToCalc = new ConcurrentQueue<BoxData> ();
 		boundingBoxBufferToUpdate = new ConcurrentQueue<CreateBoxData> ();
+		boxData = new List<CreateBoxData> ();
 //		frameObjectBuffer = new RingBuffer<FrameObjectData> (100000);
 //		boxBufferToCalc = new RingBuffer<BoxData> (100000);
 //		boxBufferToUpdate = new RingBuffer<CreateBoxData> (100000);
 		camForCalcThread = GameObject.Find("Camera").GetComponent("Camera") as Camera;
 		calc = new Thread (calculationsForBoundingBox);
 		calc.Start ();
+		labelColors = new Dictionary<string, Color> ();
+
+		kalman = new MatrixKalmanWrapper ();
 
 		colors = new List<Color> {
 			new Color (255f/255, 109f/255, 124f/255),
@@ -73,7 +82,8 @@ public class OnCameraFrame : MonoBehaviour, ITangoVideoOverlay {
 		string rootPrefix = "/icear/user";
 		string userId = "peter"; // "mobile-terminal0";
 		string serviceType = "object_recognizer";
-		string serviceInstance = "yolo-mock"; // "yolo";
+		string serviceInstance = "yolo"; // "yolo";
+		string serviceInstance2 = "openface"; // "yolo";
 
 		NdnRtc.Initialize (rootPrefix, userId);
 
@@ -81,6 +91,8 @@ public class OnCameraFrame : MonoBehaviour, ITangoVideoOverlay {
 		// AnnotationsFetcher instance might also be a singleton class
 		// and initialized/created somewhere else. here just as an example
 		aFetcher_ = new AnnotationsFetcher (servicePrefix, serviceInstance);
+
+		openFaceFetcher_ = new AnnotationsFetcher (servicePrefix, serviceInstance2);
 
 		// setup CNL logging 
 		ILOG.J2CsMapping.Util.Logging.Logger.getLogger("").setLevel(ILOG.J2CsMapping.Util.Logging.Level.FINE);
@@ -99,6 +111,21 @@ public class OnCameraFrame : MonoBehaviour, ITangoVideoOverlay {
 			//spawnBox();
 		}
 
+//		foreach( KeyValuePair<string, List<BoundingBox>> kvp in boxMgr.boundingBoxObjects )
+//		{
+//			for (int i = 0; i < kvp.Value.Count; i++) {
+//				//update box position and size?
+//				Vector3 position = Vector3.Lerp (kvp.Value [i].box.transform.position, kvp.Value [i].target, kvp.Value [i].speed);
+//				boxMgr.UpdateBoundingBoxObject (kvp.Value [i], position, kvp.Value [i].x, kvp.Value [i].y, kvp.Value [i].z, kvp.Value [i].direction, kvp.Value [i].speed, kvp.Value [i].target);
+//			}
+//		}
+
+//		string output = "";
+//		foreach( KeyValuePair<string, List<BoundingBox>> kvp in boxMgr.boundingBoxObjects )
+//		{
+//			output = output + kvp.Key.ToString () + ", " + kvp.Value.ToString() + ": ";
+//		}
+//		Debug.Log ("Bounding box label list: " + output);
 
 		//int max = boxBufferToUpdate.Count;
 
@@ -114,9 +141,111 @@ public class OnCameraFrame : MonoBehaviour, ITangoVideoOverlay {
 		for(int i = 0; i < max; i++) {
 			CreateBoxData temp = boundingBoxBufferToUpdate.Dequeue();
 			Debug.Log("frame number for box: " + temp.frameNum);
-			boxMgr.CreateBoundingBoxObject (temp.position, temp.x, temp.y, temp.z, temp.label, colors [Random.Range (0, colors.Count)]);
+			Color c = colors [Random.Range (0, colors.Count)];
+			List<BoundingBox> boundingBoxes;
+			CreateBoxData box = new CreateBoxData();
+			bool updatedBox = false;
+			//found color for this label
+			//boxMgr.CreateBoundingBoxObject (temp.position, temp.x, temp.y, temp.z, temp.label, c);
+
+			if (boxMgr.boundingBoxObjects.TryGetValue (temp.label, out boundingBoxes)) {
+				try {
+					//Debug.Log ("Update found label");
+					for (int j = 0; j < boundingBoxes.Count; j++) {
+						//find bounding box and label that matches
+						//Debug.Log ("Update searching list for box");
+						//float distance = Vector3.Distance (temp.position, boundingBoxes [j].box.transform.position);
+						float distance = Vector2.Distance (Camera.main.WorldToViewportPoint(temp.position), Camera.main.WorldToViewportPoint(boundingBoxes [j].box.transform.position));
+						//Vector3 direction = new Vector3 (temp.position.x - boundingBoxes [j].box.transform.position.x, temp.position.y - boundingBoxes [j].box.transform.position.y, temp.position.z - boundingBoxes [j].box.transform.position.z);
+						//float speed = distance * (Mathf.Abs ((float)(temp.timestamp - offset.m_screenUpdateTime)));
+						if (distance < 0.2f) {
+							//Debug.Log ("Update found box");
+							//Vector3 position = Vector3.Lerp (boundingBoxes [j].box.transform.position, temp.position);
+							//Debug.Log("update info: " + boundingBoxes [j] + "; " + temp.position + "; " +  temp.x + "; " +  temp.y + "; " +  temp.z + "; " +  temp.position);
+							//Vector3 filteredPos = kalman.Update(temp.position);
+							boxMgr.UpdateBoundingBoxObject (boundingBoxes [j], temp.position, temp.x, temp.y, temp.z, temp.label, temp.position);
+							Debug.Log ("Update bounding box: " + temp.label);
+							updatedBox = true;
+						}
+					}
+					//none of the labels looked like the wanted box, must be a new instance of this label
+					if(!updatedBox)
+					{
+						box.position = temp.position;
+						box.x = temp.x;
+						box.y = temp.y;
+						box.z = temp.z;
+						box.label = temp.label;
+						boxData.Add(box);
+					}
+				} catch (System.Exception e) {
+					Debug.Log ("exception caught box update: " + e);
+				}
+			} else {
+				//boxMgr.CreateBoundingBoxObject (temp.position, temp.x, temp.y, temp.z, temp.label, c);
+				box.position = temp.position;
+				box.x = temp.x;
+				box.y = temp.y;
+				box.z = temp.z;
+				box.label = temp.label;
+				boxData.Add(box);
+			}
+
+//			if(labelColors.TryGetValue(temp.label, out c))
+//			{
+//				//found color for this label
+//				boxMgr.CreateBoundingBoxObject (temp.position, temp.x, temp.y, temp.z, temp.label, c);
+//
+//				if(boxMgr.boundingBoxObjects.TryGetValue(temp.label, out boundingBoxes))
+//				{
+//					try{
+//					Debug.Log ("Update found label");
+//					for(int j = 0; j < boundingBoxes.Count; j++)
+//					{
+//						//find bounding box and label that matches
+//						Debug.Log ("Update searching list for box");
+//						float distance = Vector3.Distance (temp.position, boundingBoxes [j].box.transform.position);
+//						Vector3 direction = new Vector3 (temp.position.x - boundingBoxes [j].box.transform.position.x, temp.position.y - boundingBoxes [j].box.transform.position.y, temp.position.z - boundingBoxes [j].box.transform.position.z);
+//						float speed = distance * (Mathf.Abs ((float)(temp.timestamp - offset.m_screenUpdateTime)));
+//						if ( distance < 0.1f) {
+//							Debug.Log ("Update found box");
+//							Vector3 position = Vector3.Lerp (boundingBoxes [j].box.transform.position, temp.position, speed);
+//							boxMgr.UpdateBoundingBoxObject (boundingBoxes [j], temp.position, temp.x, temp.y, temp.z, direction, speed, temp.position);
+//							Debug.Log ("Update bounding box: " + temp.label);
+//						}
+//					}
+//					}
+//					catch(System.Exception e) {
+//						Debug.Log("exception caught box update: " + e);
+//					}
+//				}
+//			}
+//			else
+//			{
+//				//label is not in the dictionary, add it and assign color
+//				labelColors.Add(temp.label, colors [Random.Range (0, colors.Count)]);
+//				boxMgr.CreateBoundingBoxObject (temp.position, temp.x, temp.y, temp.z, temp.label, labelColors [temp.label]);
+//
+//			}
 		}
-			
+//		string output = "label output = ";
+//		foreach( KeyValuePair<string, Color> kvp in labelColors )
+//		{
+//			output = output + "; " + kvp.Key + ", " + kvp.Value;
+//		}
+//		Debug.Log (output);
+		if(boxData.Count > 0)
+			CreateBoxes(boxData);
+	}
+
+	public void CreateBoxes(List<CreateBoxData> boxes)
+	{
+		Color c = colors [Random.Range (0, colors.Count)];
+		for (int i = 0; i < boxes.Count; i++) {
+			//Vector3 filteredPos = kalman.Update(boxes [i].position);
+			boxMgr.CreateBoundingBoxObject (boxes[i].position, boxes [i].x, boxes [i].y, boxes [i].z, boxes [i].label, c);
+		}
+		boxData.Clear ();
 	}
 
 	public void OnTangoImageAvailableEventHandler(Tango.TangoEnums.TangoCameraId cameraId, Tango.TangoUnityImageData imageBuffer)
@@ -141,7 +270,6 @@ public class OnCameraFrame : MonoBehaviour, ITangoVideoOverlay {
 			aFetcher_.fetchAnnotation (publishedFrameNo, delegate(string jsonArrayString) {
 				int frameNumber = publishedFrameNo; // storing frame number locally
 				string debuglog = jsonArrayString.Replace(System.Environment.NewLine, " ");
-				Debug.Log("exception caught string: " + debuglog);
 				Debug.Log("Received annotations JSON (frame " + frameNumber + "): " + debuglog);
 				//Debug.Log("annotations string length: " + jsonArrayString.Length);
 				string[] testDebug = jsonArrayString.Split(']');
@@ -158,7 +286,7 @@ public class OnCameraFrame : MonoBehaviour, ITangoVideoOverlay {
 					AnnotationData data = JsonUtility.FromJson<AnnotationData>(format);
 					for (int i = 0; i < data.annotationData.Length; i++)
 					{
-						if(data.annotationData[i].prob >= 0.7f)
+						if(data.annotationData[i].prob >= 0.5f)
 						{
 							Debug.Log("test: " + data.annotationData.Length);
 							Debug.Log("test label: " + data.annotationData[i].label + " test xleft: " + data.annotationData[i].xleft
@@ -201,6 +329,7 @@ public class OnCameraFrame : MonoBehaviour, ITangoVideoOverlay {
 					annoData.cam = temp.cam;
 					annoData.camPos = temp.camPos;
 					annoData.camRot = temp.camRot;
+					annoData.timestamp = temp.timestamp;
 					annoData.label = new string[boxCount];
 					annoData.xleft = new float[boxCount];
 					annoData.xright = new float[boxCount];
@@ -238,6 +367,82 @@ public class OnCameraFrame : MonoBehaviour, ITangoVideoOverlay {
 				}
 
 
+			});
+
+			openFaceFetcher_.fetchAnnotation (publishedFrameNo, delegate(string jsonArrayString) {
+				int frameNumber = publishedFrameNo; // storing frame number locally
+				string debuglog = jsonArrayString.Replace(System.Environment.NewLine, " ");
+				Debug.Log("Received OpenFace annotations JSON (frame " + frameNumber + "): " + debuglog);
+				string[] testDebug = jsonArrayString.Split(']');
+				string formatDebug = testDebug[0] + "]";
+				try{
+					Dictionary<int, FrameObjectData> frameObjects = frameBuffer.Dequeue();
+					FrameObjectData temp;
+					if(frameObjects.TryGetValue(frameNumber, out temp))
+					{
+						string format = "{ \"annotationData\": " + formatDebug + "}";
+						AnnotationData data = JsonUtility.FromJson<AnnotationData>(format);
+						for (int i = 0; i < data.annotationData.Length; i++)
+						{
+							if(data.annotationData[i].prob >= 0.7f)
+							{
+								Debug.Log("openface test: " + data.annotationData.Length);
+								Debug.Log("openface test label: " + data.annotationData[i].label + " test xleft: " + data.annotationData[i].xleft
+									+ " test xright: " + data.annotationData[i].xright + " test ytop: " + (1-data.annotationData[i].ytop) + " test ybottom: " + (1-data.annotationData[i].ybottom));
+								//						Debug.Log("test xleft: " + data.annotationData[i].xleft);
+								//						Debug.Log("test xright: " + data.annotationData[i].xright);
+								//						Debug.Log("test ytop: " + data.annotationData[i].ytop);
+								//						Debug.Log("test ybottom: " + data.annotationData[i].ybottom);
+							}
+						}
+						//int boxCount = Mathf.Min(data.annotationData.Length, 2);
+						int boxCount = data.annotationData.Length;
+
+						BoxData annoData = new BoxData();
+						Debug.Log("box created boxdata");
+						annoData.frameNumber = frameNumber;
+						annoData.count = boxCount;
+						annoData.points = temp.points;
+						annoData.numPoints = temp.numPoints;
+						annoData.cam = temp.cam;
+						annoData.camPos = temp.camPos;
+						annoData.camRot = temp.camRot;
+						annoData.timestamp = temp.timestamp;
+						annoData.label = new string[boxCount];
+						annoData.xleft = new float[boxCount];
+						annoData.xright = new float[boxCount];
+						annoData.ytop = new float[boxCount];
+						annoData.ybottom = new float[boxCount];
+						annoData.prob = new float[boxCount];
+
+						for(int i = 0; i < boxCount; i++)
+						{
+							annoData.label[i] = data.annotationData[i].label;
+							annoData.xleft[i] = data.annotationData[i].xleft;
+							annoData.xright[i] = data.annotationData[i].xright;
+							annoData.ytop[i] = 1-data.annotationData[i].ytop;
+							annoData.ybottom[i] = 1-data.annotationData[i].ybottom;
+							annoData.prob[i] = data.annotationData[i].prob;
+						}
+
+						Debug.Log("Received openface annotations box enqueue");
+						//boxBufferToCalc.Enqueue(annoData);
+						boundingBoxBufferToCalc.Enqueue(annoData);
+					}
+					else
+					{
+						//frame object was not in the pool, lifetime expired
+						Debug.Log("Received openface annotations but frame expired");
+					}
+				}
+				catch(System.Exception e)
+				{
+					Debug.Log("exception caught openface annotations: " + e);
+					string debug = jsonArrayString.Replace(System.Environment.NewLine, " ");
+					Debug.Log("exception caught openface string: " + debug);
+					string format = "{ \"annotationData\": " + debug + "}";
+					Debug.Log("exception caught openface string with format: " + format);
+				}
 			});
 
 		} else {
@@ -378,7 +583,7 @@ public class OnCameraFrame : MonoBehaviour, ITangoVideoOverlay {
 						y [i] = Mathf.Abs (Vector3.Distance (worldTopLeft [i], worldBottomLeft [i]));
 						z [i] = 0;
 
-						if(temp.prob[i] >= 0.7f)
+						if(temp.prob[i] >= 0.5f)
 						{
 							CreateBoxData boxData = new CreateBoxData ();
 							boxData.label = temp.label [i];
@@ -388,6 +593,7 @@ public class OnCameraFrame : MonoBehaviour, ITangoVideoOverlay {
 							boxData.z = z [i];
 							boxData.cam = temp.cam;
 							boxData.frameNum = temp.frameNumber;
+							boxData.timestamp = temp.timestamp;
 							//boxBufferToUpdate.Enqueue (boxData);
 							boundingBoxBufferToUpdate.Enqueue (boxData);
 						}
@@ -429,6 +635,7 @@ public struct CreateBoxData
 	public int frameNum;
 	public string label;
 	public Camera cam;
+	public double timestamp;
 }
 
 public struct BoxData
@@ -446,4 +653,5 @@ public struct BoxData
 	public float[] ybottom;
 	public float[] prob;
 	public string[] label;
+	public double timestamp;
 }
