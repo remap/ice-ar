@@ -164,7 +164,7 @@ public class NdnRtc : MonoBehaviour
 				p.signingOn = 1;
 				p.dropFrames = 1;
 				p.fecOn = 1;
-				p.frameHeight = 240;
+				p.frameHeight = 180;
 				p.frameWidth = 320;
 				p.gop = 30;
 				p.startBitrate = 300;
