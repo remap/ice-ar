@@ -24,10 +24,11 @@ using System.Runtime.InteropServices;
 using System;
 using Tango;
 
-[UnmanagedFunctionPointerAttribute(CallingConvention.Cdecl)]
-public delegate void NdnRtcLibLogHandler(string message);
+[UnmanagedFunctionPointerAttribute (CallingConvention.Cdecl)]
+public delegate void NdnRtcLibLogHandler (string message);
 
-public struct LocalStreamParams {
+public struct LocalStreamParams
+{
 	public string basePrefix;
 	public int signingOn;
 	public int fecOn;
@@ -44,101 +45,124 @@ public struct LocalStreamParams {
 	public string threadName;
 }
 
-public class NdnRtcWrapper {
+public class NdnRtcWrapper
+{
 	[DllImport ("ndnrtc")]
 	public static extern bool ndnrtc_init (string hostname, string path, 
-		string signingIdentity, string instanceId, NdnRtcLibLogHandler logHandler);
+	                                       string signingIdentity, string instanceId, NdnRtcLibLogHandler logHandler);
 
 	[DllImport ("ndnrtc")]
 	public static extern void ndnrtc_deinit ();
 
 	[DllImport ("ndnrtc")]
-	public static extern IntPtr ndnrtc_createLocalStream(LocalStreamParams p, 
-		NdnRtcLibLogHandler loggerSink);
+	public static extern IntPtr ndnrtc_createLocalStream (LocalStreamParams p, 
+	                                                     NdnRtcLibLogHandler loggerSink);
 
 	[DllImport ("ndnrtc")]
-	public static extern IntPtr ndnrtc_destroyLocalStream(IntPtr stream);
+	public static extern IntPtr ndnrtc_destroyLocalStream (IntPtr stream);
 
 	[DllImport ("ndnrtc")]
 	// we use IntPtr return type instead of string, because otherwise runtime will
 	// try to free the pointer, which we don't want to happen (it is the property of 
 	// unmanaged code in this case)
-	public static extern IntPtr ndnrtc_LocalStream_getPrefix(IntPtr stream);
+	public static extern IntPtr ndnrtc_LocalStream_getPrefix (IntPtr stream);
 
 	[DllImport ("ndnrtc")]
-	public static extern IntPtr ndnrtc_LocalStream_getBasePrefix(IntPtr stream);
+	public static extern IntPtr ndnrtc_LocalStream_getBasePrefix (IntPtr stream);
 
 	[DllImport ("ndnrtc")]
-	public static extern IntPtr ndnrtc_LocalStream_getStreamName(IntPtr stream);
+	public static extern IntPtr ndnrtc_LocalStream_getStreamName (IntPtr stream);
 
 	[DllImport ("ndnrtc")]
-	public static extern int ndnrtc_LocalVideoStream_incomingI420Frame(IntPtr stream, 
-		uint width, uint height, uint strideY, uint strideU, uint strideV,
-		IntPtr yPlane, IntPtr uPlane, IntPtr vPlane);
+	public static extern int ndnrtc_LocalVideoStream_incomingI420Frame (IntPtr stream, 
+	                                                                   uint width, uint height, uint strideY, uint strideU, uint strideV,
+	                                                                   IntPtr yPlane, IntPtr uPlane, IntPtr vPlane);
 }
 
-public class LocalVideoStream {
+public class LocalVideoStream
+{
 	private IntPtr ndnrtcHandle_;
 	private string streamName, basePrefix, fullPrefix;
 	static private NdnRtcLibLogHandler sinkCallbackDelegate;
 
-	public LocalVideoStream(LocalStreamParams p){
+	public LocalVideoStream (LocalStreamParams p)
+	{
 
 		if (sinkCallbackDelegate == null)
-			sinkCallbackDelegate = new NdnRtcLibLogHandler(loggerSinkHandler);
+			sinkCallbackDelegate = new NdnRtcLibLogHandler (loggerSinkHandler);
 
-		ndnrtcHandle_ = NdnRtcWrapper.ndnrtc_createLocalStream(p, sinkCallbackDelegate);
+		ndnrtcHandle_ = NdnRtcWrapper.ndnrtc_createLocalStream (p, sinkCallbackDelegate);
 
-		basePrefix = Marshal.PtrToStringAnsi(NdnRtcWrapper.ndnrtc_LocalStream_getBasePrefix(ndnrtcHandle_));
-		fullPrefix = Marshal.PtrToStringAnsi(NdnRtcWrapper.ndnrtc_LocalStream_getPrefix(ndnrtcHandle_));
-		streamName = Marshal.PtrToStringAnsi(NdnRtcWrapper.ndnrtc_LocalStream_getStreamName(ndnrtcHandle_));
+		basePrefix = Marshal.PtrToStringAnsi (NdnRtcWrapper.ndnrtc_LocalStream_getBasePrefix (ndnrtcHandle_));
+		fullPrefix = Marshal.PtrToStringAnsi (NdnRtcWrapper.ndnrtc_LocalStream_getPrefix (ndnrtcHandle_));
+		streamName = Marshal.PtrToStringAnsi (NdnRtcWrapper.ndnrtc_LocalStream_getStreamName (ndnrtcHandle_));
 
-		Debug.Log("Initialized ndnrtc stream "+streamName+" (full prefix " + fullPrefix + ")");
+		Debug.Log ("Initialized ndnrtc stream " + streamName + " (full prefix " + fullPrefix + ")");
 	}
 
-	~LocalVideoStream()
+	~LocalVideoStream ()
 	{
-		NdnRtcWrapper.ndnrtc_destroyLocalStream(ndnrtcHandle_);
+		NdnRtcWrapper.ndnrtc_destroyLocalStream (ndnrtcHandle_);
 	}
 
 	public int processIncomingFrame (Tango.TangoUnityImageData imageData)
 	{
+		Debug.Log ("[ndnrtc::videostream] incoming image format " + imageData.format + " size " + imageData.width + "x" + imageData.height);
+
 		uint offset = imageData.stride;
 		uint yPlaneSize = imageData.stride * imageData.height;
-		uint vPlaneSize = (imageData.stride / 2) * (imageData.height / 2);
+//		uint vPlaneSize = (imageData.stride / 2) * (imageData.height / 2);
+		uint uvPLaneSize = yPlaneSize / 2;
 
 		GCHandle pinnedBuffer = GCHandle.Alloc (imageData.data, GCHandleType.Pinned);
 
 		IntPtr yPlane = new IntPtr (pinnedBuffer.AddrOfPinnedObject ().ToInt64 () + offset);
 		offset += yPlaneSize;
-		IntPtr vPlane = new IntPtr (pinnedBuffer.AddrOfPinnedObject ().ToInt64 () + offset);
-		offset += vPlaneSize;
-		IntPtr uPlane = new IntPtr (pinnedBuffer.AddrOfPinnedObject ().ToInt64 () + offset);
+
+		byte[] uPlaneBuf = new byte[uvPLaneSize / 2];
+		byte[] vPlaneBuf = new byte[uvPLaneSize / 2];
+
+		// now copy u and v into planes
+		for (int i = 0; i < uvPLaneSize / 2; ++i) {
+			uPlaneBuf [i] = imageData.data [yPlaneSize + i * 2];
+			vPlaneBuf [i] = imageData.data [yPlaneSize + i * 2 + 1];
+		}
+
+		GCHandle uPinned = GCHandle.Alloc (uPlaneBuf, GCHandleType.Pinned);
+		GCHandle vPinned = GCHandle.Alloc (vPlaneBuf, GCHandleType.Pinned);
+
+		IntPtr uPlane = new IntPtr (uPinned.AddrOfPinnedObject ().ToInt64 ());
+		IntPtr vPlane = new IntPtr (vPinned.AddrOfPinnedObject ().ToInt64 ());
+
+
+//		IntPtr uPlane = new IntPtr (pinnedBuffer.AddrOfPinnedObject ().ToInt64 () + offset);
+//		offset += vPlaneSize;
+//		IntPtr vPlane = new IntPtr (pinnedBuffer.AddrOfPinnedObject ().ToInt64 () + offset);
 
 		int frameNo = NdnRtcWrapper.ndnrtc_LocalVideoStream_incomingI420Frame (ndnrtcHandle_, imageData.width, imageData.height,
-			imageData.stride, imageData.stride/2, imageData.stride/2, yPlane, uPlane, vPlane);
+			              imageData.stride, imageData.stride / 2, imageData.stride / 2, yPlane, uPlane, vPlane);
 
 		pinnedBuffer.Free ();
 
 		return frameNo;
 	}
 
-	static private void loggerSinkHandler(string logMessage)
+	static private void loggerSinkHandler (string logMessage)
 	{
 		Debug.Log ("[ndnrtc::videostream] " + logMessage);
 	}
 }
 
 
-public class NdnRtc : MonoBehaviour {
+public class NdnRtc : MonoBehaviour
+{
 
 	static private NdnRtcLibLogHandler libraryCallbackDelegate;
 	static public LocalVideoStream videoStream;
 
-	public static void Initialize(string signingIdentity, string instanceId)
+	public static void Initialize (string signingIdentity, string instanceId)
 	{
-		if (libraryCallbackDelegate == null)
-		{
+		if (libraryCallbackDelegate == null) {
 			libraryCallbackDelegate = new NdnRtcLibLogHandler (ndnrtcLogHandler);
 		}
 
@@ -148,11 +172,10 @@ public class NdnRtc : MonoBehaviour {
 			res = NdnRtcWrapper.ndnrtc_init ("localhost", Application.persistentDataPath, signingIdentity, 
 				instanceId, libraryCallbackDelegate);
 
-			if (res)
-			{
-				LocalStreamParams p = new LocalStreamParams();
+			if (res) {
+				LocalStreamParams p = new LocalStreamParams ();
 
-				p.basePrefix = signingIdentity+"/"+instanceId;
+				p.basePrefix = signingIdentity + "/" + instanceId;
 				p.signingOn = 1;
 				p.dropFrames = 1;
 				p.fecOn = 1;
@@ -167,30 +190,31 @@ public class NdnRtc : MonoBehaviour {
 				p.streamName = "back_camera";
 				p.threadName = "vp9";
 
-				videoStream = new LocalVideoStream(p);
+				videoStream = new LocalVideoStream (p);
 			}
-		}
-		catch (System.Exception e) {
-			Debug.LogError ("Error initializing NDN-RTC: "+e.Message);
+		} catch (System.Exception e) {
+			Debug.LogError ("Error initializing NDN-RTC: " + e.Message);
 		}
 	}
 
-	public static void Release()
+	public static void Release ()
 	{
 		NdnRtcWrapper.ndnrtc_deinit ();
 	}
 
 	// Use this for initialization
-	void Start () {
+	void Start ()
+	{
 		
 	}
 	
 	// Update is called once per frame
-	void Update () {
+	void Update ()
+	{
 		
 	}
 
-	static private void ndnrtcLogHandler(string message)
+	static private void ndnrtcLogHandler (string message)
 	{
 		Debug.Log ("[ndnrtc] " + message);
 	}
