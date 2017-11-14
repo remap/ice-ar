@@ -90,8 +90,8 @@ def processFrames(socket, frameWidth, frameHeight):
 			imgARGB = np.frombuffer(frame, 'uint8').reshape(frameHeight, frameWidth, 4)
 			imgBGR = np.zeros((frameHeight, frameWidth, 3), 'uint8')
 			cv2.mixChannels([imgARGB], [imgBGR], [1,2, 2,1, 3,0])
-			# cv2.imwrite('test-frame'+str(counter)+'.jpg', imgBGR)
-			# counter += 1
+			#cv2.imwrite('test-frame'+str(counter)+'.jpg', imgBGR)
+			#counter += 1
 			# continue
 			# sys.exit(0)
 			p1 = datetime.datetime.now()
@@ -141,8 +141,8 @@ def main():
 		usage()
 		exit(2)
 	frameWidth=320
-	frameHeight=240
-	pipeName = "/tmp/mtcamera.320x240"
+	frameHeight=180
+	pipeName = "/tmp/mtcamera.320x180"
 	repsFile = None
 	labelsFile = None
 
