@@ -77,6 +77,10 @@ public class NdnRtcWrapper
 	public static extern int ndnrtc_LocalVideoStream_incomingI420Frame (IntPtr stream, 
 	                                                                   uint width, uint height, uint strideY, uint strideU, uint strideV,
 	                                                                   IntPtr yPlane, IntPtr uPlane, IntPtr vPlane);
+
+	[DllImport ("ndnrtc")]
+	public static extern int ndnrtc_LocalVideoStream_incomingNV21Frame (IntPtr stream, 
+		uint width, uint height, uint strideY, uint strideUV, IntPtr yPlane, IntPtr uvPlane);
 }
 
 public class LocalVideoStream
@@ -107,40 +111,21 @@ public class LocalVideoStream
 
 	public int processIncomingFrame (Tango.TangoUnityImageData imageData)
 	{
-		Debug.Log ("[ndnrtc::videostream] incoming image format " + imageData.format + " size " + imageData.width + "x" + imageData.height);
+//		Debug.Log ("[ndnrtc::videostream] incoming image format " + imageData.format + " size " + imageData.width + "x" + imageData.height);
 
 		uint offset = imageData.stride;
 		uint yPlaneSize = imageData.stride * imageData.height;
-//		uint vPlaneSize = (imageData.stride / 2) * (imageData.height / 2);
+		uint vPlaneSize = (imageData.stride / 2) * (imageData.height / 2);
 		uint uvPLaneSize = yPlaneSize / 2;
 
 		GCHandle pinnedBuffer = GCHandle.Alloc (imageData.data, GCHandleType.Pinned);
 
 		IntPtr yPlane = new IntPtr (pinnedBuffer.AddrOfPinnedObject ().ToInt64 () + offset);
 		offset += yPlaneSize;
+		IntPtr uvPlane = new IntPtr (pinnedBuffer.AddrOfPinnedObject ().ToInt64 () + offset);
 
-		byte[] uPlaneBuf = new byte[uvPLaneSize / 2];
-		byte[] vPlaneBuf = new byte[uvPLaneSize / 2];
-
-		// now copy u and v into planes
-		for (int i = 0; i < uvPLaneSize / 2; ++i) {
-			uPlaneBuf [i] = imageData.data [yPlaneSize + i * 2];
-			vPlaneBuf [i] = imageData.data [yPlaneSize + i * 2 + 1];
-		}
-
-		GCHandle uPinned = GCHandle.Alloc (uPlaneBuf, GCHandleType.Pinned);
-		GCHandle vPinned = GCHandle.Alloc (vPlaneBuf, GCHandleType.Pinned);
-
-		IntPtr uPlane = new IntPtr (uPinned.AddrOfPinnedObject ().ToInt64 ());
-		IntPtr vPlane = new IntPtr (vPinned.AddrOfPinnedObject ().ToInt64 ());
-
-
-//		IntPtr uPlane = new IntPtr (pinnedBuffer.AddrOfPinnedObject ().ToInt64 () + offset);
-//		offset += vPlaneSize;
-//		IntPtr vPlane = new IntPtr (pinnedBuffer.AddrOfPinnedObject ().ToInt64 () + offset);
-
-		int frameNo = NdnRtcWrapper.ndnrtc_LocalVideoStream_incomingI420Frame (ndnrtcHandle_, imageData.width, imageData.height,
-			              imageData.stride, imageData.stride / 2, imageData.stride / 2, yPlane, uPlane, vPlane);
+		int frameNo = NdnRtcWrapper.ndnrtc_LocalVideoStream_incomingNV21Frame (ndnrtcHandle_, imageData.width, imageData.height,
+			              imageData.stride, imageData.stride / 2, yPlane, uvPlane);
 
 		pinnedBuffer.Free ();
 
