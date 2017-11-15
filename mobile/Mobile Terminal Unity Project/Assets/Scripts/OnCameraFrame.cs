@@ -384,11 +384,11 @@ public class OnCameraFrame : MonoBehaviour, ITangoVideoOverlay {
 						AnnotationData data = JsonUtility.FromJson<AnnotationData>(format);
 						for (int i = 0; i < data.annotationData.Length; i++)
 						{
-							if(data.annotationData[i].prob >= 0.7f)
+							//if(data.annotationData[i].prob >= 0.7f)
 							{
-								Debug.Log("openface test: " + data.annotationData.Length);
+								Debug.Log("openface test: " + data.annotationData[i].prob);
 								Debug.Log("openface test label: " + data.annotationData[i].label + " test xleft: " + data.annotationData[i].xleft
-									+ " test xright: " + data.annotationData[i].xright + " test ytop: " + (1-data.annotationData[i].ytop) + " test ybottom: " + (1-data.annotationData[i].ybottom));
+									+ " test xright: " + data.annotationData[i].xright + " test ytop: " + (data.annotationData[i].ytop) + " test ybottom: " + (data.annotationData[i].ybottom));
 								//						Debug.Log("test xleft: " + data.annotationData[i].xleft);
 								//						Debug.Log("test xright: " + data.annotationData[i].xright);
 								//						Debug.Log("test ytop: " + data.annotationData[i].ytop);
@@ -417,12 +417,16 @@ public class OnCameraFrame : MonoBehaviour, ITangoVideoOverlay {
 
 						for(int i = 0; i < boxCount; i++)
 						{
+							if(data.annotationData[i].ytop > 1)
+								data.annotationData[i].ytop = 1;
+							if(data.annotationData[i].ybottom < 0)
+								data.annotationData[i].ybottom = 0;
 							annoData.label[i] = data.annotationData[i].label;
 							annoData.xleft[i] = data.annotationData[i].xleft;
 							annoData.xright[i] = data.annotationData[i].xright;
-							annoData.ytop[i] = 1-data.annotationData[i].ytop;
-							annoData.ybottom[i] = 1-data.annotationData[i].ybottom;
-							annoData.prob[i] = data.annotationData[i].prob;
+							annoData.ytop[i] = data.annotationData[i].ytop;
+							annoData.ybottom[i] = data.annotationData[i].ybottom;
+							annoData.prob[i] = 1;
 						}
 
 						Debug.Log("Received openface annotations box enqueue");

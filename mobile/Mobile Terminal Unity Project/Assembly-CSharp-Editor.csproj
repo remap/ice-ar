@@ -153,19 +153,19 @@
  <HintPath>C:/Program Files/Unity/Editor/Data/PlaybackEngines/windowsstandalonesupport/UnityEditor.WindowsStandalone.Extensions.dll</HintPath>
  </Reference>
  <Reference Include="ndn-dot-net">
- <HintPath>C:/Users/pudgy/Documents/Tango/Mobile Terminal Unity Project/Assets/ndn-dot-net.dll</HintPath>
+ <HintPath>C:/Users/pudgy/Documents/GitHub/ice-ar/mobile/Mobile Terminal Unity Project/Assets/ndn-dot-net.dll</HintPath>
  </Reference>
  <Reference Include="TextMeshPro-1.0.55.56.0b12">
- <HintPath>C:/Users/pudgy/Documents/Tango/Mobile Terminal Unity Project/Assets/TextMesh Pro/Plugins/TextMeshPro-1.0.55.56.0b12.dll</HintPath>
+ <HintPath>C:/Users/pudgy/Documents/GitHub/ice-ar/mobile/Mobile Terminal Unity Project/Assets/TextMesh Pro/Plugins/TextMeshPro-1.0.55.56.0b12.dll</HintPath>
  </Reference>
  <Reference Include="TextMeshPro-1.0.55.56.0b12-Editor">
- <HintPath>C:/Users/pudgy/Documents/Tango/Mobile Terminal Unity Project/Assets/TextMesh Pro/Plugins/Editor/TextMeshPro-1.0.55.56.0b12-Editor.dll</HintPath>
+ <HintPath>C:/Users/pudgy/Documents/GitHub/ice-ar/mobile/Mobile Terminal Unity Project/Assets/TextMesh Pro/Plugins/Editor/TextMeshPro-1.0.55.56.0b12-Editor.dll</HintPath>
  </Reference>
  <Reference Include="Vectrosity">
- <HintPath>C:/Users/pudgy/Documents/Tango/Mobile Terminal Unity Project/Assets/Vectrosity/Plugins/Vectrosity.dll</HintPath>
+ <HintPath>C:/Users/pudgy/Documents/GitHub/ice-ar/mobile/Mobile Terminal Unity Project/Assets/Vectrosity/Plugins/Vectrosity.dll</HintPath>
  </Reference>
  <Reference Include="VectrosityEditor">
- <HintPath>C:/Users/pudgy/Documents/Tango/Mobile Terminal Unity Project/Assets/Vectrosity/Plugins/Editor/VectrosityEditor.dll</HintPath>
+ <HintPath>C:/Users/pudgy/Documents/GitHub/ice-ar/mobile/Mobile Terminal Unity Project/Assets/Vectrosity/Plugins/Editor/VectrosityEditor.dll</HintPath>
  </Reference>
   </ItemGroup>
   <ItemGroup>
