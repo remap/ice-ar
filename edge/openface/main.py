@@ -52,10 +52,11 @@ def getAnnotationFromRect(r, w, h):
 	annotation = {}
 	annotation['xleft'] = float(r.left())/float(w)
 	annotation['xright'] = float(r.right())/float(w)
-	annotation['ytop'] = float(r.top())/float(h)
-	annotation['ybottom'] = float(r.bottom())/float(h)
+	annotation['ytop'] = float(h-r.top())/float(h)		# since we flipped the image
+	annotation['ybottom'] = float(h-r.bottom())/float(h)	# since we flipped the image
 	annotation['prob'] = 1.
 	annotation['label'] = 'a face'
+
 	return annotation
 
 def dumpAnnotations(frameNo, annotations):
@@ -71,8 +72,9 @@ def runClassifier(img, annotation, rect):
 	features = torchNn.forward(alignedImg)
 	# need to reshape features, as svc object expects 2d array, while features is 1d array
 	predictions = svc.predict_proba(features.reshape(1,-1)).ravel()
-	maxLikelihood = np.argmax(predictions)
-	label = labelEncoder.inverse_transform(maxLikelihood)
+	idx = np.argmax(predictions)
+	maxLikelihood = predictions[idx]
+	label = labelEncoder.inverse_transform(idx)
 	if maxLikelihood > 0.5:
 		annotation['prob'] = maxLikelihood
 		annotation['label'] = label
@@ -86,7 +88,7 @@ def processFrames(socket, frameWidth, frameHeight):
 	while True:
 		frameNumber, frame, err = readFrame(socket, frameSize)
 		if not err:
-			print(" > read frame "+str(frameNumber)+" ("+str(len(frame))+" bytes)")
+			# print(" > read frame "+str(frameNumber)+" ("+str(len(frame))+" bytes)")
 			imgARGB = np.frombuffer(frame, 'uint8').reshape(frameHeight, frameWidth, 4)
 			imgBGR = np.zeros((frameHeight, frameWidth, 3), 'uint8')
 			cv2.mixChannels([imgARGB], [imgBGR], [1,2, 2,1, 3,0])
@@ -100,10 +102,10 @@ def processFrames(socket, frameWidth, frameHeight):
 			p2 = datetime.datetime.now()
 			delta = p2-p1
 			processingMs = int(delta.total_seconds() * 1000)
-			print(" > open face processing took " + str(processingMs)+" ms")
+			# print(" > open face processing took " + str(processingMs)+" ms")
 
 			if len(rects) > 0:
-				print(" > DETECTED "+str(len(rects))+" faces")
+				# print(" > DETECTED "+str(len(rects))+" faces")
 				facesArray = []
 				for r in rects:
 					faceAnnotation = getAnnotationFromRect(r, frameWidth, frameHeight)
@@ -112,7 +114,8 @@ def processFrames(socket, frameWidth, frameHeight):
 					facesArray.append(faceAnnotation)
 				dumpAnnotations(frameNumber, facesArray)
 			else:
-				print(" > no faces detected")
+				# print(" > no faces detected")
+				pass
 
 			# handy code to slice image into separate channels
 			# imgR = np.zeros((frameHeight, frameWidth, 1), 'uint8')

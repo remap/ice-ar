@@ -29,7 +29,9 @@ if len(jpegs):
 		path = folder+"/"+jpeg
 		img = cv2.imread(path)
 		if len(img):
-			rects = dlibObject.getAllFaceBoundingBoxes(cv2.flip(img, 0))
+			# img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
+			# rects = dlibObject.getAllFaceBoundingBoxes(cv2.flip(img,0))
+			rects = dlibObject.getAllFaceBoundingBoxes(img)
 			print jpeg+" -> "+str(len(rects))+" faces"
 			totalFound += len(rects)
 
