@@ -141,6 +141,8 @@ public class OnCameraFrame : MonoBehaviour, ITangoVideoOverlay {
 		for(int i = 0; i < max; i++) {
 			CreateBoxData temp = boundingBoxBufferToUpdate.Dequeue();
 			Debug.Log("frame number for box: " + temp.frameNum);
+			string output = "Yolo " + temp.frameNum + "";
+			textbox.text = output;
 			Color c = colors [Random.Range (0, colors.Count)];
 			List<BoundingBox> boundingBoxes;
 			CreateBoxData box = new CreateBoxData();
@@ -279,7 +281,7 @@ public class OnCameraFrame : MonoBehaviour, ITangoVideoOverlay {
 				FrameObjectData temp;
 				if(frameObjects.TryGetValue(frameNumber, out temp))
 				{
-
+					//temp.textbox.text = "Yolo annotaion @ " + frameNumber;
 					//AnnotationData[] data = JsonHelper.FromJson<AnnotationData>(jsonArrayString);
 						//try to print out how many characters the jsonArrayString has
 					string format = "{ \"annotationData\": " + formatDebug + "}";
@@ -472,7 +474,6 @@ public class OnCameraFrame : MonoBehaviour, ITangoVideoOverlay {
 			{
 				BoxData temp = boundingBoxBufferToCalc.Dequeue();
 				int boxCount = temp.count;
-
 				//Vector3[] min = new Vector3[boxCount];
 				float[] averageZ = new float[boxCount];
 				int[] numWithinBox = new int[boxCount];

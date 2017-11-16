@@ -219,7 +219,7 @@ public class BoundingBoxPoolManager : MonoBehaviour {
 	
 	// Update is called once per frame
 	void Update () {
-		textbox.text = "" + boundingBoxObjects.Count;
+		//textbox.text = "" + boundingBoxObjects.Count;
 	}
 }
 
