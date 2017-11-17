@@ -141,6 +141,8 @@ public class OnCameraFrame : MonoBehaviour, ITangoVideoOverlay {
 		for(int i = 0; i < max; i++) {
 			CreateBoxData temp = boundingBoxBufferToUpdate.Dequeue();
 			Debug.Log("frame number for box: " + temp.frameNum);
+			string output = "Yolo " + temp.frameNum + "";
+			textbox.text = output;
 			Color c = colors [Random.Range (0, colors.Count)];
 			List<BoundingBox> boundingBoxes;
 			CreateBoxData box = new CreateBoxData();
@@ -279,7 +281,7 @@ public class OnCameraFrame : MonoBehaviour, ITangoVideoOverlay {
 				FrameObjectData temp;
 				if(frameObjects.TryGetValue(frameNumber, out temp))
 				{
-
+					//temp.textbox.text = "Yolo annotaion @ " + frameNumber;
 					//AnnotationData[] data = JsonHelper.FromJson<AnnotationData>(jsonArrayString);
 						//try to print out how many characters the jsonArrayString has
 					string format = "{ \"annotationData\": " + formatDebug + "}";
@@ -384,11 +386,11 @@ public class OnCameraFrame : MonoBehaviour, ITangoVideoOverlay {
 						AnnotationData data = JsonUtility.FromJson<AnnotationData>(format);
 						for (int i = 0; i < data.annotationData.Length; i++)
 						{
-							if(data.annotationData[i].prob >= 0.7f)
+							//if(data.annotationData[i].prob >= 0.7f)
 							{
-								Debug.Log("openface test: " + data.annotationData.Length);
+								Debug.Log("openface test: " + data.annotationData[i].prob);
 								Debug.Log("openface test label: " + data.annotationData[i].label + " test xleft: " + data.annotationData[i].xleft
-									+ " test xright: " + data.annotationData[i].xright + " test ytop: " + (1-data.annotationData[i].ytop) + " test ybottom: " + (1-data.annotationData[i].ybottom));
+									+ " test xright: " + data.annotationData[i].xright + " test ytop: " + (data.annotationData[i].ytop) + " test ybottom: " + (data.annotationData[i].ybottom));
 								//						Debug.Log("test xleft: " + data.annotationData[i].xleft);
 								//						Debug.Log("test xright: " + data.annotationData[i].xright);
 								//						Debug.Log("test ytop: " + data.annotationData[i].ytop);
@@ -417,12 +419,16 @@ public class OnCameraFrame : MonoBehaviour, ITangoVideoOverlay {
 
 						for(int i = 0; i < boxCount; i++)
 						{
+							if(data.annotationData[i].ytop > 1)
+								data.annotationData[i].ytop = 1;
+							if(data.annotationData[i].ybottom < 0)
+								data.annotationData[i].ybottom = 0;
 							annoData.label[i] = data.annotationData[i].label;
 							annoData.xleft[i] = data.annotationData[i].xleft;
 							annoData.xright[i] = data.annotationData[i].xright;
-							annoData.ytop[i] = 1-data.annotationData[i].ytop;
-							annoData.ybottom[i] = 1-data.annotationData[i].ybottom;
-							annoData.prob[i] = data.annotationData[i].prob;
+							annoData.ytop[i] = data.annotationData[i].ytop;
+							annoData.ybottom[i] = data.annotationData[i].ybottom;
+							annoData.prob[i] = 1;
 						}
 
 						Debug.Log("Received openface annotations box enqueue");
@@ -468,7 +474,6 @@ public class OnCameraFrame : MonoBehaviour, ITangoVideoOverlay {
 			{
 				BoxData temp = boundingBoxBufferToCalc.Dequeue();
 				int boxCount = temp.count;
-
 				//Vector3[] min = new Vector3[boxCount];
 				float[] averageZ = new float[boxCount];
 				int[] numWithinBox = new int[boxCount];
