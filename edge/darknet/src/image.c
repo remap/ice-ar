@@ -31,6 +31,7 @@ float colors[6][3] = { {1,0,1}, {0,0,1},{0,1,1},{0,1,0},{1,1,0},{1,0,0} };
 
 static int frame_pipe_ = -1; // ndnrtc->yolo: consume frames
 static int feature_pipe = -1; // yolo->ndnrtc: publish features
+static int image_pipe_ = -1; // preview sink
     
 int create_pipe(const char* fname)
 {
@@ -137,6 +138,42 @@ void dump_annotations(unsigned int frameNo, cJSON *array)
         free(jsonString);
     }
 #endif
+}
+
+// images are dumped in BGRA format
+// to read/playback iamges:
+//  $ ffplay -f rawvideo -vcodec rawvideo -s 320x180 -pix_fmt bgra -i /tmp/yolo-out
+void dump_image(image im)
+{
+    static const char *yoloOutPipe = "/tmp/yolo-out";
+    if(image_pipe_ < 0)
+    {
+        create_pipe(yoloOutPipe);
+        image_pipe_ = open(yoloOutPipe, O_WRONLY|O_NONBLOCK|O_EXCL);
+    }
+
+    if (image_pipe_ < 0)
+    {
+        printf("couldn't open pipe %s: %s (%d). continue\n", 
+            yoloOutPipe, strerror(errno), errno);
+    }
+    else
+    {
+        image copy = copy_image(im);
+        if(im.c == 3) rgbgr_image(copy);
+        int x,y,k;
+
+        IplImage *disp = cvCreateImage(cvSize(im.w,im.h), IPL_DEPTH_8U, im.c);
+        int step = disp->widthStep;
+
+        for(y = 0; y < im.h; ++y)
+            for(x = 0; x < im.w; ++x)
+                for(k= 0; k < im.c; ++k)
+                    disp->imageData[y*step + x*im.c + k] = (unsigned char)(get_pixel(copy,x,y,k)*255);
+
+        writeExactly(disp->imageData, disp->imageSize, image_pipe_);
+        cvReleaseImage(&disp);
+    }
 }
 //******************************************************************************
 
@@ -401,21 +438,21 @@ void draw_detections_ndnrtc(image im, int num, float thresh, box *boxes, float *
             cJSON_AddItemToObject(item, "prob", cJSON_CreateNumber(prob));
             cJSON_AddItemToArray(annotations, item);
 
-            // draw_box_width(im, left, top, right, bot, width, red, green, blue);
-            // if (alphabet) {
-            //     image label = get_label(alphabet, names[class], (im.h*.03)/10);
-            //     draw_label(im, top + width, left, label, rgb);
-            //     free_image(label);
-            // }
-            // if (masks){
-            //     image mask = float_to_image(14, 14, 1, masks[i]);
-            //     image resized_mask = resize_image(mask, b.w*im.w, b.h*im.h);
-            //     image tmask = threshold_image(resized_mask, .5);
-            //     embed_image(tmask, im, left, top);
-            //     free_image(mask);
-            //     free_image(resized_mask);
-            //     free_image(tmask);
-            // }
+            draw_box_width(im, left, top, right, bot, width, red, green, blue);
+            if (alphabet) {
+                image label = get_label(alphabet, names[class], (im.h*.03)/10);
+                draw_label(im, top + width, left, label, rgb);
+                free_image(label);
+            }
+            if (masks){
+                image mask = float_to_image(14, 14, 1, masks[i]);
+                image resized_mask = resize_image(mask, b.w*im.w, b.h*im.h);
+                image tmask = threshold_image(resized_mask, .5);
+                embed_image(tmask, im, left, top);
+                free_image(mask);
+                free_image(resized_mask);
+                free_image(tmask);
+            }
         }
     }    
 
@@ -425,6 +462,8 @@ void draw_detections_ndnrtc(image im, int num, float thresh, box *boxes, float *
     }
     else
         printf("> nothing passed threshold %.2f (%d detected)\n", thresh, num);
+
+    dump_image(im);
 
     cJSON_Delete(annotations);
 }
