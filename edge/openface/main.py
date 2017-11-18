@@ -28,6 +28,21 @@ dumpSocket = None
 labelEncoder = None
 svc = None
 torchNn = None
+imagePipeName = '/tmp/openface-out'
+imagePipe = None
+
+def dumpImage(img):
+	global imagePipe, imagePipeName
+	if not imagePipe:
+		if not os.path.exists(imagePipeName):
+			os.mkfifo(imagePipeName, 0644)
+		imagePipe = os.open(imagePipeName, os.O_WRONLY)
+	else:
+		os.write(imagePipe, img.tobytes())
+
+def drawBox(img, rect, label):
+	cv2.rectangle(img, (rect.left(), rect.top()), (rect.right(), rect.bottom()), (0,0,255), 2)
+	cv2.putText(img,label,(rect.left(),rect.top()),cv2.FONT_HERSHEY_SIMPLEX,0.5,(255,255,0),1)
 
 def initClassifier(labelsFile, repsFile):
 	global svc, labelEncoder
@@ -72,6 +87,7 @@ def runClassifier(img, annotation, rect):
 	features = torchNn.forward(alignedImg)
 	# need to reshape features, as svc object expects 2d array, while features is 1d array
 	predictions = svc.predict_proba(features.reshape(1,-1)).ravel()
+	print "predictions "+str(predictions)
 	idx = np.argmax(predictions)
 	maxLikelihood = predictions[idx]
 	label = labelEncoder.inverse_transform(idx)
@@ -88,34 +104,37 @@ def processFrames(socket, frameWidth, frameHeight):
 	while True:
 		frameNumber, frame, err = readFrame(socket, frameSize)
 		if not err:
-			# print(" > read frame "+str(frameNumber)+" ("+str(len(frame))+" bytes)")
+			print(" > read frame "+str(frameNumber)+" ("+str(len(frame))+" bytes)")
 			imgARGB = np.frombuffer(frame, 'uint8').reshape(frameHeight, frameWidth, 4)
+			imgAlpha = np.zeros((frameHeight, frameWidth, 1), 'uint8')
 			imgBGR = np.zeros((frameHeight, frameWidth, 3), 'uint8')
-			cv2.mixChannels([imgARGB], [imgBGR], [1,2, 2,1, 3,0])
-			#cv2.imwrite('test-frame'+str(counter)+'.jpg', imgBGR)
-			#counter += 1
+			cv2.mixChannels([imgARGB], [imgBGR, imgAlpha], [1,2, 2,1, 3,0, 0,3])
+			# cv2.imwrite('test-frame'+str(counter)+'.jpg', imgBGR)
+			# counter += 1
 			# continue
 			# sys.exit(0)
 			p1 = datetime.datetime.now()
 			# we need to flip the image so that OpenFace can work properly
-			rects = dlibObject.getAllFaceBoundingBoxes(cv2.flip(imgBGR,0))
-			p2 = datetime.datetime.now()
-			delta = p2-p1
-			processingMs = int(delta.total_seconds() * 1000)
-			# print(" > open face processing took " + str(processingMs)+" ms")
+			flippedImg = cv2.flip(imgBGR,0)
+			rects = dlibObject.getAllFaceBoundingBoxes(flippedImg)
 
 			if len(rects) > 0:
-				# print(" > DETECTED "+str(len(rects))+" faces")
+				print(" > DETECTED "+str(len(rects))+" faces")
 				facesArray = []
 				for r in rects:
 					faceAnnotation = getAnnotationFromRect(r, frameWidth, frameHeight)
 					# run classifier, if probabilirt less than 50%, ignore classifier's data
-					faceAnnotation = runClassifier(imgBGR, faceAnnotation, r)
+					faceAnnotation = runClassifier(flippedImg, faceAnnotation, r)
+					p2 = datetime.datetime.now()
+					delta = p2-p1
+					processingMs = int(delta.total_seconds() * 1000)
+					print(" > open face processing took " + str(processingMs)+" ms")
 					facesArray.append(faceAnnotation)
+					drawBox(flippedImg, r, faceAnnotation['label'])
 				dumpAnnotations(frameNumber, facesArray)
 			else:
-				# print(" > no faces detected")
-				pass
+				print(" > no faces detected")
+			dumpImage(flippedImg)
 
 			# handy code to slice image into separate channels
 			# imgR = np.zeros((frameHeight, frameWidth, 1), 'uint8')
@@ -145,7 +164,7 @@ def main():
 		exit(2)
 	frameWidth=320
 	frameHeight=180
-	pipeName = "/tmp/mtcamera.320x180"
+	pipeName = "/tmp/mtcamera"
 	repsFile = None
 	labelsFile = None
 
@@ -168,6 +187,8 @@ def main():
 
 	if len(args) == 1:
 		pipeName = args[0]+"."+str(frameWidth)+"x"+str(frameHeight)
+	else:
+		pipeName += "."+str(frameWidth)+"x"+str(frameHeight)
 
 	s = Socket(SUB)
 	s.connect("ipc://"+pipeName)
@@ -185,7 +206,8 @@ def main():
 	print(" > ...done.")
 
 	print(" > initializing torch feature extractor...")
-	torchNn = openface.TorchNeuralNet(torchModelPath, imgDim=96)
+	# torchNn = openface.TorchNeuralNet(torchModelPath, imgDim=96)
+	torchNn = openface.TorchNeuralNet(torchModelPath, imgDim=96, cuda=True)
 	print(" > ...done.")
 
 	print(" > processing frames of size "+str(frameWidth)+"x"+str(frameHeight)+" from "+pipeName)
