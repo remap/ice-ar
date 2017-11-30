@@ -936,7 +936,9 @@ image load_raw_image_cv(char *filename, int w, int h, int channels, unsigned int
     IplImage* src= cvCreateImageHeader(size,IPL_DEPTH_8U,4);
     
     src->imageData = buffer;
-    
+    // flip vertically and hotrizontally
+    cvFlip(src, src, -1);
+
     image out = ipl_to_image(src);
 
     // save_image_jpg(out, "test-frame");

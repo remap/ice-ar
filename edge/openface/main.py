@@ -114,8 +114,8 @@ def processFrames(socket, frameWidth, frameHeight):
 			# continue
 			# sys.exit(0)
 			p1 = datetime.datetime.now()
-			# we need to flip the image so that OpenFace can work properly
-			flippedImg = cv2.flip(imgBGR,0)
+			# we need to flip (vertically&horizontally) the image so that OpenFace can work properly
+			flippedImg = cv2.flip(imgBGR,-1)
 			rects = dlibObject.getAllFaceBoundingBoxes(flippedImg)
 
 			if len(rects) > 0:
