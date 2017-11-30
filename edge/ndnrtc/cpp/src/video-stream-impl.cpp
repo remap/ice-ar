@@ -101,6 +101,15 @@ VideoStreamImpl::incomingFrame(const I420RawFrameWrapper& w)
 	return -1;
 }
 
+int 
+VideoStreamImpl::incomingFrame(const YUV_NV21FrameWrapper& w)
+{
+	LogDebugC << "⤹ incoming NV21 frame " << w.width_ << "x" << w.height_ << std::endl;
+	if (feedFrame(conv_ << w))
+		return (playbackCounter_-1);
+	return -1;
+}
+
 void VideoStreamImpl::setLogger(boost::shared_ptr<ndnlog::new_api::Logger> logger)
 {
 	boost::lock_guard<boost::mutex> scopedLock(internalMutex_);
@@ -226,7 +235,7 @@ void VideoStreamImpl::publish(map<string, FramePacketPtr>& frames)
 		CommonHeader packetHdr;
 		packetHdr.sampleRate_ = metaKeepers_[it.first]->getRate();
 		packetHdr.publishTimestampMs_ = clock::millisecondTimestamp();
-		packetHdr.publishUnixTimestampMs_ = clock::unixTimestamp();
+		packetHdr.publishUnixTimestamp_ = clock::unixTimestamp();
 
 		it.second->setSyncList(getCurrentSyncList(isKey));
 		it.second->setHeader(packetHdr);
