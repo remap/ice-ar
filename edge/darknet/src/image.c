@@ -141,7 +141,7 @@ void dump_annotations(unsigned int frameNo, cJSON *array)
 }
 
 // images are dumped in BGRA format
-// to read/playback iamges:
+// to read/playback images:
 //  $ ffplay -f rawvideo -vcodec rawvideo -s 320x180 -pix_fmt bgra -i /tmp/yolo-out
 void dump_image(image im)
 {

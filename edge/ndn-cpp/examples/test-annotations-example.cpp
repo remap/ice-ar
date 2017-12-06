@@ -412,7 +412,7 @@ std::string readAnnotations(int pipe, unsigned int &frameNo, std::string &engine
         string s(annStr);
         free(annStr);
 
-        cout << "> read annotations (frame " << frameNo << "): " << s << std::endl;
+        cout << "> read annotations (frame " << frameNo << ", engine " << engine << "): " << s << std::endl;
 
         return s;
       }
@@ -534,15 +534,19 @@ int main(int argc, char** argv)
       
       std::string engine;
       std::string annotations = readAnnotations(feature_pipe, frameNo, engine);
+
+      if (annotations !="")
+      {
 #ifdef DEBUG
-      io.dispatch([frameNo, annotations, &acquiredAnnotations](){
-        acquiredAnnotations.insert(std::pair<unsigned int, AnnotationArray>(frameNo, AnnotationArray(annotations)));
-      });
+        io.dispatch([frameNo, annotations, &acquiredAnnotations](){
+          acquiredAnnotations.insert(std::pair<unsigned int, AnnotationArray>(frameNo, AnnotationArray(annotations)));
+        });
 #else
-      io.dispatch([&apub, frameNo, annotations, engine](){
-        apub.publish(frameNo, AnnotationArray(annotations), engine);
-      });
+        io.dispatch([&apub, frameNo, annotations, engine](){
+          apub.publish(frameNo, AnnotationArray(annotations), engine);
+        }); 
 #endif
+      }
 
       if (!registrationResultSuccess)
         cout << "> prefix registration failed. data won't be served" << std::endl;

@@ -36,6 +36,11 @@ namespace op_ice
             mOsstream << value;
         }
 
+        inline void plainString(const std::string value)
+        {
+            mOsstream << "\"" + value + "\"";
+        }
+
         inline void comma()
         {
             mOsstream << ",";

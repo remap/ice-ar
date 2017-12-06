@@ -305,10 +305,10 @@ private:
 };
 
 // this will dump jsons to nanomsg socket
-class WJsonNanoOutput : public op::WorkerConsumer<std::shared_ptr<std::vector<IceDatum>>>
+class WJsonNanoWorker : public op::Worker<std::shared_ptr<std::vector<IceDatum>>>
 {
 public:
-    WJsonNanoOutput(const std::string &nanoPipeFilename):
+    WJsonNanoWorker(const std::string &nanoPipeFilename):
     mNanoSocket(ipc_setupPubSinkSocket(nanoPipeFilename.c_str()))
     {
         if (mNanoSocket < 0)
@@ -317,7 +317,7 @@ public:
 
     void initializationOnThread() {}
 
-    void workConsumer(const std::shared_ptr<std::vector<IceDatum>>& datumsPtr)
+    void work(std::shared_ptr<std::vector<IceDatum>>& datumsPtr)
     {
         try
         {
@@ -332,8 +332,13 @@ public:
 
                     op::log("Got "+std::to_string(jsonsArray.size())+" jsons: ", op::Priority::High);
                     for (auto jsonString:jsonsArray)
+                    {
                         op::log(jsonString, op::Priority::High);
+                        ipc_sendData(mNanoSocket, (void*)jsonString.c_str(), jsonString.size());
+                    }
                 }
+                else
+                    op::error("Failed to setup nanomsg socket", __LINE__, __FUNCTION__, __FILE__);
             }
         }
         catch (const std::exception& e)
@@ -342,6 +347,7 @@ public:
             op::error(e.what(), __LINE__, __FUNCTION__, __FILE__);
         }
     }
+
 private:
     int mNanoSocket;
 
@@ -359,7 +365,9 @@ private:
             };
             // Save keypoints
             std::string jsonString = saveKeypointsJson(tDatum.frameNumber, keypointVector);
-            jsonArray.push_back(jsonString);
+
+            if (jsonString != "")
+                jsonArray.push_back(jsonString);
         }
 
         return jsonArray;
@@ -375,6 +383,15 @@ private:
             for (const auto& keypointPair : keypointVector)
                 if (!keypointPair.first.empty() && keypointPair.first.getNumberDimensions() != 3 )
                     op::error("keypointVector.getNumberDimensions() != 3.", __LINE__, __FUNCTION__, __FILE__);
+
+            // Ger max numberPeople
+            auto numberPeople = 0;
+            for (auto vectorIndex = 0 ; vectorIndex < keypointVector.size() ; vectorIndex++)
+                numberPeople = op::fastMax(numberPeople, keypointVector[vectorIndex].first.getSize(0));
+
+            // if (numberPeople == 0);
+            //     return "";
+
             // Record frame on desired path
             jsonWriter.objectOpen();
             // Version
@@ -383,22 +400,19 @@ private:
             jsonWriter.comma();
 
             // frame number 
-            jsonWriter.key("frameNumber");
+            jsonWriter.key("frameNo");
             jsonWriter.plainText(frameNo);
             jsonWriter.comma();
 
             // engine
             jsonWriter.key("engine");
-            jsonWriter.plainText("openpose");
+            jsonWriter.plainString("openpose");
             jsonWriter.comma();
 
             // Bodies
-            jsonWriter.key("people");
+            jsonWriter.key("annotations");
             jsonWriter.arrayOpen();
-            // Ger max numberPeople
-            auto numberPeople = 0;
-            for (auto vectorIndex = 0 ; vectorIndex < keypointVector.size() ; vectorIndex++)
-                numberPeople = op::fastMax(numberPeople, keypointVector[vectorIndex].first.getSize(0));
+
             for (auto person = 0 ; person < numberPeople ; person++)
             {
                 jsonWriter.objectOpen();
@@ -502,17 +516,18 @@ int openPoseTutorialWrapper2()
     auto wPipeOutput = std::make_shared<WPipeOutput>("/tmp/openpose-out");
 
     // Json nanomsg socket output
-    auto wJsonNanoOutput = std::make_shared<WJsonNanoOutput>("/tmp/ice-annotations");
+    auto wJsonNanoWriter = std::make_shared<WJsonNanoWorker>("/tmp/ice-annotations");
 
     op::Wrapper<std::vector<IceDatum>> opWrapper;
     // Add custom input
     const auto workerInputOnNewThread = false;
     opWrapper.setWorkerInput(wNanoInput, workerInputOnNewThread);
     
+    // Add processing (Json to nano socket writer)
+    opWrapper.setWorkerPostProcessing(wJsonNanoWriter, false);
+
     // Add custom output
-    const auto workerOutputOnNewThread = true;
-    opWrapper.setWorkerOutput(wPipeOutput, workerOutputOnNewThread);
-    // opWrapper.setWorkerOutput(wJsonNanoOutput, false);
+    opWrapper.setWorkerOutput(wPipeOutput, true);
 
     // Configure OpenPose
     op::log("Configuring OpenPose wrapper.", op::Priority::Low, __LINE__, __FUNCTION__, __FILE__);
