@@ -84,9 +84,9 @@ static int feature_socket_ = -1; // yolo->ndnrtc: publish features
 
 // #endif
 
-void dump_annotations(unsigned int frameNo, cJSON *array)
+void dump_annotations(unsigned int frameNo, cJSON *array, const char *filename)
 {
-    const char *annotationsPipe = "/tmp/ice-annotations";
+    const char *annotationsPipe = filename;
 
 #ifndef USE_NANOMSG
     // Write the features to the pipe
@@ -141,11 +141,10 @@ void dump_annotations(unsigned int frameNo, cJSON *array)
 }
 
 // images are dumped in BGRA format
-// to read/playback images:
-//  $ ffplay -f rawvideo -vcodec rawvideo -s 320x180 -pix_fmt bgra -i /tmp/yolo-out
-void dump_image(image im)
+void dump_image(image im, const char *filename)
 {
-    static const char *yoloOutPipe = "/tmp/yolo-out";
+    const char *yoloOutPipe = filename;
+
     if(image_pipe_ < 0)
     {
         create_pipe(yoloOutPipe);
@@ -370,7 +369,8 @@ image **load_alphabet()
     return alphabets;
 }
 
-void draw_detections_ndnrtc(image im, int num, float thresh, box *boxes, float **probs, float **masks, char **names, image **alphabet, int classes, unsigned int frameNo)
+void draw_detections_ndnrtc(image im, int num, float thresh, box *boxes, float **probs, float **masks, char **names, 
+    image **alphabet, int classes, unsigned int frameNo, const char *annotationsFile, const char *previewFile)
 {
     int i;
     cJSON *annotations = cJSON_CreateArray();
@@ -458,12 +458,12 @@ void draw_detections_ndnrtc(image im, int num, float thresh, box *boxes, float *
 
     if (cJSON_GetArraySize(annotations) > 0)
     {
-        dump_annotations(frameNo, annotations);
+        dump_annotations(frameNo, annotations, annotationsFile);
     }
     else
         printf("> nothing passed threshold %.2f (%d detected)\n", thresh, num);
 
-    dump_image(im);
+    dump_image(im, previewFile);
 
     cJSON_Delete(annotations);
 }
@@ -936,7 +936,7 @@ image load_raw_image_cv(char *filename, int w, int h, int channels, unsigned int
     IplImage* src= cvCreateImageHeader(size,IPL_DEPTH_8U,4);
     
     src->imageData = buffer;
-    // flip vertically and hotrizontally
+    // flip vertically and horizontally
     cvFlip(src, src, -1);
 
     image out = ipl_to_image(src);

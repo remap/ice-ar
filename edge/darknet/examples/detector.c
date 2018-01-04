@@ -652,11 +652,16 @@ void test_detector(char *datacfg, char *cfgfile, char *weightfile, char *filenam
 
 
 
-void ndnrtc_detector(char *datacfg, char *cfgfile, char *weightfile, char *filename, int frame_width, int frame_height, float thresh, float hier_thresh, char *outfile, int fullscreen)
+void ndnrtc_detector(char *datacfg, char *cfgfile, char *weightfile, char *filename, 
+    int frame_width, int frame_height, float thresh, float hier_thresh, 
+    char *outfile, int fullscreen,
+    char *output, char *preview)
 {
     list *options = read_data_cfg(datacfg);
     char *name_list = option_find_str(options, "names", "data/names.list");
     char **names = get_labels(name_list);
+    char *annotationsFile = (output ? output : "/tmp/ice-annotations");
+    char *previewFile = (preview ? preview : "/tmp/yolo-out");
 
     image **alphabet = load_alphabet();
     network net = parse_network_cfg(cfgfile);
@@ -677,6 +682,9 @@ void ndnrtc_detector(char *datacfg, char *cfgfile, char *weightfile, char *filen
     // strncpy(input, filename, 256);
     sprintf(input, "%s.%dx%d", filename, frame_width, frame_height);
     printf("> listening for incoming raw frames on %s\n", input);
+    printf("> dumping annotations to %s\n", annotationsFile);
+    printf("> see preview at %s (ffplay -f rawvideo -vcodec rawvideo -s %dx%d -pix_fmt bgra -i %s)\n", 
+            previewFile, frame_width, frame_height, previewFile);
 
     while(1){
 
@@ -701,17 +709,9 @@ void ndnrtc_detector(char *datacfg, char *cfgfile, char *weightfile, char *filen
         get_region_boxes(l, im.w, im.h, net.w, net.h, thresh, probs, boxes, masks, 0, 0, hier_thresh, 1);
         if (nms) do_nms_obj(boxes, probs, l.w*l.h*l.n, l.classes, nms);
         //else if (nms) do_nms_sort(boxes, probs, l.w*l.h*l.n, l.classes, nms);
-        draw_detections_ndnrtc(im, l.w*l.h*l.n, thresh, boxes, probs, masks, names, alphabet, l.classes, frameNo);
-        if(outfile){
-            save_image(im, outfile);
-        }
-        else{
-            save_image(im, "ndnrtc");
-#ifdef OPENCV
-            // show_image(im, "ndnrtc");
-            // display_in_ndnrtc(im);
-#endif
-        }
+
+        draw_detections_ndnrtc(im, l.w*l.h*l.n, thresh, boxes, probs, masks, names, alphabet, l.classes, frameNo,
+            annotationsFile, previewFile);
 
         free_image(im);
         free_image(sized);
@@ -767,10 +767,14 @@ void run_detector(int argc, char **argv)
     int height = find_int_arg(argc, argv, "-h", 0);
     int fps = find_int_arg(argc, argv, "-fps", 0);
 
+    char *previewfile = find_char_arg(argc, argv, "-preview", 0);
+    char *output = find_char_arg(argc, argv, "-output", 0);
+    char *filename = find_char_arg(argc, argv, "-input", 0);
+
     char *datacfg = argv[3];
     char *cfg = argv[4];
     char *weights = (argc > 5) ? argv[5] : 0;
-    char *filename = (argc > 6) ? argv[6]: 0;
+
     if(0==strcmp(argv[2], "test")) test_detector(datacfg, cfg, weights, filename, thresh, hier_thresh, outfile, fullscreen);
     else if(0==strcmp(argv[2], "train")) train_detector(datacfg, cfg, weights, gpus, ngpus, clear);
     else if(0==strcmp(argv[2], "valid")) validate_detector(datacfg, cfg, weights, outfile);
@@ -785,6 +789,6 @@ void run_detector(int argc, char **argv)
     }
     else if(0==strcmp(argv[2], "ndnrtc")){
         //NDNRTC-specific detector: Read ARGB frame from pipe, detect each frame
-        ndnrtc_detector(datacfg, cfg, weights, filename, width, height, thresh, hier_thresh, outfile, fullscreen);
+        ndnrtc_detector(datacfg, cfg, weights, filename, width, height, thresh, hier_thresh, outfile, fullscreen, NULL, NULL);
     }
 }
