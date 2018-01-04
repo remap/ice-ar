@@ -81,6 +81,10 @@ public class NdnRtcWrapper
 	[DllImport ("ndnrtc")]
 	public static extern int ndnrtc_LocalVideoStream_incomingNV21Frame (IntPtr stream, 
 		uint width, uint height, uint strideY, uint strideUV, IntPtr yPlane, IntPtr uvPlane);
+
+	[DllImport ("ndnrtc")]
+	public static extern int ndnrtc_LocalVideoStream_incomingARGBFrame (IntPtr stream,
+	    uint width, uint height, IntPtr argbFrameData, uint frameSize);
 }
 
 public class LocalVideoStream
