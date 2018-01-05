@@ -23,6 +23,7 @@ from sklearn import svm
 
 dlibModelPath = '/home/peter/openface/models/dlib/shape_predictor_68_face_landmarks.dat'
 torchModelPath = '/home/peter/openface/models/openface/nn4.small2.v1.t7'
+
 dlibObject = None
 dumpSocket = None
 labelEncoder = None
@@ -151,13 +152,13 @@ def processFrames(socket, frameWidth, frameHeight):
 
 #******************************************************************************
 def usage():
-	print "\t"+sys.argv[0]+" [--frame-width=, --frame-height=] --labels=<labels file>, --reps=<reps file> [pipe file]"
+	print "\t"+sys.argv[0]+" [--frame-width=, --frame-height=, --input=, --output=, --preview=] --dlibmodel=<dlib model path> --torchmodel=<torch model path> --labels=<labels file>, --reps=<reps file> [pipe file]"
 	print "usage: "
 
 def main():
-	global dlibObject, dumpSocket, torchNn, torchModelPath
+	global dlibObject, dumpSocket, torchNn, torchModelPath, imagePipeName, dlibModelPath
 	try:
-		opts, args = getopt.getopt(sys.argv[1:], "w:h:", ["frame-width=", "frame-height=", "labels=", "reps="])
+		opts, args = getopt.getopt(sys.argv[1:], "w:h:", ["frame-width=", "frame-height=", "labels=", "reps=", "input=", "output=", "preview=", "dlibmodel=", "torchmodel="])
 	except getopt.GetoptError as err:
 		print str(err)
 		usage()
@@ -165,6 +166,7 @@ def main():
 	frameWidth=320
 	frameHeight=180
 	pipeName = "/tmp/mtcamera"
+	outputName = "/tmp/ice-annotations"
 	repsFile = None
 	labelsFile = None
 
@@ -177,6 +179,16 @@ def main():
 			labelsFile = a
 		elif o in ("--reps"):
 			repsFile = a
+		elif o in ("--input"):
+			pipeName = a
+		elif o in ("--output"):
+			outputName = a
+		elif o in ("--preview"):
+			imagePipeName = a
+		elif o in ("--dlibmodel"):
+			dlibModelPath = a
+		elif o in ("--torchmodel"):
+			torchModelPath = a
 		else:
 			assert False, "unhandled option "+ o
 
@@ -195,7 +207,16 @@ def main():
 	s.set_string_option(SUB, SUB_SUBSCRIBE, '')
 
 	dumpSocket = Socket(PUB)
-	dumpSocket.connect("ipc:///tmp/ice-annotations")
+	dumpSocket.connect("ipc://"+outputName)
+
+	print " > reading frames " + str(frameWidth) + "x" + str(frameHeight) + " from "+pipeName
+	print " > writing annotations to "+outputName
+	print " > preview at " + imagePipeName + " (ffplay -f rawvideo -vcodec rawvideo -s " + str(frameWidth) + "x" + str(frameHeight) + " -pix_fmt bgr24 -i " + imagePipeName + ")"
+	print " > loading dlib model from " + dlibModelPath
+	print " > loading torch model from " + torchModelPath
+	print " > reps file " + repsFile
+	print " > labels file " + labelsFile
+	print ""
 
 	print(" > initializing OpenFace...")
 	dlibObject=openface.AlignDlib(dlibModelPath)
@@ -206,7 +227,6 @@ def main():
 	print(" > ...done.")
 
 	print(" > initializing torch feature extractor...")
-	# torchNn = openface.TorchNeuralNet(torchModelPath, imgDim=96)
 	torchNn = openface.TorchNeuralNet(torchModelPath, imgDim=96, cuda=True)
 	print(" > ...done.")
 
