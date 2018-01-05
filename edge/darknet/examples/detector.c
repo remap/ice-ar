@@ -789,6 +789,6 @@ void run_detector(int argc, char **argv)
     }
     else if(0==strcmp(argv[2], "ndnrtc")){
         //NDNRTC-specific detector: Read ARGB frame from pipe, detect each frame
-        ndnrtc_detector(datacfg, cfg, weights, filename, width, height, thresh, hier_thresh, outfile, fullscreen, NULL, NULL);
+        ndnrtc_detector(datacfg, cfg, weights, filename, width, height, thresh, hier_thresh, outfile, fullscreen, output, previewfile);
     }
 }
