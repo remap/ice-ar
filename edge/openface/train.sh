@@ -19,6 +19,14 @@
 
 FACES_FOLDER=$1
 
-echo "> processing faces from ${FACES_FOLDER}..."
-/openface/util/align-dlib.py $FACES_FOLDER outerEyesAndNose /aligned --verbose
-/openface/batch-represent/main.lua -outDir /reps -data /aligned
+if [ -z "$FACES_FOLDER" ]
+then
+	echo "usage: $0 <faces folder>"
+	exit 1
+else
+
+	echo "> processing faces from ${FACES_FOLDER}..."
+	/openface/util/align-dlib.py $FACES_FOLDER outerEyesAndNose /aligned --verbose
+	/openface/batch-represent/main.lua -outDir /reps -data /aligned
+
+fi
