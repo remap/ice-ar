@@ -17,14 +17,15 @@ RUN git clone --recursive https://github.com/remap/ice-ar
 RUN cd /ice-ar/edge/darknet && make
 
 RUN cd /ice-ar/edge/darknet && wget https://pjreddie.com/media/files/yolo.weights
-RUN rm -Rf cmake-* nanomsg && apt-get remove -y wget
+RUN rm -Rf cmake-* nanomsg && apt-get remove -y wget git
+RUN mkdir /in /out /preview
 
 ENV LD_LIBRARY_PATH=/usr/local/lib
 
-ENV INPUT=/tmp/mtcamera
+ENV INPUT=/in/mtcamera
 ENV FRAME_WIDTH=320
 ENV FRAME_HEIGHT=180
-ENV OUTPUT=/tmp/ice-annotations
-ENV PREVIEW=/tmp/yolo-out
+ENV OUTPUT=/out/ice-annotations
+ENV PREVIEW=/preview/yolo-out
 
 CMD cd /ice-ar/edge/darknet && ./darknet detector ndnrtc cfg/coco.data cfg/yolo.cfg yolo.weights -input $INPUT -w $FRAME_WIDTH -h $FRAME_HEIGHT -output $OUTPUT -preview $PREVIEW
