@@ -26,6 +26,7 @@ then
 else
 
 	echo "> processing faces from ${FACES_FOLDER}..."
+	. /distro/install/bin/torch-activate
 	/openface/util/align-dlib.py $FACES_FOLDER align outerEyesAndNose /aligned --verbose
 	/openface/batch-represent/main.lua -outDir /reps -data /aligned
 
