@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 
 # 1st argument - folder with subfolders with face images
 # each subfolder name - person's name (or ID) which will be used as a label
@@ -26,7 +26,7 @@ then
 else
 
 	echo "> processing faces from ${FACES_FOLDER}..."
-	/openface/util/align-dlib.py $FACES_FOLDER outerEyesAndNose /aligned --verbose
+	/openface/util/align-dlib.py $FACES_FOLDER align outerEyesAndNose /aligned --verbose
 	/openface/batch-represent/main.lua -outDir /reps -data /aligned
 
 fi

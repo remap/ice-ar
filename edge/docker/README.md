@@ -1,0 +1,1 @@
+This is a base Docker image for individual Docker containers (OpenFace, YOLO, OpenPose). It has common prerequisites and aims at speeding up `docker build` process.
