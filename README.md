@@ -49,8 +49,21 @@ The diagram below shows how these modules interoperate:
 
 #### Yolo processing
 
+To run YOLO container, one must install Docker [nvidia-runtime](https://github.com/NVIDIA/nvidia-docker) on their machine, in order to benefit from GPU acceleration.
+As was explained earlier, container takes raw video as an input and outputs annotations as JSON arrays. It also provides output as raw video with bounding boxes rendered, for preview purposes. All these inputs and outputs can be configured and have default values (can be found in YOLO [Dockerfile](edge/darknet/docker/Dockerfile#L15)). Here is the description of each variable:
+
+- `INPUT` -- file/unix socket to read raw video from;
+- `FRAME_WIDTH` -- video frame width;
+- `FRAME_HEIGHT` -- video frame height;
+- `OUTPUT` -- file/unix socket to write JSON annotations to;
+- `PREVIEW` -- file/unix socket to write preview video (with rendered annotations boxes) to.
+
+The following command can be used to start YOLO container (it is assumed, however, that incoming video is written to a file in `/tmp` folder on host machine; frame size is default as defined by Dockerfile and annotations output and preview files must be written to `/tmp` folder on host machine):
+
 ```
- docker run --runtime=nvidia -it --name yolo -a stdout -v /tmp:/in -v /tmp:/out -v /tmp:/preview peetonn/ice-ar:yolo
+ docker run --runtime=nvidia -it --name yolo -a stdout \
+    -v /tmp:/in -v /tmp:/out -v /tmp:/preview \
+    peetonn/ice-ar:yolo
 ```
 
 #### OpenFace processing
