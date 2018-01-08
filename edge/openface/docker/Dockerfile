@@ -29,4 +29,4 @@ ENV LABELS=/reps/labels.csv
 ENV REPS=/reps/reps.csv
 ENV TRAIN_FOLDER=/faces
 
-CMD /ice-ar/edge/openface/train.sh $TRAIN_FOLDER
+COPY run.sh /

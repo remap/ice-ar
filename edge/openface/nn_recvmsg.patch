@@ -1,0 +1,424 @@
+diff --git a/_nanomsg_ctypes/__init__.py b/_nanomsg_ctypes/__init__.py
+index 43aefc1..b9212bd 100644
+--- a/_nanomsg_ctypes/__init__.py
++++ b/_nanomsg_ctypes/__init__.py
+@@ -5,6 +5,26 @@ import ctypes
+ import platform
+ import sys
+ 
++class NN_IOVEC(ctypes.Structure):
++    _fields_ = [("iov_base", ctypes.c_void_p),
++                ("iov_len", ctypes.c_size_t)]
++
++class NN_MSGHDR(ctypes.Structure):
++    _fields_ = [("msg_iov", ctypes.POINTER(NN_IOVEC)), # ctypes.c_void_p),
++                ("msg_iovlen", ctypes.c_int),
++                ("msg_control", ctypes.c_void_p),
++                ("msg_controllen", ctypes.c_size_t)]
++
++    def __init__(self, iovecList):
++        elems = (NN_IOVEC * len(iovecList))()
++        self.msg_iovlen = len(iovecList)
++        self.msg_iov = ctypes.cast(elems, ctypes.POINTER(NN_IOVEC))
++        for i in range(0, len(iovecList)):
++            self.msg_iov[i].iov_base = iovecList[i].iov_base
++            self.msg_iov[i].iov_len = iovecList[i].iov_len
++        self.msg_controllen = 0
++        self.msg_control = 0
++
+ if sys.platform in ('win32', 'cygwin'):
+     _functype = ctypes.WINFUNCTYPE
+     _lib = ctypes.windll.nanomsg
+@@ -33,7 +53,7 @@ def _c_func_wrapper_factory(cdecl_text):
+             'void *': ctypes.c_void_p,
+             'size_t':  ctypes.c_size_t,
+             'size_t *':  ctypes.POINTER(ctypes.c_size_t),
+-            'struct nn_msghdr *': ctypes.c_void_p,
++            'struct nn_msghdr *': ctypes.POINTER(NN_MSGHDR),
+             'struct nn_pollfd *': ctypes.c_void_p,
+         }
+         type_def_without_const = type_def.replace('const ','')
+@@ -130,7 +150,6 @@ nn_connect.__doc__ = "add a remote endpoint to the socket"
+ nn_shutdown = _nn_shutdown
+ nn_shutdown.__doc__ = "remove an endpoint from a socket"
+ 
+-
+ def create_writable_buffer(size):
+     """Returns a writable buffer.
+ 
+@@ -263,6 +282,33 @@ def nn_recv(socket, *args):
+         rtn = _nn_recv(socket, ctypes.addressof(msg_buf), len(mv_buf), flags)
+         return rtn, msg_buf
+ 
++def nn_recvmsg(socket, sizes = None):
++    "receive message/messages"
++    if sizes:
++        iovecList = []
++        buffers = []
++        for sz in sizes:
++            iovec = NN_IOVEC()
++            iovec.iov_len = sz
++            buf = bytearray(sz)
++            buffers.append(buf)
++            ctypesBuf = (ctypes.c_char * len(buf)).from_buffer(buf)
++            iovec.iov_base = ctypes.c_void_p(ctypes.addressof(ctypesBuf))
++            iovecList.append(iovec)
++        msgHdr = NN_MSGHDR(iovecList)
++        if isinstance(socket, int): 
++            fd = socket
++        else:
++            fd = socket.fd
++        rtn = _nn_recvmsg(fd, ctypes.pointer(msgHdr), 0)
++        if rtn < 0 :
++            return None, None, nn_strerror(nn_errno())
++        else:
++            res = buffers
++            res.append(None)
++            return tuple(res)
++    else:
++        pass # tbd
+ 
+ nn_device = _nn_device
+ nn_device.__doc__ = "start a device"
+diff --git a/test/cpp-test/ipc-shim.c b/test/cpp-test/ipc-shim.c
+new file mode 100644
+index 0000000..e3041f1
+--- /dev/null
++++ b/test/cpp-test/ipc-shim.c
+@@ -0,0 +1,146 @@
++// 
++// ipc-shim.c
++//
++// Copyright (c) 2017. Peter Gusev. All rights reserved
++//
++
++#include <nanomsg/nn.h>
++#include <nanomsg/pubsub.h>
++#include <string.h>
++#include <stdio.h>
++#include <stdlib.h>
++
++#include "ipc-shim.h"
++
++int ipc_setupSocket(const char* handle, int isPub, int isBind)
++{
++	int socket = nn_socket (AF_SP, (isPub == 1 ? NN_PUB : NN_SUB));
++
++	if (isPub != 1) // set receive all messages is SUB
++		nn_setsockopt (socket, NN_SUB, NN_SUB_SUBSCRIBE, "", 0);
++
++	if (socket >= 0)
++	{
++		char str[256];
++		memset(str,0,256);
++		sprintf(str, "ipc://%s", handle);
++
++		int endpoint = (isBind ? nn_bind(socket, str) : nn_connect(socket, str));
++		if (endpoint < 0) return -1;
++	}
++	return socket;
++}
++
++int ipc_shutdownSocket(int socket)
++{
++	return nn_close(socket);
++}
++
++int ipc_setupBroadcasterSocket(const char* handle)
++{
++	return ipc_setupSocket(handle, 1, 1);
++}
++
++int ipc_setupListenerSocket(const char* handle)
++{
++	return ipc_setupSocket(handle, 0, 0);
++}
++
++int ipc_setupEmitterSocket(const char* handle)
++{
++	return ipc_setupSocket(handle, 1, 0);
++}
++
++int ipc_setupAggregatorSocket(const char* handle)
++{
++	return ipc_setupSocket(handle, 0, 1);
++}
++
++int ipc_sendData(int socket, void *buffer, size_t bufferLen)
++{
++	struct nn_msghdr msgHdr;
++	struct nn_iovec iov;
++
++	void *b = nn_allocmsg(bufferLen, 0); // it will be deallocated automatically upon successfull send
++	memcpy(b, buffer, bufferLen);
++
++	iov.iov_base = &b; // this is curious (pointer of a pointer)
++	iov.iov_len = NN_MSG;
++	memset(&msgHdr, 0, sizeof(msgHdr));
++	msgHdr.msg_iov = &iov;
++	msgHdr.msg_iovlen = 1;
++
++	int ret = nn_sendmsg(socket, &msgHdr, NN_DONTWAIT);
++
++	if (ret < 0)
++		free(b);
++
++	return ret;
++}
++
++int ipc_sendFrame(int socket, unsigned int frameNo, void *buffer, size_t bufferLen)
++{
++	struct nn_msghdr msgHdr;
++	struct nn_iovec iov[2];
++
++	iov[0].iov_base = &frameNo;
++	iov[0].iov_len = sizeof(frameNo);
++	iov[1].iov_base = buffer;
++	iov[1].iov_len = bufferLen;
++	memset(&msgHdr, 0, sizeof(msgHdr));
++	msgHdr.msg_iov = iov;
++	msgHdr.msg_iovlen = 2;
++
++	return nn_sendmsg(socket, &msgHdr, NN_DONTWAIT);
++}
++
++int ipc_readData(int socket, void **buffer)
++{
++	struct nn_msghdr msgHdr;
++	struct nn_iovec iov;
++
++	void *b;
++
++	iov.iov_base = &b;
++	iov.iov_len = NN_MSG;
++	memset(&msgHdr, 0, sizeof(msgHdr));
++	msgHdr.msg_iov = &iov;
++	msgHdr.msg_iovlen = 1;
++
++	int ret = nn_recvmsg(socket, &msgHdr, 0);
++
++	if (ret > 0)
++	{
++		*buffer = malloc(ret);
++		memcpy(*buffer, b, ret);
++		nn_freemsg(b);
++	}
++
++	return ret;
++}
++
++int ipc_readFrame(int socket, unsigned int *frameNo, void *buffer, size_t bufferLen)
++{
++	struct nn_msghdr msgHdr;
++	struct nn_iovec iov[2];
++
++	iov[0].iov_base = frameNo;
++	iov[0].iov_len = sizeof(unsigned int);
++	iov[1].iov_base = buffer;
++	iov[1].iov_len = bufferLen;
++	memset(&msgHdr, 0, sizeof(msgHdr));
++	msgHdr.msg_iov = iov;
++	msgHdr.msg_iovlen = 2;
++
++	return nn_recvmsg(socket, &msgHdr, 0);
++}
++
++const int ipc_lastErrorCode()
++{
++	return nn_errno();
++}
++
++const char* ipc_lastError()
++{
++	return nn_strerror(nn_errno());
++}
+\ No newline at end of file
+diff --git a/test/cpp-test/ipc-shim.h b/test/cpp-test/ipc-shim.h
+new file mode 100644
+index 0000000..e2484fc
+--- /dev/null
++++ b/test/cpp-test/ipc-shim.h
+@@ -0,0 +1,42 @@
++// 
++// ipc-shim.h
++//
++// Copyright (c) 2017. Peter Gusev. All rights reserved
++//
++
++#ifndef __ipc_shim_h__
++#define __ipc_shim_h__
++
++#ifdef __cplusplus
++extern "C" {
++#endif
++
++// 1-to-many socket with pub protocol
++int ipc_setupBroadcasterSocket(const char* handle);
++// 1-to-many socket with sub protocol
++int ipc_setupListenerSocket(const char* handle);
++// many-to-1 pub socket
++int ipc_setupEmitterSocket(const char* handle);
++// many-to-1 sub socket
++int ipc_setupAggregatorSocket(const char* handle);
++
++int ipc_shutdownSocket(int socket);
++
++// send data
++int ipc_sendData(int socket, void *buffer, size_t bufferLen);
++int ipc_sendFrame(int socket, unsigned int frameNo, void *buffer, size_t bufferLen);
++
++// receive data 
++// - buffer will be allocated inside readData
++// - client code must free the buffer
++int ipc_readData(int socket, void **buffer);
++int ipc_readFrame(int socket, unsigned int *frameNo, void *buffer, size_t bufferLen);
++
++const int ipc_lastErrorCode();
++const char* ipc_lastError();
++
++#ifdef __cplusplus
++}
++#endif
++
++#endif
+\ No newline at end of file
+diff --git a/test/cpp-test/reader.cpp b/test/cpp-test/reader.cpp
+new file mode 100644
+index 0000000..1343ffd
+--- /dev/null
++++ b/test/cpp-test/reader.cpp
+@@ -0,0 +1,48 @@
++// build as:
++// g++ reader.cpp ipc-shim.c -o reader -I/usr/local/include -L/usr/local/lib/ -lnanomsg
++#include <stdio.h>
++#include <iostream>
++#include <unistd.h>
++#include <string.h>
++#include <stdlib.h>
++
++#include "ipc-shim.h"
++
++using namespace std;
++
++#define IPC_SHMEM "/tmp/testnano"
++
++int main(){
++
++	cout << "> creating subscribe socket..." << endl;
++	int socket = ipc_setupListenerSocket(IPC_SHMEM);
++	// int socket = ipc_setupSubSourceSocket(IPC_SHMEM);
++
++	cout << "> socket " << socket << endl;
++
++	if (socket >= 0)
++	{
++		cout << "> start feeding data" << endl;
++
++		unsigned int frameSize = 360*240*4;
++		unsigned int frameNo = 0;
++		void *frame = malloc(frameSize);
++
++		while (1)
++		{
++			
++			int ret = ipc_readFrame(socket, &frameNo, frame, frameSize);
++			
++			if (ret > 0)
++				cout << "> received " << ret << " bytes. frame #" << frameNo << endl;
++			else
++				cout << "> error pushing frame " << frameNo << ": " 
++					<< ipc_lastError() << " (" << ipc_lastErrorCode() << ")" << endl;
++		}
++	}
++	else
++		cout << "> error creating socket: " << ipc_lastError() << " (" << ipc_lastErrorCode() << ")" << endl;
++
++
++	return 0;
++}
+\ No newline at end of file
+diff --git a/test/cpp-test/writer.cpp b/test/cpp-test/writer.cpp
+new file mode 100644
+index 0000000..5a99df9
+--- /dev/null
++++ b/test/cpp-test/writer.cpp
+@@ -0,0 +1,54 @@
++// build as:
++// g++ writer.cpp ipc-shim.c -o writer -I/usr/local/include -L/usr/local/lib/ -lnanomsg
++#include <stdio.h>
++#include <iostream>
++#include <unistd.h>
++#include <stdlib.h>
++
++#include "ipc-shim.h"
++
++using namespace std;
++
++#define IPC_SHMEM "/tmp/testnano"
++
++int main(){
++
++	cout << "> creating publish socket..." << endl;
++	int socket = ipc_setupBroadcasterSocket(IPC_SHMEM);
++	// int socket = ipc_setupPubSinkSocket(IPC_SHMEM);
++
++	cout << "> socket " << socket << endl;
++
++	if (socket >= 0)
++	{
++		cout << "> start feeding data" << endl;
++
++		int frameSize = 360*240*4;
++		int frameNo = 0;
++		void *frame = malloc(frameSize);
++
++		while (1)
++		{
++			
++			for (int i = 0; i < frameSize; ++i)
++				((char*)frame)[i] = (char)i%255;
++
++			int ret = ipc_sendFrame(socket, frameNo, frame, frameSize);
++			
++			if (ret > 0)
++				cout << "> pushed frame "<< frameNo << endl;
++			else
++				cout << "> error pushing frame " << frameNo << ": " 
++					<< ipc_lastError() << " (" << ipc_lastErrorCode() << ")" << endl;
++
++			frameNo++;
++			usleep(100000);
++
++			std::cin.get();
++		}
++	}
++	else
++		cout << "> error creating socket: " << ipc_lastError() << " (" << ipc_lastErrorCode() << ")" << endl;
++
++	return 0;
++}
+\ No newline at end of file
+diff --git a/test/test.py b/test/test.py
+new file mode 100755
+index 0000000..e65b816
+--- /dev/null
++++ b/test/test.py
+@@ -0,0 +1,18 @@
++#!/usr/bin/python
++
++from nanomsg import *
++import _nanomsg_ctypes as nnc
++import struct
++
++with Socket(SUB) as s:
++	s.connect("ipc:///tmp/testnano")
++	s.set_string_option(SUB, SUB_SUBSCRIBE, '')
++	frameSize = 324*240*4
++	while True:
++		frameNoBuf, frame, err = nnc.nn_recvmsg(s, [4, frameSize])
++		frameNo, = struct.unpack('<L', frameNoBuf)
++		if not err:
++			print "frameNo "+ str(frameNo) + " and frame data (" + str(len(frame)) + " bytes) received"
++		else:
++			print "error reading from socket: "+str(err)
++
