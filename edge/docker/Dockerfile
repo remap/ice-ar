@@ -10,5 +10,8 @@ RUN cd /nanomsg && ./configure && make && make install
 RUN rm -Rf /nanomsg
 
 RUN git clone https://github.com/tonysimpson/nanomsg-python.git
-RUN cd /nanomsg-python && python setup.py install
+RUN cd /nanomsg-python \
+	&& wget https://raw.githubusercontent.com/remap/ice-ar/master/edge/openface/nn_recvmsg.patch . \
+	&& git apply nn_recvmsg.patch \
+	&& python setup.py install
 RUN rm -Rf /nanomsg-python
