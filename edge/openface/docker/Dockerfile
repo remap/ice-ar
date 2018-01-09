@@ -20,7 +20,7 @@ RUN git clone --recursive https://github.com/cmusatyalab/openface.git \
 	&& ./get-models.sh
 
 RUN DEBUG_VER=${DEBUG_VER} git clone --recursive https://github.com/remap/ice-ar
-RUN apt-get remove -y git cmake wget lsb-release python-pip gawk
+RUN apt-get remove -y git cmake wget lsb-release python-pip
 
 ENV LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/usr/local/lib
 
