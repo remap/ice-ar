@@ -161,7 +161,9 @@ DEFINE_string(write_heatmaps_format,    "png",          "File extension and form
 
 DEFINE_int32(frame_width,               320,            "Frame width");
 DEFINE_int32(frame_height,              240,            "Frame height");
-DEFINE_string(frame_source,             "/tmp/mtcamera","Frame source pipe");
+DEFINE_string(frame_source,             "/tmp/mtcamera",            "Frame source pipe");
+DEFINE_string(annotations_dest,         "/tmp/ice-annotations",     "Annotations destination");
+DEFINE_string(preview,                  "/tmp/openpose-out",        "Preview destination");
 
 // If the user needs his own variables, he can inherit the op::Datum struct and add them
 // IceDatum can be directly used by the OpenPose wrapper because it inherits from op::Datum, just define
@@ -473,12 +475,16 @@ int openPoseTutorialWrapper2()
     const int frameWidth = FLAGS_frame_width;
     const int frameHeight = FLAGS_frame_height;
     const auto frameSource = FLAGS_frame_source;
+    const auto annotationsDest = FLAGS_annotations_dest;
+    const auto preview = FLAGS_preview;
 
     std::stringstream ss;
     ss << frameSource << "." << frameWidth << "x" << frameHeight;
     auto nanoPipeFilename = ss.str();
 
     op::log("Reading frames from "+nanoPipeFilename, op::Priority::High);
+    op::log("Writing annotations to "+annotationsDest, op::Priority::High);
+    op::log("Streaming preview to "+preview, op::Priority::High);
 
     const auto timerBegin = std::chrono::high_resolution_clock::now();
 
@@ -513,10 +519,10 @@ int openPoseTutorialWrapper2()
     auto wNanoInput = std::make_shared<WNanoInput>(nanoPipeFilename, frameWidth, frameHeight);
 
     // Pipe preview output
-    auto wPipeOutput = std::make_shared<WPipeOutput>("/tmp/openpose-out");
+    auto wPipeOutput = std::make_shared<WPipeOutput>(preview);
 
     // Json nanomsg socket output
-    auto wJsonNanoWriter = std::make_shared<WJsonNanoWorker>("/tmp/ice-annotations");
+    auto wJsonNanoWriter = std::make_shared<WJsonNanoWorker>(annotationsDest);
 
     op::Wrapper<std::vector<IceDatum>> opWrapper;
     // Add custom input
