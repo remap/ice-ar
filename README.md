@@ -11,6 +11,9 @@ Current prototype architecture draft:
 ## Edge Node
 
 ### Docker
+
+> **NOTE:** In order to benefit from GPU acceleration, one must install [nvidia-runtime](https://github.com/NVIDIA/nvidia-docker) runtime on their host machines. Edge node processing modules are relying on this runtime and, most likely, won't run if it's not installed.
+
 In order to provide easy and quick edge-node deployment, edge node modules were containerized. These modules can (and should) interact with each other in order to provide full edge node functionality.
 There are three types of edge node modules:
 
@@ -26,19 +29,19 @@ There are three types of edge node modules:
 
 Currently, the following modules are implemented (those in **bold** are currently containerized):
 
-- Mobile Terminal Video fetching module
+- Mobile Terminal Video fetching module // Dockerhub: [peetonn/ice-ar:consumer](https://hub.docker.com/r/peetonn/ice-ar/tags/)
 
     *This module fetches video (over NDN) from a *Mobile Terminal* (mobile video producer), decodes and writes it frame by frame (ARGB format) into a unix socket (powered by [nanomsg](http://nanomsg.org/)).*
-- **YOLO processing module**
+- **YOLO processing module**  // Dockerhub: [peetonn/ice-ar:yolo](https://hub.docker.com/r/peetonn/ice-ar/tags/)
 
     *This module consumes raw video frame by frame from a unix socket and processes it by GPU-accelerated object recognition software [YOLO](https://pjreddie.com/darknet/yolo/). Resulting information is formatted as JSON dictionary and written into another unix socket.* 
-- OpenFace processing module
+- **OpenFace processing module** // Dockerhub: [peetonn/ice-ar:openface](https://hub.docker.com/r/peetonn/ice-ar/tags/)
 
     *This module consumes raw video frame by frame from a unix socket and processes it by GPU-accelerated face recognition software [OpenFace](https://cmusatyalab.github.io/openface/). Resulting information is formatted as JSON dictionary and written into another unix socket.*
-- OpenPose processing module
+- OpenPose processing module // Dockerhub: [peetonn/ice-ar:openpose](https://hub.docker.com/r/peetonn/ice-ar/tags/)
 
     *This module consumes raw video frame by frame from a unix socket and processes it by GPU-accelerated pose recognition software [OpenPose](https://github.com/CMU-Perceptual-Computing-Lab/openpose). Resulting information is formatted as JSON dictionary and written into another unix socket.* 
-- Annotations publishing module
+- **Annotations publishing module** // Dockerhub: [peetonn/ice-ar:publisher](https://hub.docker.com/r/peetonn/ice-ar/tags/)
 
    This module consumer JSON arrays from a unix socket and makes this information available over the network (NDN) for clients.
 
@@ -48,9 +51,32 @@ The diagram below shows how these modules interoperate:
 
 #### Mobile Terminal Video fetching
 
+>
+><details>
+>    <summary><b>Optional:</b><i>Building container manually (expand for more info)</i></summary>
+>    
+>     cd edge/ndnrtc/docker
+>     docker build -t ice-ar:consumer .
+>
+>   See [Dockerfile](edge/ndnrtc/docker/Dockerfile) for additional info.
+>    
+></details>
+
 *TBD*
 
 #### Yolo processing
+
+>
+><details>
+>    <summary><b>Optional:</b><i>Building container manually (expand for more info)</i></summary>
+>    
+>     cd edge/darknet/docker
+>     docker build -t ice-ar:yolo .
+>
+>   See [Dockerfile](edge/darknet/docker/Dockerfile) for additional info.
+>    
+></details>
+
 
 To run YOLO container, one must install Docker [nvidia-runtime](https://github.com/NVIDIA/nvidia-docker) on their machine, in order to benefit from GPU acceleration.
 As was explained earlier, container takes raw video as an input and outputs annotations as JSON arrays. It also provides output as raw video with bounding boxes rendered, for preview purposes. All these inputs and outputs can be configured and have default values (can be found in YOLO [Dockerfile](edge/darknet/docker/Dockerfile#L15)). Here is the description of each variable:
@@ -70,6 +96,17 @@ The following command can be used to start YOLO container (it is assumed, howeve
 ```
 
 #### OpenFace processing
+
+>
+><details>
+>    <summary><b>Optional:</b><i>Building container manually (expand for more info)</i></summary>
+>    
+>     cd edge/openface/docker
+>     docker build -t ice-ar:openface .
+>
+>   See [Dockerfile](edge/openface/docker/Dockerfile) for additional info.
+>    
+></details>
 
 First, one needs to train OpenFace on face images. One should prepare a folder with subfolders, each named after person's id (or a name, whitespaces allowed) and containing `.jpg` training images. There are no specific requirements in terms of resolutions and sizes of images (faces will be detected automatically and aligned into 96x96 square images prior training). Here's an example of how training folder should look like:
 
@@ -115,9 +152,31 @@ Like with [YOLO](#Yolo-processing) container, there is a number of [environment 
 
 #### OpenPose processing
 
+>
+><details>
+>    <summary><b>Optional:</b><i>Building container manually (expand for more info)</i></summary>
+>    
+>     cd edge/openpose/docker
+>     docker build -t ice-ar:openpose .
+>
+>   See [Dockerfile](edge/openpose/docker/Dockerfile) for additional info.
+>    
+></details>
+
 *TBD*
 
 #### Annotations publishing
+
+>
+><details>
+>    <summary><b>Optional:</b><i>Building container manually (expand for more info)</i></summary>
+>    
+>     cd edge/publisher/docker
+>     docker build -t ice-ar:publisher .
+>
+>   See [Dockerfile](edge/publisher/docker/Dockerfile) for additional info.
+>    
+></details>
 
 One must ensure, that NFD is installed and running on host machine in order to have publisher working properly.
 To run annotations publisher module with default configuration:
