@@ -29,5 +29,6 @@ else
 	. /distro/install/bin/torch-activate
 	/openface/util/align-dlib.py $FACES_FOLDER align outerEyesAndNose /aligned --verbose
 	/openface/batch-represent/main.lua -outDir /reps -data /aligned
-
+ 	mv /reps/labels.csv /reps/labels.csv.original
+ 	cat /reps/labels.csv.original | gawk -F',' 'match($2, /\/aligned\/(.*)\/.*/, a) { print a[1] "," $2}' > /reps/labels.csv
 fi

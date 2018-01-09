@@ -2,19 +2,25 @@ FROM peetonn/ice-ar-base:latest
 LABEL maintainer "Peter Gusev <peter@remap.ucla.edu>"
 ARG DEBUG_VER=unknown
 
-RUN pip2 install numpy dlib pandas scipy scikit-learn scikit-image opencv-python
+RUN apt-get install gawk \
+	&& pip2 install numpy dlib pandas scipy scikit-learn scikit-image opencv-python
 
-RUN git clone https://github.com/torch/distro.git --recursive
-RUN export TORCH_NVCC_FLAGS="-D__CUDA_NO_HALF_OPERATORS__" && cd /distro && bash install-deps &&  yes yes | ./install.sh
-RUN . /distro/install/bin/torch-activate && for NAME in dpnn nn optim optnet csvigo cutorch cunn fblualib torchx tds; do luarocks install $NAME; done
+RUN git clone https://github.com/torch/distro.git --recursive \
+	&& export TORCH_NVCC_FLAGS="-D__CUDA_NO_HALF_OPERATORS__"  \
+	&& cd /distro \
+	&& bash install-deps \
+	&&  yes yes | ./install.sh \
+	&& . /distro/install/bin/torch-activate \
+	&& for NAME in dpnn nn optim optnet csvigo cutorch cunn fblualib torchx tds; do luarocks install $NAME; done
 
-RUN git clone --recursive https://github.com/cmusatyalab/openface.git
-RUN cd /openface && python setup.py install
-RUN cd /openface/models && ./get-models.sh
+RUN git clone --recursive https://github.com/cmusatyalab/openface.git \
+	&& cd /openface \
+	&& python setup.py install \
+	&& cd /openface/models \
+	&& ./get-models.sh
 
 RUN DEBUG_VER=${DEBUG_VER} git clone --recursive https://github.com/remap/ice-ar
-
-RUN apt-get remove -y git cmake wget lsb-release python-pip
+RUN apt-get remove -y git cmake wget lsb-release python-pip gawk
 
 ENV LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/usr/local/lib
 
@@ -30,3 +36,4 @@ ENV REPS=/reps/reps.csv
 ENV TRAIN_FOLDER=/faces
 
 COPY run.sh /
+COPY train.sh /

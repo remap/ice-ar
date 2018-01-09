@@ -131,7 +131,7 @@ def processFrames(socket, frameWidth, frameHeight):
 					processingMs = int(delta.total_seconds() * 1000)
 					print(" > open face processing took " + str(processingMs)+" ms")
 					facesArray.append(faceAnnotation)
-					drawBox(flippedImg, r, faceAnnotation['label'])
+					drawBox(flippedImg, r, str(faceAnnotation['label']))
 				dumpAnnotations(frameNumber, facesArray)
 			else:
 				print(" > no faces detected")
