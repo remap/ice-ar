@@ -4,6 +4,9 @@
 // Copyright (c) 2018. Peter Gusev. All rights reserved
 //
 
+// build
+// g++ main.cpp ipc-shim.c cJSON.c -o ice-publisher -std=c++11 -lboost_thread -lboost_system -lnanomsg -lndn-cpp -lndn-cpp-tools
+
 #include <cstdlib>
 #include <unistd.h>
 #include <time.h>

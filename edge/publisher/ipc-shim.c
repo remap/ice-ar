@@ -5,9 +5,6 @@
 // Author: Peter Gusev. 
 //
 
-// build
-// g++ main.cpp ipc-shim.c cJSON.c -o ice-publisher -std=c++11 -lboost_thread -lboost_system -lnanomsg -lndn-cpp -lndn-cpp-tools
-
 #include <nanomsg/nn.h>
 #include <nanomsg/pubsub.h>
 #include <string.h>

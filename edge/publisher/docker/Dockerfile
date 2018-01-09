@@ -1,0 +1,29 @@
+FROM ubuntu:16.04
+LABEL maintainer "Peter Gusev <peter@remap.ucla.edu>"
+ARG DEBUG_VER=unknown
+
+RUN  apt-get update \
+	&& apt-get install -y git libssl-dev build-essential libboost-all-dev cmake libprotobuf-dev protobuf-compiler
+
+RUN git clone https://github.com/named-data/ndn-cpp.git \
+	&& cd ndn-cpp \
+	&& ./configure --with-std-shared-ptr=no --with-std-function=no \
+	&& make && make install \
+	&& rm -Rf /ndn-cpp
+
+RUN git clone https://github.com/nanomsg/nanomsg.git \
+	&& cd /nanomsg && ./configure && make && make install \
+	&& rm -Rf /nanomsg
+
+RUN DEBUG_VER=${DEBUG_VER} git clone --recursive https://github.com/remap/ice-ar
+RUN cd /ice-ar/edge/publisher \
+	&& g++ main.cpp ipc-shim.c cJSON.c -o ice-publisher -std=c++11 -lboost_thread -lboost_system -lnanomsg -lndn-cpp -lndn-cpp-tools
+
+ENV LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/usr/local/lib
+
+ENV BASE_PREFIX=/icear/user
+ENV USER_ID=peter
+ENV SERVICE=object_recognizer
+ENV INPUT=/in/ice-annotations
+
+CMD /ice-ar/edge/publisher/ice-publisher $BASE_PREFIX $USER_ID $SERVICE $INPUT
