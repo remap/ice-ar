@@ -6,6 +6,8 @@ Current prototype architecture draft:
 
 ## Mobile Terminal
 
+*TBD*
+
 ## Edge Node
 
 ### Docker
@@ -45,6 +47,7 @@ The diagram below shows how these modules interoperate:
 ![edge node containerization](doc/containerization.png)
 
 #### Mobile Terminal Video fetching
+
 *TBD*
 
 #### Yolo processing
@@ -111,9 +114,38 @@ Like with [YOLO](#Yolo-processing) container, there is a number of [environment 
 - `TRAIN_FOLDER` -- folder, which contains faces images for training (default is `/faces`).
 
 #### OpenPose processing
+
 *TBD*
 
 #### Annotations publishing
-*TBD*
+
+One must ensure, that NFD is installed and running on host machine in order to have publisher working properly.
+To run annotations publisher module with default configuration:
+
+```
+docker run --name publisher -v /tmp:/in -v /var/run:/var/run peetonn/ice-ar:publisher
+```
+
+This module publishes annotations as [Generalized NDN objects](doc/generalized-object.pdf) under configurable prefix (which, generally speaking, can be arbitrary, but should be known by a client in order to fetch annotations):
+  
+  `<base prefix>`/`<user-id\>`/`<service>`/`<frame-number>`/`<engine-name>`/`<generalized-object:annotaion>`
+    
+    ^               ^            ^           ^                ^               ^        
+    |               |            |           |                |               + -- generalized object sub-namespace
+    |               |            |           |                + -- processing engine name, e.g. "yolo", "openface", "openpose", etc.
+    |               |            |           + -- video frame number, as provided by mobile client
+    |               |            + -- edge node service name (can be arbitrary, currently "object_recognizer")
+    |               + -- user id, should correspond to client's user id
+    + -- base prefix, default is `/icear/user`
+
+One may alter default configuration by passing environment variables into container:
+
+- `INPUT` -- input file pipe/unix socket for JSON annotations (default is `/in/ice-annotations`);
+- `BASE_PREFIX` -- base prefix (default is `/icear/user`);
+- `USER_ID` -- user id (default is `peter`);
+- `SERVICE` -- edge node service name (default is `object_recognizer`).
+
 
 ## Content Provider
+
+*TBD*
