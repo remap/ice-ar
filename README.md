@@ -188,9 +188,8 @@ docker run --name publisher \
 ```
 
 This module publishes annotations as [Generalized NDN objects](doc/generalized-object.pdf) under configurable prefix (which, generally speaking, can be arbitrary, but should be known by a client in order to fetch annotations):
-  
-  `<base prefix>`/`<user-id\>`/`<service>`/`<frame-number>`/`<engine-name>`/`<generalized-object:annotaion>`
-    
+
+    <base prefix>/<user-id>/<service>/<frame-number>/<engine-name>/<generalized-object:annotaion>
     ^               ^            ^           ^                ^               ^        
     |               |            |           |                |               + -- generalized object sub-namespace
     |               |            |           |                + -- processing engine name, e.g. "yolo", "openface", "openpose", etc.
