@@ -67,7 +67,48 @@ The following command can be used to start YOLO container (it is assumed, howeve
 ```
 
 #### OpenFace processing
-*TBD*
+
+First, one needs to train OpenFace on face images. One should prepare a folder with subfolders, each named after person's id (or a name, whitespaces allowed) and containing `.jpg` training images. There are no specific requirements in terms of resolutions and sizes of images (faces will be detected automatically and aligned into 96x96 square images prior training). Here's an example of how training folder should look like:
+
+- **faces**
+  - *alex o'harra*
+    - *image1.jpg*
+    - ...
+  - *bob smith*
+    - *image1.jpg*
+    - ...
+  - *connor mckinsey*
+    - *image1.jpg*
+    - ...
+  - *...*
+  
+To start training, one shall mount **faces** folder into a container and run training script:
+
+```
+docker run --name openface-trained \
+    -v $(pwd)/faces:/faces \
+    peetonn/ice-ar:openface /train.sh /faces
+```
+
+Once training is complete, commit container as an image and start using it:
+
+```
+docker commit openface-trained ice-ar:openface-trained
+docker run -v /tmp:/in -v /tmp:/out -v /tmp:/preview ice-ar:openface-trained /run.sh
+```
+
+Like with [YOLO](#Yolo-processing) container, there is a number of [environment variables](edge/openface/docker/Dockerfile#L21) available to customize `run.sh` script:
+
+- `INPUT` -- file/unix socket to read raw video from;
+- `FRAME_WIDTH` -- video frame width;
+- `FRAME_HEIGHT` -- video frame height;
+- `OUTPUT` -- file/unix socket to write JSON annotations to;
+- `PREVIEW` -- file/unix socket to write preview video (with rendered annotations boxes) to.
+- `TORCH_MODEL` -- [Torch](http://pytorch.org/) model to be used by OpenFace ([more info](https://cmusatyalab.github.io/openface/models-and-accuracies/));
+- `DLIB_MODEL` -- [Dlib](http://dlib.net/) model to be used by OpenFace ([more info](https://cmusatyalab.github.io/openface/models-and-accuracies/));
+- `LABELS` -- labels file, file generated during training phase which contains labels for different face classes;
+- `REPS` -- reps file, file generated during training phase which contains faces features; 
+- `TRAIN_FOLDER` -- folder, which contains faces images for training (default is `/faces`).
 
 #### OpenPose processing
 *TBD*
