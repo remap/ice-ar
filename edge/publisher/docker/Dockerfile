@@ -3,7 +3,7 @@ LABEL maintainer "Peter Gusev <peter@remap.ucla.edu>"
 ARG DEBUG_VER=unknown
 
 RUN  apt-get update \
-	&& apt-get install -y git libssl-dev build-essential libboost-all-dev cmake libprotobuf-dev protobuf-compiler
+	&& apt-get install -y git libssl-dev build-essential libboost-all-dev cmake libprotobuf-dev protobuf-compiler libsqlite3-dev
 
 RUN git clone https://github.com/named-data/ndn-cpp.git \
 	&& cd ndn-cpp \
@@ -18,6 +18,8 @@ RUN git clone https://github.com/nanomsg/nanomsg.git \
 RUN DEBUG_VER=${DEBUG_VER} git clone --recursive https://github.com/remap/ice-ar
 RUN cd /ice-ar/edge/publisher \
 	&& g++ main.cpp ipc-shim.c cJSON.c -o ice-publisher -std=c++11 -lboost_thread -lboost_system -lnanomsg -lndn-cpp -lndn-cpp-tools
+
+RUN apt-get remove -y git cmake protobuf-compiler build-essential
 
 ENV LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/usr/local/lib
 

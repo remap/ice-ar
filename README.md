@@ -182,7 +182,9 @@ One must ensure, that NFD is installed and running on host machine in order to h
 To run annotations publisher module with default configuration:
 
 ```
-docker run --name publisher -v /tmp:/in -v /var/run:/var/run peetonn/ice-ar:publisher
+docker run --name publisher \
+    -v /var/run:/var/run -v $HOME/.ndn:/root/.ndn -v /tmp:/in \
+    peetonn/ice-ar:publisher
 ```
 
 This module publishes annotations as [Generalized NDN objects](doc/generalized-object.pdf) under configurable prefix (which, generally speaking, can be arbitrary, but should be known by a client in order to fetch annotations):
