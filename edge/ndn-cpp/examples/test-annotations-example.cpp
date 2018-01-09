@@ -301,7 +301,7 @@ AnnotationArray generateAnnotationArray(int nAnnotations)
 }
 
 //******************************************************************************
-static const char *pipeName = "/tmp/ice-annotations";
+static std::string pipeName = "/tmp/ice-annotations";
 static int feature_pipe = -1;
 
 int create_pipe(const char* fname)
@@ -355,7 +355,7 @@ std::string readAnnotations(int pipe, unsigned int &frameNo, std::string &engine
         std::cout << "> error reading frameNo from pipe: " 
           << strerror(errno) << std::endl;
       else if (r == 0)
-        reopen_readpipe(pipeName, &feature_pipe);
+        reopen_readpipe(pipeName.c_str(), &feature_pipe);
       else
       {
         if (r != sizeof(unsigned int))
@@ -375,7 +375,7 @@ std::string readAnnotations(int pipe, unsigned int &frameNo, std::string &engine
       std::cout << "> error reading from pipe: " 
         << strerror(errno) << std::endl;
     else
-      reopen_readpipe(pipeName, &feature_pipe);
+      reopen_readpipe(pipeName.c_str(), &feature_pipe);
 
     completeRead = (nBraces == 0);
 
@@ -433,6 +433,18 @@ int main(int argc, char** argv)
   signal(SIGABRT, handler);
   std::srand(std::time(0));
 
+  // usage: test-annotations-example <basePrefix> <userId> <serviceName> <annotationsFile>
+  if (argc < 5)
+  {
+    std::cout << "usage: " << argv[0] << " <basePrefix> <userId> <serviceName> <annotationsFile>" << std::endl;
+    exit(1);
+  }
+
+  std::string basePrefix = std::string(argv[1]);  // "/icear/user";
+  std::string userId = std::string(argv[2]);      //"peter";
+  std::string service = std::string(argv[3]);     //"object_recognizer";
+  pipeName = std::string(argv[4]);
+
   try {
     boost::asio::io_service io;
     boost::shared_ptr<boost::asio::io_service::work> work(boost::make_shared<boost::asio::io_service::work>(io));
@@ -452,12 +464,14 @@ int main(int argc, char** argv)
     ThreadsafeFace producerFace(io);
     producerFace.setCommandSigningInfo(keyChain, certificateName);
     MemoryContentCache contentCache(&producerFace);
-    std::string userId = "peter";
-    std::string service = "object_recognizer";
     std::string serviceInstance = "yolo-mock";
-    Name servicePrefix("/icear/user");
+    Name servicePrefix(basePrefix);
+
     servicePrefix.append(userId).append(service);
     
+    std::cout << "> reading annotations from " << pipeName << std::endl;
+    std::cout << "> will publish under " << servicePrefix << std::endl;
+
     bool enabled = true;
     bool registrationResultSuccess = false;
     unsigned int frameNo;
@@ -506,8 +520,8 @@ int main(int argc, char** argv)
     // Open the feature pipe (from YOLO)
     cout << "> opening pipe..." << std::endl;
 #ifndef USE_NANOMSG
-    create_pipe(pipeName);
-    reopen_readpipe(pipeName, &feature_pipe);
+    create_pipe(pipeName.c_str());
+    reopen_readpipe(pipeName.c_str(), &feature_pipe);
 
     if(feature_pipe < 0) {
       std::cout << "> failed to open the feature pipe" << std::endl;
@@ -518,16 +532,16 @@ int main(int argc, char** argv)
 #else
     if (feature_pipe < 0)
     {
-        feature_pipe = ipc_setupSubSourceSocket(pipeName);
+        feature_pipe = ipc_setupSubSourceSocket(pipeName.c_str());
 
         if (feature_pipe < 0)
         {
             printf("> failed to setup socket %s: %s (%d)\n", 
-                pipeName, ipc_lastError(), ipc_lastErrorCode());
+                pipeName.c_str(), ipc_lastError(), ipc_lastErrorCode());
             exit(1);
         }
         else
-          printf("> opened feature socket (%s)\n", pipeName);
+          printf("> opened feature socket (%s)\n", pipeName.c_str());
     }
 #endif
     while(enabled){
@@ -554,6 +568,7 @@ int main(int argc, char** argv)
   } catch (std::exception& e) {
     cout << "exception: " << e.what() << endl;
   }
+
   return 0;
 }
 
