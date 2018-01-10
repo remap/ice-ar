@@ -10,9 +10,95 @@ Current prototype architecture draft:
 
 ## Edge Node
 
-### Docker
+### DOCKER
 
 > **NOTE:** In order to benefit from GPU acceleration, one must install [nvidia-runtime](https://github.com/NVIDIA/nvidia-docker) runtime on their host machines. Edge node processing modules are relying on this runtime and, most likely, won't run if it's not installed.
+
+#### QUICK START HOW-TO
+
+> **This section is intended for quick start ready-to-go edge node bootstrapping. For detailed information one shall read sections below.**
+
+<details>
+    <summary><i>#0 <b>Prepare host machine</b></i></summary>
+     
+   Creating folders for previews, logs, temporary files to analyze during edge node runtime.
+</details>
+
+```Shell
+mkdir edge && cd edge
+mkdir preview logs faces
+```
+
+<details>
+    <summary><i>#0.5 <b>Copy OpenFace training data to "faces" subfolder</b></i></summary>
+     
+   > It is needed to train OpenFace. More info [below](#openface-processing)!
+</details>
+
+```Shell
+cp -a <OpenFace train data folder>/. faces/
+```
+
+<details>
+    <summary><i>#1 <b>Launch publishing module</b></i></summary>
+     
+   > **It is assumed that NFD is up and running on host machine and routes are configured properly**
+</details>
+
+```Shell
+docker run --name publisher -v /var/run:/var/run -v $HOME/.ndn:/root/.ndn -v annotationsVol:/in -d peetonn/ice-ar:publisher
+```
+
+<details>
+    <summary><i>#2 <b>Launch processing modules</b></i></summary>
+    
+   Nothing's here 👹
+</details>
+
+```Shell
+docker run --runtime=nvidia --name=yolo1 -v rawvideoVol:/in -v annotationsVol:/out -v `pwd`/preview:/preview -d peetonn/ice-ar:yolo
+docker run --runtime=nvidia --name=openpose1 -v rawvideoVol:/in -v annotationsVol:/out -v `pwd`/preview:/preview -d peetonn/ice-ar:openpose
+docker run --runtime=nvidia --name=openface-trained -v `pwd`/faces:/faces peetonn/ice-ar:openface /train.sh /faces
+docker commit openface-trained ice-ar:openface-trained
+docker run --runtime=nvidia --name=openface1 -v rawvideoVol:/in -v annotationsVol:/out -v `pwd`/preview:/preview -d ice-ar:openface-trained /run.sh
+```
+
+<details>
+    <summary><i>#3 <b>Launch consumer module</b></i></summary>
+     
+   **It is assumed that NFD is up and running on host machine and routes are configured properly**
+</details>
+
+```Shell
+docker run --name=consumer1 -v /var/run:/var/run -v $HOME/.ndn:/root/.ndn \
+    -v rawvideoVol:/out -v `pwd`/logs:/tmp -v `pwd`/preview:/preview \
+    peetonn/ice-ar:consumer
+```
+
+> **What now?**
+>
+> Your edge node setup should be running.
+> ```
+> $ docker ps --format '{{.Names}}'
+> consumer1
+> openface1
+> openpose1
+> yolo1
+> publisher
+> ```
+> `logs` folder will contain consumer's log files, so you may want to read/analyze those if something is going wrong or not as expected (advice: use `tail -f` for log files and don't panic).
+>
+> In `preview` folder you should be able to see preview file pipes for each module: `mt-out` (for consumer module), `yolo-out`, `openface-out` and `openpose-out`. To render these previews using GUI, use `ffplay`:
+> ```
+> ffplay -f rawvideo -vcodec rawvideo -s 320x180 -pix_fmt argb -i preview/mt-out
+> ffplay -f rawvideo -vcodec rawvideo -s 320x180 -pix_fmt bgra -i /tmp/yolo-out
+> ffplay -f rawvideo -vcodec rawvideo -s 320x180 -pix_fmt bgr24 -i /tmp/openface-out
+> ffplay -f rawvideo -vcodec rawvideo -s 320x180 -pix_fmt bgr24 -i /tmp/openpose-out
+> ```
+> If you don't see some previews - don't worry, they will appear as soon as processing module will start receiving and processing first frame. This means, by the way, that if you don't see `mt-out` there, most likely your consumer module isn't receiving any video - time to check your NFD routes!
+
+
+#### DETAILED DESCRIPTION
 
 In order to provide easy and quick edge-node deployment, edge node modules were containerized. These modules can (and should) interact with each other in order to provide full edge node functionality.
 There are three types of edge node modules:
