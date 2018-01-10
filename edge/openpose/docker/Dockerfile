@@ -33,8 +33,8 @@ RUN git clone --recursive https://github.com/CMU-Perceptual-Computing-Lab/openpo
 	&& make -j$(nproc) \
 	&& make install
 
-RUN DEBUG_VER=${DEBUG_VER} git clone --recursive https://github.com/remap/ice-ar
-RUN cd /ice-ar/edge/openpose \
+RUN DEBUG_VER=${DEBUG_VER} git clone --recursive https://github.com/remap/ice-ar \
+	&& cd /ice-ar/edge/openpose \
 	&& g++ -std=c++11 ice-openpose.cpp ipc-shim.c pipe-utils.c jsonOsstream.cpp \
 	  -o ice-openpose \
 	  -L/usr/local/lib  -lopenpose -lpthread -lopencv_highgui \
