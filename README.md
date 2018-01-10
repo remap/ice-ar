@@ -62,7 +62,23 @@ The diagram below shows how these modules interoperate:
 >    
 ></details>
 
-*TBD*
+For video fetching, a modified [ndnrtc-client](https://github.com/remap/ndnrtc/tree/master/cpp/client) application is used. For more detailed information on how ndnrtc-client and NDN-RTC library operate, one shall refer to the official [repo](https://github.com/remap/ndnrtc/).
+
+One must install and configure NFD on their host machine as this container relise on it. 
+To run video fetching consumer with default arguments:
+
+```
+docker run --name=consumer1 \
+    -v /var/run:/var/run -v $HOME/.ndn:/root/.ndn -v /tmp:/tmp -ti \
+    peetonn/ice-ar:consumer
+```
+
+There are few environment variables exposed for custom configuration:
+
+- `RUNTIME` -- runtime for consumer (default `10000` seconds);
+- `SIGNING_IDENTITY` -- signing identity (default is `/`; not actually used, needed for app ot run);
+- `CONSUMER_CONFIG` -- ndnrtc-client configuration file - this one describes prefixes and streams to fetch (default is `/icear-consumer.cfg`, provded with the container);
+- `POLICY_FILE` -- verification policy file (default is `/rule.conf`, provided with the container).
 
 #### Yolo processing
 
