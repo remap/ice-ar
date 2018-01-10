@@ -4,15 +4,15 @@ DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 EDGE_ENV_FOLDER=$DIR/edge-env
 
 if [ -z $2 ]; then
-	FRAME_WIDTH=$2
-else
 	FRAME_WIDTH=320
+else
+	FRAME_WIDTH=$2
 fi
 
 if [ -z $3 ]; then
-	FRAME_HEIGHT=$3
-else
 	FRAME_HEIGHT=180
+else
+	FRAME_HEIGHT=$3
 fi
 
 case "$1" in

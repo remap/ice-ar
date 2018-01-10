@@ -49,7 +49,7 @@ ENV INPUT=/in/mtcamera
 ENV FRAME_WIDTH=320
 ENV FRAME_HEIGHT=180
 ENV OUTPUT=/out/ice-annotations
-ENV PREVIEW=/preview/openface-out
+ENV PREVIEW=/preview/openpose-out
 
 CMD /ice-ar/edge/openpose/ice-openpose -model_folder=/openpose/models -keypoint_scale=3 \
   -frame_width=$FRAME_WIDTH -frame_height=$FRAME_HEIGHT \
