@@ -90,7 +90,7 @@ As was explained earlier, container takes raw video as an input and outputs anno
 The following command can be used to start YOLO container (it is assumed, however, that incoming video is written to a file in `/tmp` folder on host machine; frame size is default as defined by Dockerfile and annotations output and preview files must be written to `/tmp` folder on host machine):
 
 ```
- docker run --runtime=nvidia --name yolo -a stdout \
+ docker run --runtime=nvidia --name=yolo1 -a stdout \
     -v /tmp:/in -v /tmp:/out -v /tmp:/preview \
     peetonn/ice-ar:yolo
 ```
@@ -125,7 +125,7 @@ First, one needs to train OpenFace on face images. One should prepare a folder w
 To start training, one shall mount **faces** folder into a container and run training script:
 
 ```
-docker run --runtime=nvidia --name openface-trained \
+docker run --runtime=nvidia --name=openface-trained \
     -v $(pwd)/faces:/faces \
     peetonn/ice-ar:openface /train.sh /faces
 ```
@@ -134,7 +134,9 @@ Once training is complete, commit container as an image and start using it:
 
 ```
 docker commit openface-trained ice-ar:openface-trained
-docker run --runtime=nvidia -v /tmp:/in -v /tmp:/out -v /tmp:/preview ice-ar:openface-trained /run.sh
+docker run --runtime=nvidia --name=openface1 \
+    -v /tmp:/in -v /tmp:/out -v /tmp:/preview \
+    ice-ar:openface-trained /run.sh
 ```
 
 Like with [YOLO](#Yolo-processing) container, there is a number of [environment variables](edge/openface/docker/Dockerfile#L21) available to customize `run.sh` script:
@@ -163,7 +165,22 @@ Like with [YOLO](#Yolo-processing) container, there is a number of [environment 
 >    
 ></details>
 
-*TBD*
+To run this module with default parameters:
+
+```
+docker run --runtime=nvidia --name=openpose1 \
+    -v /tmp:/in -v /tmp:/out -v /tmp:/preview \
+    peetonn/ice-ar:openpose
+```
+
+Like other containers, this container has few configurable arguments:
+
+- `INPUT` -- file/unix socket to read raw video from;
+- `FRAME_WIDTH` -- video frame width;
+- `FRAME_HEIGHT` -- video frame height;
+- `OUTPUT` -- file/unix socket to write JSON annotations to;
+- `PREVIEW` -- file/unix socket to write preview video (with rendered annotations boxes) to.
+
 
 #### Annotations publishing
 
