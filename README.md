@@ -27,9 +27,9 @@ There are three types of edge node modules:
 
     Publishing modules consume data from other (processing) modules and make it available for clients. Publishing modules usually have one input data channel (file pipe) which supports **Many-to-1** synchronization model (in order to allow multiple processing modules to write to it), and have no output data channels, as they provide data for clients by other means (network).
 
-Currently, the following modules are implemented (those in **bold** are currently containerized):
+Currently, the following modules are implemented:
 
-- Mobile Terminal Video fetching module // Dockerhub: [peetonn/ice-ar:consumer](https://hub.docker.com/r/peetonn/ice-ar/tags/)
+- **Mobile Terminal Video fetching module** // Dockerhub: [peetonn/ice-ar:consumer](https://hub.docker.com/r/peetonn/ice-ar/tags/)
 
     *This module fetches video (over NDN) from a *Mobile Terminal* (mobile video producer), decodes and writes it frame by frame (ARGB format) into a unix socket (powered by [nanomsg](http://nanomsg.org/)).*
 - **YOLO processing module**  // Dockerhub: [peetonn/ice-ar:yolo](https://hub.docker.com/r/peetonn/ice-ar/tags/)
@@ -38,7 +38,7 @@ Currently, the following modules are implemented (those in **bold** are currentl
 - **OpenFace processing module** // Dockerhub: [peetonn/ice-ar:openface](https://hub.docker.com/r/peetonn/ice-ar/tags/)
 
     *This module consumes raw video frame by frame from a unix socket and processes it by GPU-accelerated face recognition software [OpenFace](https://cmusatyalab.github.io/openface/). Resulting information is formatted as JSON dictionary and written into another unix socket.*
-- OpenPose processing module // Dockerhub: [peetonn/ice-ar:openpose](https://hub.docker.com/r/peetonn/ice-ar/tags/)
+- **OpenPose processing module** // Dockerhub: [peetonn/ice-ar:openpose](https://hub.docker.com/r/peetonn/ice-ar/tags/)
 
     *This module consumes raw video frame by frame from a unix socket and processes it by GPU-accelerated pose recognition software [OpenPose](https://github.com/CMU-Perceptual-Computing-Lab/openpose). Resulting information is formatted as JSON dictionary and written into another unix socket.* 
 - **Annotations publishing module** // Dockerhub: [peetonn/ice-ar:publisher](https://hub.docker.com/r/peetonn/ice-ar/tags/)
@@ -62,7 +62,23 @@ The diagram below shows how these modules interoperate:
 >    
 ></details>
 
-*TBD*
+For video fetching, a modified [ndnrtc-client](https://github.com/remap/ndnrtc/tree/master/cpp/client) application is used. For more detailed information on how ndnrtc-client and NDN-RTC library operate, one shall refer to the official [repo](https://github.com/remap/ndnrtc/).
+
+One must install and configure NFD on their host machine as this container relise on it. 
+To run video fetching consumer with default arguments:
+
+```
+docker run --name=consumer1 \
+    -v /var/run:/var/run -v $HOME/.ndn:/root/.ndn -v /tmp:/tmp -ti \
+    peetonn/ice-ar:consumer
+```
+
+There are few environment variables exposed for custom configuration:
+
+- `RUNTIME` -- runtime for consumer (default `10000` seconds);
+- `SIGNING_IDENTITY` -- signing identity (default is `/`; not actually used, needed for app ot run);
+- `CONSUMER_CONFIG` -- ndnrtc-client configuration file - this one describes prefixes and streams to fetch (default is `/icear-consumer.cfg`, provded with the container);
+- `POLICY_FILE` -- verification policy file (default is `/rule.conf`, provided with the container).
 
 #### Yolo processing
 
