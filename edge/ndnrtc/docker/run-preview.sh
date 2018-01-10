@@ -8,7 +8,7 @@ while true; do
 	done;
 
 	while [ -z "$SINKFILE" ]; do
-		SINKFILE=`ls ${SINK}*`
+		SINKFILE=`ls ${SINK}* 2>/dev/null`
 		sleep 0.5
 	done; 
 
