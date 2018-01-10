@@ -57,14 +57,16 @@ RUN cd /ice-ar/edge/misc/nanopipe-adaptor \
 
 # cleanup
 RUN apt-get remove -y wget autoconf automake libtool cmake git build-essential libconfig9 lsb-release protobuf-compiler
+RUN mkdir /out /preview
 
 COPY icear-consumer.cfg /
 COPY rule.conf /
 COPY run-preview.sh /
+COPY run.sh /
 
 ENV RUNTIME=10000
 ENV SIGNING_IDENTITY=/
 ENV CONSUMER_CONFIG=/icear-consumer.cfg
 ENV POLICY_FILE=/rule.conf
 
-CMD /run-preview.sh & || /ice-ar/edge/ndnrtc/cpp/ndnrtc-client -c $CONSUMER_CONFIG -s $SIGNING_IDENTITY -p $POLICY_FILE -t $RUNTIME -v 
+CMD /run.sh
