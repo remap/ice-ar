@@ -38,7 +38,7 @@ RUN cd /ice-ar/edge/openpose \
 	&& g++ -std=c++11 ice-openpose.cpp ipc-shim.c pipe-utils.c jsonOsstream.cpp \
 	  -o ice-openpose \
 	  -L/usr/local/lib  -lopenpose -lpthread -lopencv_highgui \
-	  -lopencv_objdetect -lopencv_imgcodecs -lopencv_imgproc \
+	  -lopencv_objdetect -lopencv_imgproc \
 	  -lopencv_core -lgflags -lnanomsg
 
 RUN apt-get remove -y git cmake wget lsb-release python-pip
@@ -51,6 +51,6 @@ ENV FRAME_HEIGHT=180
 ENV OUTPUT=/out/ice-annotations
 ENV PREVIEW=/preview/openface-out
 
-CMD /ice-ar/edge/openpose/ice-openpose -model_folder=/openpose/models \
+CMD /ice-ar/edge/openpose/ice-openpose -model_folder=/openpose/models -keypoint_scale=3 \
   -frame_width=$FRAME_WIDTH -frame_height=$FRAME_HEIGHT \
   -frame_source=$INPUT -preview=$PREVIEW -annotations_dest=$OUTPUT
