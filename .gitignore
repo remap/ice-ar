@@ -1,23 +1,12 @@
 # =============== #
 # Unity generated #
 # =============== #
-Temp/
-Library/
+
 
 # ===================================== #
 # Visual Studio / MonoDevelop generated #
 # ===================================== #
-ExportedObj/
-obj/
-*.svd
-*.userprefs
-/*.csproj
-*.pidb
-*.suo
-/*.sln
-*.user
-*.unityproj
-*.booproj
+
 
 # ============ #
 # OS generated #
@@ -60,13 +49,7 @@ ndnrtc/build
 ndnrtc/peter-build
 
 # Compiled files
-*.slo
-*.lo
-*.o
-*.dylib
-*.lai
-*.la
-*.a
+
 edge/darknet/yolo.weights.*
 edge/darknet/yolo.weights
 edge/darknet/darknet
