@@ -63,7 +63,6 @@ ndnrtc/peter-build
 *.slo
 *.lo
 *.o
-*.so
 *.dylib
 *.lai
 *.la
