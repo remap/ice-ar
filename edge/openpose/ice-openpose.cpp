@@ -285,7 +285,7 @@ public:
                 {
                     std::stringstream ss;
                     ss << "Failed to open pipe (" << mOutputFilePipe << "): " << errno << " - " << strerror(errno);
-                    op::error(ss.str(), __LINE__, __FUNCTION__, __FILE__);
+                    op::log(ss.str()); //, __LINE__, __FUNCTION__, __FILE__);
                 }
                 else
                 {
