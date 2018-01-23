@@ -91,9 +91,9 @@ docker run --name=consumer1 -v /var/run:/var/run -v $HOME/.ndn:/root/.ndn \
 > In `preview` folder you should be able to see preview file pipes for each module: `mt-out` (for consumer module), `yolo-out`, `openface-out` and `openpose-out`. To render these previews using GUI, use `ffplay`:
 > ```
 > ffplay -f rawvideo -vcodec rawvideo -s 320x180 -pix_fmt argb -i preview/mt-out
-> ffplay -f rawvideo -vcodec rawvideo -s 320x180 -pix_fmt bgra -i /tmp/yolo-out
-> ffplay -f rawvideo -vcodec rawvideo -s 320x180 -pix_fmt bgr24 -i /tmp/openface-out
-> ffplay -f rawvideo -vcodec rawvideo -s 320x180 -pix_fmt bgr24 -i /tmp/openpose-out
+> ffplay -f rawvideo -vcodec rawvideo -s 320x180 -pix_fmt bgra -i preview/yolo-out
+> ffplay -f rawvideo -vcodec rawvideo -s 320x180 -pix_fmt bgr24 -i preview/openface-out
+> ffplay -f rawvideo -vcodec rawvideo -s 320x180 -pix_fmt bgr24 -i preview/openpose-out
 > ```
 > If you don't see some previews - don't worry, they will appear as soon as processing module will start receiving and processing first frame. This means, by the way, that if you don't see `mt-out` there, most likely your consumer module isn't receiving any video - time to check your NFD routes!
 
