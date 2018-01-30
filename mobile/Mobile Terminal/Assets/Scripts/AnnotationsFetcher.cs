@@ -33,7 +33,7 @@ public class AnnotationsFetcher
 {
 	private string serviceInstance_;
 	private string servicePrefix_;
-	private Face face_;
+	public Face face_;
 	private Namespace serviceNamespace;
 	private Thread faceThread_;
 	private bool runThread_;

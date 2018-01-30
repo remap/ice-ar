@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2017 Regents of the University of California.
+ * Copyright (C) 2017-2018 Regents of the University of California.
  * @author: Jeff Thompson <jefft0@remap.ucla.edu>
  *
  * This program is free software: you can redistribute it and/or modify
@@ -368,7 +368,7 @@ namespace net.named_data.cnl_dot_net {
       logger_.log(Level.FINE, "Namespace: Express interest " + name_.toUri());
       face.expressInterest
         (name_, interestTemplate, this,
-         ExponentialReExpress.makeOnTimeout(face, this, null, 0));
+         ExponentialReExpress.makeOnTimeout(face, this, null));
     }
 
     /// <summary>
