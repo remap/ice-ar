@@ -12,6 +12,7 @@ using Kalman;
 using System;
 using UnityEngine.Rendering;
 using net.named_data.cnl_dot_net;
+using net.named_data.jndn.util;
 
 public class OnCameraFrame : MonoBehaviour {
 
@@ -271,6 +272,19 @@ public class OnCameraFrame : MonoBehaviour {
 		}
 	}
 
+	public void fetchModel(string modelId)
+	{
+		var prefix = new Namespace("/icear/content-publisher/avatars/"+modelId+".model");
+		prefix.setFace(aFetcher_.face_);
+
+		Debug.Log("Will fetch model /icear/content-publisher/avatars/test.model");
+		var ndnfsFile = new NdnfsFile(prefix, delegate(NdnfsFile nf, Namespace contentNamespace, Blob content) {
+			Debug.Log("Got model contents; size " + content.size());
+		});
+
+		ndnfsFile.start();
+	}
+
 	public void OnImageAvailable(TextureReaderApi.ImageFormatType format, int width, int height, IntPtr pixelBuffer, int bufferSize)
 	{
 		try{
@@ -324,6 +338,11 @@ public class OnCameraFrame : MonoBehaviour {
 		//						Debug.Log("test xright: " + data.annotationData[i].xright);
 		//						Debug.Log("test ytop: " + data.annotationData[i].ytop);
 		//						Debug.Log("test ybottom: " + data.annotationData[i].ybottom);
+							
+							// example how to fetch model from content-publisher
+							// Therese, please check this is the right place in code where models should be requested
+							// (prob. model doesn't need to be fetched every frame for same object)
+							//fetchModel(data.annotationData[i].label);
 						}
 					}
 		//				FrameObjectData temp;
