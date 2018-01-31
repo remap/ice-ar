@@ -33,41 +33,18 @@ public class AnnotationsFetcher
 {
 	private string serviceInstance_;
 	private string servicePrefix_;
-	public Face face_;
 	private Namespace serviceNamespace;
-	private Thread faceThread_;
-	private bool runThread_;
+	private FaceProcessor faceProcessor_;
 
-	public AnnotationsFetcher (string servicePrefix, string instance)
+	public AnnotationsFetcher (FaceProcessor faceProcessor, string servicePrefix, string instance)
 	{
+		faceProcessor_ = faceProcessor;
 		serviceInstance_ = instance;
 		serviceNamespace = new Namespace (new Name (servicePrefix));
-		start();
+		serviceNamespace.setFace(faceProcessor.getFace());
 	}
 
 	~AnnotationsFetcher(){
-		runThread_ = false;
-		faceThread_.Join();
-	}
-
-	private void start() {
-		face_ = new Face ("localhost");
-
-		serviceNamespace.setFace (face_);
-
-		runThread_ = true;
-		faceThread_ = new Thread(new ThreadStart(delegate() {
-			while (runThread_)
-			{
-				processFace();
-			}
-		}));
-		faceThread_.Priority = System.Threading.ThreadPriority.Highest;
-		faceThread_.Start ();
-	}
-
-	public void processFace(){
-		face_.processEvents();
 	}
 
 	public void fetchAnnotation(int frameNo, FrameAnnotationsHandler onAnnotationsFetched)

@@ -22,6 +22,7 @@ public class OnCameraFrame : MonoBehaviour {
 	public System.DateTime begin;
 	public FramePoolManager frameMgr;
 	public BoundingBoxPoolManager boxMgr;
+	private FaceProcessor faceProcessor_;
 	private AnnotationsFetcher aFetcher_;
 	private AnnotationsFetcher openFaceFetcher_;
 	private ConcurrentQueue<Dictionary<int, FrameObjectData>> frameBuffer;
@@ -85,13 +86,14 @@ public class OnCameraFrame : MonoBehaviour {
 		string serviceInstance2 = "openface"; // "yolo";
 
 		NdnRtc.Initialize (rootPrefix, userId);
+		faceProcessor_ = new FaceProcessor();
+		faceProcessor_.start();
 
 		string servicePrefix = rootPrefix + "/" + userId + "/" + serviceType;
 		// AnnotationsFetcher instance might also be a singleton class
 		// and initialized/created somewhere else. here just as an example
-		aFetcher_ = new AnnotationsFetcher (servicePrefix, serviceInstance);
-
-		openFaceFetcher_ = new AnnotationsFetcher (servicePrefix, serviceInstance2);
+		aFetcher_ = new AnnotationsFetcher (faceProcessor_, servicePrefix, serviceInstance);
+		openFaceFetcher_ = new AnnotationsFetcher (faceProcessor_, servicePrefix, serviceInstance2);
 
 		// setup CNL logging 
 		ILOG.J2CsMapping.Util.Logging.Logger.getLogger("").setLevel(ILOG.J2CsMapping.Util.Logging.Level.FINE);
@@ -275,7 +277,7 @@ public class OnCameraFrame : MonoBehaviour {
 	public void fetchModel(string modelId)
 	{
 		var prefix = new Namespace("/icear/content-publisher/avatars/"+modelId+".model");
-		prefix.setFace(aFetcher_.face_);
+		prefix.setFace(faceProcessor_.getFace());
 
 		Debug.Log("Will fetch model /icear/content-publisher/avatars/test.model");
 		var ndnfsFile = new NdnfsFile(prefix, delegate(NdnfsFile nf, Namespace contentNamespace, Blob content) {
