@@ -11,8 +11,6 @@ using PlaynomicsPlugin;
 using Kalman;
 using System;
 using UnityEngine.Rendering;
-using net.named_data.cnl_dot_net;
-using net.named_data.jndn.util;
 
 public class OnCameraFrame : MonoBehaviour {
 
@@ -25,6 +23,8 @@ public class OnCameraFrame : MonoBehaviour {
 	private FaceProcessor faceProcessor_;
 	private AnnotationsFetcher aFetcher_;
 	private AnnotationsFetcher openFaceFetcher_;
+	private AssetBundleFetcher assetFetcher_;
+
 	private ConcurrentQueue<Dictionary<int, FrameObjectData>> frameBuffer;
 	private static ConcurrentQueue<BoxData> boundingBoxBufferToCalc;
 	private static ConcurrentQueue<CreateBoxData> boundingBoxBufferToUpdate;
@@ -88,6 +88,8 @@ public class OnCameraFrame : MonoBehaviour {
 		NdnRtc.Initialize (rootPrefix, userId);
 		faceProcessor_ = new FaceProcessor();
 		faceProcessor_.start();
+
+		assetFetcher_ = new AssetBundleFetcher(faceProcessor_);
 
 		string servicePrefix = rootPrefix + "/" + userId + "/" + serviceType;
 		// AnnotationsFetcher instance might also be a singleton class
@@ -276,15 +278,11 @@ public class OnCameraFrame : MonoBehaviour {
 
 	public void fetchModel(string modelId)
 	{
-		var prefix = new Namespace("/icear/content-publisher/avatars/"+modelId+".model");
-		prefix.setFace(faceProcessor_.getFace());
-
-		Debug.Log("Will fetch model /icear/content-publisher/avatars/test.model");
-		var ndnfsFile = new NdnfsFile(prefix, delegate(NdnfsFile nf, Namespace contentNamespace, Blob content) {
-			Debug.Log("Got model contents; size " + content.size());
+		var modelName = "/icear/content-publisher/avatars/"+modelId+".model";
+		assetFetcher_.fetch(modelName, delegate (AssetBundle assetBundle) {
+			Debug.Log ("Fetched asset bundle...");
+			// TODO: load asset bundle into the scene, cache it locally, etc...
 		});
-
-		ndnfsFile.start();
 	}
 
 	public void OnImageAvailable(TextureReaderApi.ImageFormatType format, int width, int height, IntPtr pixelBuffer, int bufferSize)
@@ -415,8 +413,6 @@ public class OnCameraFrame : MonoBehaviour {
 					string str = "{ \"annotationData\": " + debug + "}";
 					Debug.Log("exception caught string with format: " + str);
 				}
-
-
 			});
 
 			openFaceFetcher_.fetchAnnotation (publishedFrameNo, delegate(string jsonArrayString) {
