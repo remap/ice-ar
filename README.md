@@ -72,7 +72,7 @@ docker run --runtime=nvidia --name=openface1 -v rawvideoVol:/in -v annotationsVo
 ```Shell
 docker run --name=consumer1 -v /var/run:/var/run -v $HOME/.ndn:/root/.ndn \
     -v rawvideoVol:/out -v `pwd`/logs:/tmp -v `pwd`/preview:/preview \
-    peetonn/ice-ar:consumer
+    -e SIGNING_IDENTITY=/`whoami` peetonn/ice-ar:consumer
 ```
 
 > **What now?**
@@ -151,12 +151,12 @@ The diagram below shows how these modules interoperate:
 For video fetching, a modified [ndnrtc-client](https://github.com/remap/ndnrtc/tree/master/cpp/client) application is used. For more detailed information on how ndnrtc-client and NDN-RTC library operate, one shall refer to the official [repo](https://github.com/remap/ndnrtc/).
 
 One must install and configure NFD on their host machine as this container relise on it. 
-To run video fetching consumer with default arguments:
+To run video fetching consumer with default arguments (one must provide signing identity explicitly for NFD version >= 0.6.0):
 
 ```
 docker run --name=consumer1 \
     -v /var/run:/var/run -v $HOME/.ndn:/root/.ndn -v /tmp:/tmp -ti \
-    peetonn/ice-ar:consumer
+    -e SIGNING_IDENTITY=/`whoami` peetonn/ice-ar:consumer
 ```
 
 There are few environment variables exposed for custom configuration:
