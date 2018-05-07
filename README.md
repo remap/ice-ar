@@ -46,7 +46,7 @@ cp -a <OpenFace train data folder>/. faces/
 </details>
 
 ```Shell
-docker run --name publisher -v /var/run:/var/run -v $HOME/.ndn:/root/.ndn -v annotationsVol:/in -d peetonn/ice-ar:publisher
+docker run --rm --name publisher -v /var/run:/var/run -v $HOME/.ndn:/root/.ndn -v annotationsVol:/in -d peetonn/ice-ar:publisher
 ```
 
 <details>
@@ -56,11 +56,11 @@ docker run --name publisher -v /var/run:/var/run -v $HOME/.ndn:/root/.ndn -v ann
 </details>
 
 ```Shell
-docker run --runtime=nvidia --name=yolo1 -v rawvideoVol:/in -v annotationsVol:/out -v `pwd`/preview:/preview -d peetonn/ice-ar:yolo
-docker run --runtime=nvidia --name=openpose1 -v rawvideoVol:/in -v annotationsVol:/out -v `pwd`/preview:/preview -d peetonn/ice-ar:openpose
+docker run --runtime=nvidia --rm --name=yolo1 -v rawvideoVol:/in -v annotationsVol:/out -v `pwd`/preview:/preview -d peetonn/ice-ar:yolo
+docker run --runtime=nvidia --rm --name=openpose1 -v rawvideoVol:/in -v annotationsVol:/out -v `pwd`/preview:/preview -d peetonn/ice-ar:openpose
 docker run --runtime=nvidia --name=openface-trained -v `pwd`/faces:/faces peetonn/ice-ar:openface /train.sh /faces
 docker commit openface-trained ice-ar:openface-trained
-docker run --runtime=nvidia --name=openface1 -v rawvideoVol:/in -v annotationsVol:/out -v `pwd`/preview:/preview -d ice-ar:openface-trained /run.sh
+docker run --runtime=nvidia --rm --name=openface1 -v rawvideoVol:/in -v annotationsVol:/out -v `pwd`/preview:/preview -d ice-ar:openface-trained /run.sh
 ```
 
 <details>
@@ -70,7 +70,7 @@ docker run --runtime=nvidia --name=openface1 -v rawvideoVol:/in -v annotationsVo
 </details>
 
 ```Shell
-docker run --name=consumer1 -v /var/run:/var/run -v $HOME/.ndn:/root/.ndn \
+docker run --rm --name=consumer1 -v /var/run:/var/run -v $HOME/.ndn:/root/.ndn \
     -v rawvideoVol:/out -v `pwd`/logs:/tmp -v `pwd`/preview:/preview \
     -e SIGNING_IDENTITY=/`whoami` peetonn/ice-ar:consumer
 ```
