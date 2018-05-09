@@ -65,7 +65,7 @@ COPY run-preview.sh /
 COPY run.sh /
 
 ENV RUNTIME=10000
-ENV SIGNING_IDENTITY=/
+ENV SIGNING_IDENTITY=/icear-client
 ENV CONSUMER_CONFIG=/icear-consumer.cfg
 ENV POLICY_FILE=/rule.conf
 
