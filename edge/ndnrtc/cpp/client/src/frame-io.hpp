@@ -1,5 +1,5 @@
-// 
-// frame-io.h
+//
+// frame-io.hpp
 //
 //  Created by Peter Gusev on 17 March 2016.
 //  Copyright 2013-2016 Regents of the University of California
@@ -15,66 +15,66 @@
 //******************************************************************************
 class RawFrame {
 public:
-	RawFrame(unsigned int width, unsigned int height);
-	virtual ~RawFrame(){}
+    RawFrame(unsigned int width, unsigned int height);
+    virtual ~RawFrame(){}
 
-	virtual unsigned long getFrameSizeInBytes() const = 0;
-	unsigned int getWidth() const { return width_; }
-	unsigned int getHeight() const { return height_; }
-	virtual void getFrameResolution(unsigned int& width, unsigned int& height) const = 0;
-	boost::shared_ptr<uint8_t> getBuffer() const { return buffer_; }
+    virtual unsigned long getFrameSizeInBytes() const = 0;
+    unsigned int getWidth() const { return width_; }
+    unsigned int getHeight() const { return height_; }
+    virtual void getFrameResolution(unsigned int& width, unsigned int& height) const = 0;
+    boost::shared_ptr<uint8_t> getBuffer() const { return buffer_; }
 
-	void setFrameNumber(unsigned int fNo) { frameNo_ = fNo; }
-	unsigned int getFrameNumber() const { return frameNo_; }
+    void setFrameNumber(unsigned int fNo) { frameNo_ = fNo; }
+    unsigned int getFrameNumber() const { return frameNo_; }
 
 protected:
-	unsigned int width_, height_;
-	unsigned int frameNo_;
+    unsigned int width_, height_;
+    unsigned int frameNo_;
 
-	virtual void setBuffer(const long& bufSize, boost::shared_ptr<uint8_t> buf) 
-	{ bufferSize_ = bufSize; buffer_ = buf; }
+    virtual void setBuffer(const long& bufSize, boost::shared_ptr<uint8_t> buf) 
+    { bufferSize_ = bufSize; buffer_ = buf; }
 
 private:
-	long bufferSize_;
-	boost::shared_ptr<uint8_t> buffer_;
+    long bufferSize_;
+    boost::shared_ptr<uint8_t> buffer_;
 };
 
 //******************************************************************************
 class ArgbFrame : public RawFrame {
 public:
-	ArgbFrame(unsigned int width, unsigned int height);
+    ArgbFrame(unsigned int width, unsigned int height);
 
-	virtual unsigned long getFrameSizeInBytes() const;
-	void getFrameResolution(unsigned int& width, unsigned int& height) const;
+    virtual unsigned long getFrameSizeInBytes() const;
+    void getFrameResolution(unsigned int& width, unsigned int& height) const;
 };
 
 //******************************************************************************
 class FileFrameStorage {
 public:
-	FileFrameStorage(std::string path):file_(nullptr), path_(path), fileSize_(0) { }
-	virtual ~FileFrameStorage(){ closeFile(); }
+    FileFrameStorage(std::string path):file_(nullptr), path_(path), fileSize_(0) { }
+    virtual ~FileFrameStorage(){ closeFile(); }
 
-	std::string getPath() { return path_; }
-	unsigned long getSize() { return fileSize_; }
+    std::string getPath() { return path_; }
+    unsigned long getSize() { return fileSize_; }
 protected:
-	FILE *file_;
-	std::string path_;
-	unsigned long fileSize_;
+    FILE *file_;
+    std::string path_;
+    unsigned long fileSize_;
 
-	void openFile();
-	virtual FILE* openFile_impl(std::string path) = 0;
+    void openFile();
+    virtual FILE* openFile_impl(std::string path) = 0;
 private:
-	void closeFile();
+    void closeFile();
 };
 
 //******************************************************************************
 class IFrameSink {
 public:
-	virtual IFrameSink& operator<<(const RawFrame& frame) = 0;
-	virtual std::string getName() = 0;
-	virtual bool isLastWriteSuccessful() = 0;
-	virtual bool isBusy() = 0;
-	virtual void setShouldWriteFrameNo(bool) = 0;
+    virtual IFrameSink& operator<<(const RawFrame& frame) = 0;
+    virtual std::string getName() = 0;
+    virtual bool isLastWriteSuccessful() = 0;
+    virtual bool isBusy() = 0;
+    virtual void setShouldWriteFrameNo(bool) = 0;
 };
 
 /**
@@ -82,14 +82,14 @@ public:
  */
 class FileSink : public IFrameSink, public FileFrameStorage {
 public:
-	FileSink(const std::string& path):FileFrameStorage(path),writeFrameNo_(false),isLastWriteSuccessful_(false){ openFile(); }
-	IFrameSink& operator<<(const RawFrame& frame);
-	std::string getName() { return path_; }
+    FileSink(const std::string& path):FileFrameStorage(path),writeFrameNo_(false),isLastWriteSuccessful_(false){ openFile(); }
+    IFrameSink& operator<<(const RawFrame& frame);
+    std::string getName() { return path_; }
 
-	bool isLastWriteSuccessful() { return isLastWriteSuccessful_; }
-	// TODO: whether file writing can be busy, probably, need to be tested
-	bool isBusy() { return false; }
-	void setShouldWriteFrameNo(bool b) { writeFrameNo_ = b; }
+    bool isLastWriteSuccessful() { return isLastWriteSuccessful_; }
+    // TODO: whether file writing can be busy, probably, need to be tested
+    bool isBusy() { return false; }
+    void setShouldWriteFrameNo(bool b) { writeFrameNo_ = b; }
 
 private:
     FILE* openFile_impl(std::string path);
@@ -101,29 +101,28 @@ private:
  * Non-blocking pipe-based frame sink
  * - will create pipe if it does not exist
  * - in order for pipe to be opened for writing, it should be opened for reading 
- *		by another process; until then, sink will skip writing frames. 
+ *        by another process; until then, sink will skip writing frames. 
  */
 class PipeSink : public IFrameSink {
 public:
-	PipeSink(const std::string& path);
-	~PipeSink();
+    PipeSink(const std::string& path);
+    ~PipeSink();
 
-	IFrameSink& operator<<(const RawFrame& frame);
-	std::string getName() { return pipePath_; }
+    IFrameSink& operator<<(const RawFrame& frame);
+    std::string getName() { return pipePath_; }
 
-	bool isLastWriteSuccessful() { return isLastWriteSuccessful_; }
-	bool isBusy() { return isWriting_; }
-	void setShouldWriteFrameNo(bool b) { writeFrameNo_ = b; }
+    bool isLastWriteSuccessful() { return isLastWriteSuccessful_; }
+    bool isBusy() { return isWriting_; }
+    void setShouldWriteFrameNo(bool b) { writeFrameNo_ = b; }
 
 private:
-	std::string pipePath_;
-	int pipe_;
-	bool writeFrameNo_;
-	std::atomic<bool> isLastWriteSuccessful_, isWriting_;
+    std::string pipePath_;
+    int pipe_;
+    bool writeFrameNo_;
+    std::atomic<bool> isLastWriteSuccessful_, isWriting_;
 
-	void createPipe(const std::string& path);
-	void openPipe(const std::string& path);
-	int writeExactly(uint8_t *buffer, size_t bufSize, int pipe);
+    void createPipe(const std::string& path);
+    void openPipe(const std::string& path);
 };
 
 #ifdef HAVE_NANOMSG
@@ -132,51 +131,57 @@ private:
  */
 class NanoMsgSink : public IFrameSink {
 public: 
-	NanoMsgSink(const std::string& handle);
-	~NanoMsgSink();
+    NanoMsgSink(const std::string& handle);
+    ~NanoMsgSink();
 
-	virtual IFrameSink& operator<<(const RawFrame& frame);
-	virtual std::string getName() { return handle_; }
-	virtual bool isBusy() { return false; }
-	bool isLastWriteSuccessful() { return isLastWriteSuccessful_; }
-	void setShouldWriteFrameNo(bool b) { writeFrameNo_ = b; }
+    virtual IFrameSink& operator<<(const RawFrame& frame);
+    virtual std::string getName() { return handle_; }
+    virtual bool isBusy() { return false; }
+    bool isLastWriteSuccessful() { return isLastWriteSuccessful_; }
+    void setShouldWriteFrameNo(bool b) { writeFrameNo_ = b; }
 
 private:
-	std::string handle_;
-	bool isLastWriteSuccessful_, writeFrameNo_;
-	int nnSocket_;
-
+    std::string handle_;
+    bool isLastWriteSuccessful_, writeFrameNo_;
+    int nnSocket_;
 };
 #endif
 
 //******************************************************************************
-class IFrameSource {
-public:
-	virtual IFrameSource& operator>>(RawFrame& frame) noexcept = 0;
+class IFrameSource
+{
+  public:
+    virtual IFrameSource &operator>>(RawFrame &frame) noexcept = 0;
 };
 
-class FileFrameSource : public IFrameSource, public FileFrameStorage {
-public:
-	FileFrameSource(const std::string& path);
+class FileFrameSource : public IFrameSource, public FileFrameStorage
+{
+  public:
+    FileFrameSource(const std::string &path);
 
-	IFrameSource& operator>>(RawFrame& frame) noexcept;
-	/**
-	 * NOTE: will always return 'true' before any read call.
-	 * proper use to read frames in a loop:
-	 * do {
-	 *		if (source.isEof()) source.rewind();
-	 *		source >> frame;
-	 * } while(source.isEof() && !source.isError());
-	 */
-	bool isEof(){ return (feof(file_) != 0); }
-	bool isError() { return readError_; }
-	void rewind(){ ::rewind(file_); current_ = 0; }
+    IFrameSource &operator>>(RawFrame &frame) noexcept;
+    /**
+     * NOTE: will always return 'true' before any read call.
+     * proper use to read frames in a loop:
+     * do {
+     *        if (source.isEof()) source.rewind();
+     *        source >> frame;
+     * } while(source.isEof() && !source.isError());
+     */
+    bool isEof() { return (feof(file_) != 0); }
+    bool isError() { return readError_; }
+    void rewind()
+    {
+        ::rewind(file_);
+        current_ = 0;
+    }
 
-	static bool checkSourceForFrame(const std::string& path, const RawFrame& frame);
-private:
-	FILE* openFile_impl(std::string path);
-	unsigned long current_;
-	bool readError_;
+    static bool checkSourceForFrame(const std::string &path, const RawFrame &frame);
+
+  private:
+    FILE *openFile_impl(std::string path);
+    unsigned long current_;
+    bool readError_;
 };
 
 #endif

@@ -6,7 +6,6 @@
 //  Copyright 2013-2015 Regents of the University of California
 //
 
-
 #include <stdlib.h>
 #include <ndnrtc/simple-log.hpp>
 
@@ -14,11 +13,11 @@
 
 using namespace std;
 
-RendererInternal::RendererInternal(const std::string sinkName, SinkFactoryCreate sinkFactoryCreate, 
-        boost::asio::io_service& io, bool suppressBadSink)
-:sinkName_(sinkName), createSink_(sinkFactoryCreate), io_(io), 
-frameCount_(0), isDumping_(true), suppressBadSink_(suppressBadSink),
-frame_(new ArgbFrame(0,0))
+RendererInternal::RendererInternal(const std::string sinkName, SinkFactoryCreate sinkFactoryCreate,
+                                   boost::asio::io_service& io, bool suppressBadSink)
+    : sinkName_(sinkName), createSink_(sinkFactoryCreate), io_(io),
+      frameCount_(0), isDumping_(true), suppressBadSink_(suppressBadSink),
+      frame_(new ArgbFrame(0, 0))
 {
 }
 
@@ -28,9 +27,9 @@ RendererInternal::~RendererInternal()
     frame_.reset();
 }
 
-uint8_t* RendererInternal::getFrameBuffer(int width, int height)
+uint8_t *RendererInternal::getFrameBuffer(int width, int height)
 {
-    if (sink_ && sink_->isBusy()) 
+    if (sink_ && sink_->isBusy())
     {
         LogWarn("") << "Frame sink is busy. Writing frames is too slow?..." << std::endl;
         return nullptr;
@@ -41,17 +40,17 @@ uint8_t* RendererInternal::getFrameBuffer(int width, int height)
         frame_.reset(new ArgbFrame(width, height));
         closeSink();
         openSink(width, height);
-        
-        LogInfo("") << "receiving frame of resolution " << width << "x" << height 
-            << "(" << frame_->getFrameSizeInBytes() <<" bytes per frame)." 
-            <<  (isDumping_? string(" writing to ") + sink_->getName() : "" ) << std::endl;
+
+        LogInfo("") << "receiving frame of resolution " << width << "x" << height
+                    << "(" << frame_->getFrameSizeInBytes() << " bytes per frame)."
+                    << (isDumping_ ? string(" writing to ") + sink_->getName() : "") << std::endl;
     }
 
     return frame_->getBuffer().get();
 }
 
-void RendererInternal::renderBGRAFrame(int64_t timestamp, uint frameNo, int width, int height, 
-    const uint8_t* buffer)
+void RendererInternal::renderBGRAFrame(int64_t timestamp, uint frameNo, int width, int height,
+                                       const uint8_t *buffer)
 {
     if (!frame_.get())
         throw runtime_error("render buffer has not been initialized");
@@ -60,14 +59,14 @@ void RendererInternal::renderBGRAFrame(int64_t timestamp, uint frameNo, int widt
         throw runtime_error("wrong frame size supplied");
 
     // do whatever we need, i.e. drop frame, render it, write to file, etc.
-    LogDebug("") << "received frame " << frameNo << " (" << width << "x" << height << ") at " 
-        << timestamp << " ms"<<", frame count: "<< frameCount_ << std::endl;
+    LogDebug("") << "received frame (" << width << "x" << height << ") at "
+                 << timestamp << " ms"
+                 << ", frame count: " << frameCount_ << std::endl;
 
-    frame_->setFrameNumber(frameNo);
     dumpFrame();
     frameCount_++;
 }
-    
+
 string RendererInternal::openSink(unsigned int width, unsigned int height)
 {
     if (sinkName_ == "")
@@ -79,13 +78,13 @@ string RendererInternal::openSink(unsigned int width, unsigned int height)
     }
 
     stringstream sinkPath;
-    sinkPath << sinkName_  << "." << width << "x" << height;
+    sinkPath << sinkName_ << "." << width << "x" << height;
 
     try
     {
         sink_ = createSink_(sinkPath.str());
     }
-    catch (const std::runtime_error& e)
+    catch (const std::runtime_error &e)
     {
         if (suppressBadSink_)
             isDumping_ = false;
@@ -125,6 +124,6 @@ void RendererInternal::dumpFrame()
                 LogWarn("") << "couldn't dump frame " << frame_->getFrameNumber() 
                     << "(" << frame_->getFrameSizeInBytes() 
                     << " bytes). disk space issues/pipe is not open?" << std::endl;
-    });
+        });
     }
 }

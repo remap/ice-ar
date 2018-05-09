@@ -119,7 +119,7 @@ BufferSlot::segmentsRequested(const std::vector<boost::shared_ptr<const ndn::Int
     {
         boost::shared_ptr<SlotSegment> segment(boost::make_shared<SlotSegment>(i));
         
-        if (!segment->getInfo().hasSeqNo_)
+        if (!segment->getInfo().hasSeqNo_ || !segment->getInfo().hasSegNo_)
             throw std::runtime_error("No rightmost interests allowed: Interest should have segment-level info");
         
         if (name_.size() == 0) 
@@ -245,7 +245,6 @@ BufferSlot::dump(bool showLastSegment) const
     // << ((double)nSegmentsParityReady_/(double)nSegmentsParity_)*100 << "%), "
     // << std::setw(5) << getPairedFrameNumber() << ", "
     // << std::setw(3) << getPlaybackDeadline() << ", "
-    << (hasOriginalSegments_?"ORIG":"CACH") << ", "
     << std::setw(3) << nRtx_ << ", "
     // << (isRecovered_ ? "R" : "I") << ", "
     // << std::setw(2) << nSegmentsTotal_ << "/" << nSegmentsReady_
@@ -254,6 +253,9 @@ BufferSlot::dump(bool showLastSegment) const
     // << getLifetime() << " "
     << std::setw(5) << assembledSize_ << " "
     << (showLastSegment ? lastFetched_->getInfo().getSuffix(suffix_filter::Thread) : nameInfo_.getSuffix(suffix_filter::Thread))
+    << " " << (lastFetched_ && lastFetched_->isOriginal() ? "ORIG" : "CACH")
+    << " dgen " << (showLastSegment ? lastFetched_->getDgen() : -1)
+    << " rtt " << (showLastSegment ? lastFetched_->getRoundTripDelayUsec()/1000 : -1)
     << " " << std::setw(5) << (getConsistencyState() & BufferSlot::HeaderMeta ? getHeader().publishTimestampMs_ : 0)
     << "]";
 
@@ -536,7 +538,7 @@ Buffer::reset()
         pool_->push(s.second);
     activeSlots_.clear();
  
-     LogDebugC << "reset. slot pool capacity " << pool_->capacity()
+     LogDebugC << "slot pool capacity " << pool_->capacity()
         << " pool size " << pool_->size() << " "
         << reservedSlots_.size() << " slot(s) locked for playback" << std::endl;
 
@@ -586,7 +588,7 @@ Buffer::requested(const std::vector<boost::shared_ptr<const ndn::Interest>>& int
 
         LogTraceC << "▷▷▷" << activeSlots_[it.first]->dump()
         << " x" << it.second.size() << std::endl;
-        LogDebugC << shortdump() << std::endl;
+        //LogDebugC << shortdump() << std::endl;
         LogTraceC << dump() << std::endl;
     }
 
@@ -623,12 +625,26 @@ Buffer::received(const boost::shared_ptr<WireSegment>& segment)
             
             (*sstorage_)[Indicator::AssembledNum]++;
             if (receipt.slot_->getNameInfo().class_ == SampleClass::Key)
+            {
                 (*sstorage_)[Indicator::AssembledKeyNum]++;
+                (*sstorage_)[Indicator::FrameFetchAvgKey] = (double)receipt.slot_->getLongestDrd()/1000.;
+            }
+            else
+            {
+                (*sstorage_)[Indicator::FrameFetchAvgDelta] = (double)receipt.slot_->getLongestDrd()/1000.;
+            }
+            
         }
     }
     else
+    {
+        if (receipt.oldState_ == BufferSlot::New)
+            LogDebugC << "new sample " 
+                      << receipt.segment_->getInfo().getSuffix(suffix_filter::Thread) 
+                      << std::endl;
         LogTraceC << " ► " << receipt.slot_->dump(true)
-        << receipt.segment_->getInfo().segNo_ << std::endl;
+                  << receipt.segment_->getInfo().segNo_ << std::endl;
+    }
     
     for (auto o:observers_) o->onNewData(receipt);
     
@@ -770,10 +786,10 @@ Buffer::dump() const
     boost::lock_guard<boost::recursive_mutex> scopedLock(mutex_);
     int i = 0;
     stringstream ss;
-    ss << std::endl;
+    ss << "buffer dump:";
 
     for (auto& s:activeSlots_)
-        ss << ++i << " " << s.second->dump() << std::endl;
+        ss << std::endl << ++i << " " << s.second->dump();
 
     return ss.str();
 }
@@ -782,22 +798,33 @@ std::string
 Buffer::shortdump() const
 {
     boost::lock_guard<boost::recursive_mutex> scopedLock(mutex_);
-    int i = 0;
     stringstream ss;
     ss << "[ ";
 
-    for (auto& s:activeSlots_)
-    {
-        if ((i++ % 10 == 0) || !s.second->getNameInfo().isDelta_ )
-            ss << s.second->getNameInfo().sampleNo_; 
-        
-        ss << (s.second->getNameInfo().isDelta_ ? "" : "K") 
-           << (s.second->getAssembledLevel() >= 1 ? "■" : "☐" );
-    }
+    //dumpSlotDictionary(ss, reservedSlots_);
+    dumpSlotDictionary(ss, activeSlots_);
 
     ss << " ]";
 
     return ss.str();
+}
+
+void
+Buffer::dumpSlotDictionary(stringstream& ss, 
+    const map<ndn::Name, boost::shared_ptr<BufferSlot>> &slotDict) const
+{
+    int i = 0;
+    for (auto& s:slotDict)
+    {
+        if ((i++ % 10 == 0) || !s.second->getNameInfo().isDelta_ )
+        {
+            ss << s.second->getNameInfo().sampleNo_; 
+            ss << (s.second->getNameInfo().isDelta_ ? "" : "K");
+        }
+
+        ss << (s.second->getAssembledLevel() >= 1 ? "■" :
+            (s.second->getAssembledLevel() > 0 ? "◘" : "☐" ));
+    }
 }
 
 //******************************************************************************
@@ -839,7 +866,7 @@ PlaybackQueue::pop(ExtractSlot extract)
 
         double playTime = (queue_.size() ? queue_.begin()->timestamp() - slot->getHeader().publishTimestampMs_ : samplePeriod());
         
-        LogDebugC << "-■-" << slot->dump()  << "~" << (int)playTime << "ms " 
+        LogTraceC << "-■-" << slot->dump()  << "~" << (int)playTime << "ms " 
             << dump() << std::endl;
 
         extract(slot, playTime);
@@ -900,9 +927,10 @@ PlaybackQueue::dump()
     ss.precision(2);
     
     ss << "[ ";
+    int idx = 0;
     for (auto s:queue_)
     {
-        if (s.slot()->getNameInfo().sampleNo_%10 == 0 ||
+        if ((idx++ % 10 == 0) || //s.slot()->getNameInfo().sampleNo_%10 == 0 ||
             !s.slot()->getNameInfo().isDelta_)
             ss  << s.slot()->getNameInfo().sampleNo_;
         if (s.slot()->getVerificationStatus() == BufferSlot::Verification::Verified)
@@ -935,7 +963,8 @@ PlaybackQueue::onNewData(const BufferReceipt& receipt)
 
         for (auto o:observers_) o->onNewSampleReady();
         
-        LogDebugC << "--■" << receipt.slot_->dump() << dump() << std::endl;
+        LogDebugC << "--■ add assembled frame " << receipt.slot_->dump() << std::endl;
+        LogDebugC << "dump " << dump() << buffer_->shortdump() << std::endl;
         
         (*sstorage_)[Indicator::BufferPlayableSize] = size();
     }

@@ -56,43 +56,6 @@ TEST(TestSink, TestSink)
 	remove(fname.c_str());
 }
 
-TEST(TestSink, TestWriteFrameNo)
-{
-	std::string fname = "/tmp/test-sink1.argb";
-	boost::shared_ptr<FileSink> sink(new FileSink(fname));
-	ArgbFrame frame(640, 480);
-	uint8_t *b = frame.getBuffer().get();
-
-	for (int i = 0; i < frame.getFrameSizeInBytes(); ++i)
-		b[i] = (i%256);
-
-	frame.setFrameNumber(111);
-	sink->setShouldWriteFrameNo(true);
-
-	*sink << frame;
-	sink.reset();
-
-	FILE *f = fopen(fname.c_str(), "rb");
-	fseek (f , 0 , SEEK_END);
-	long lSize = ftell(f);
-	rewind (f);
-
-
-	ASSERT_EQ(lSize-sizeof(unsigned int), frame.getFrameSizeInBytes());
-	uint8_t *buf = (uint8_t*)malloc(sizeof(uint8_t)*lSize);
-	unsigned int frameNo;
-
-	fread(&frameNo, sizeof(unsigned int), 1, f);
-	fread(buf, sizeof(uint8_t), lSize, f);
-
-	ASSERT_EQ(111, frameNo);
-
-	for (int i = 0; i < lSize-sizeof(unsigned int); ++i)
-		ASSERT_EQ(buf[i], (i%256));
-
-	remove(fname.c_str());
-}
-
 TEST(TestSink, TestSinkThrowOnCreation)
 {
 	EXPECT_ANY_THROW(FileSink(""));
@@ -266,134 +229,40 @@ TEST(TestPipeSink, TestWriteAndRead)
 	remove(fname.c_str());
 }
 
-TEST(TestPipeSink, TestWriteAndReadFrameNo)
-{
-	std::string fname = "/tmp/test-pipe.argb";
-	boost::shared_ptr<PipeSink> sink(new PipeSink(fname));
-	ArgbFrame frame(1280, 720);
-	uint8_t *b = frame.getBuffer().get();
-	int frameNo = 111, nFrames = 100;
-	sink->setShouldWriteFrameNo(true);
-	frame.setFrameNumber(frameNo);
-
-	for (int i = 0; i < frame.getFrameSizeInBytes(); ++i)
-		b[i] = (i%256);
-
-	boost::thread t([&sink, &frame, &frameNo, nFrames]{
-		int nWritten = 0;
-		do {
-			EXPECT_NO_THROW(*sink << frame);
-			if (sink->isLastWriteSuccessful())
-			{
-				nWritten++;
-				frame.setFrameNumber(++frameNo);
-			}
-		} while(nWritten < nFrames);
-	});
-
-	int pipe = open(fname.c_str(), O_RDONLY);
-	ASSERT_TRUE(pipe > 0);
-
-	int checkFrameNo = 111;
-
-	for (int i = 0; i < nFrames; ++i)
-	{
-		size_t bufSz = frame.getFrameSizeInBytes();
-		uint8_t *buf = (uint8_t*)malloc(sizeof(uint8_t)*bufSz);
-		int readBytes = 0;
-		int frameNo = 0;
-
-		int r = read(pipe, &frameNo, sizeof(unsigned int));
-		assert(r == sizeof(unsigned int));
-
-		do {
-			int r = read(pipe, buf+readBytes, bufSz-readBytes);
-			if (r > 0) readBytes += r;
-		} while (readBytes != bufSz);
-
-		EXPECT_EQ(checkFrameNo, frameNo);
-		checkFrameNo++;
-
-		free(buf);
-	}
-
-	EXPECT_TRUE(sink->isLastWriteSuccessful());
-	t.join(); 
-	sink.reset();
-
-	remove(fname.c_str());
-}
-
 #ifdef HAVE_NANOMSG
-TEST(TestNanoSink, TestWriteAndRead)
-{
-	std::string handle = "testnano";
-	boost::shared_ptr<NanoMsgSink> sink;
-	EXPECT_NO_THROW(sink.reset(new NanoMsgSink(handle)));
+// TEST(TestNanoSink, TestWriteAndRead)
+// {
+// 	std::string handle = "testnano";
+// 	boost::shared_ptr<NanoMsgSink> sink;
+// 	EXPECT_NO_THROW(sink.reset(new NanoMsgSink(handle)));
 
-	ArgbFrame frame(1280, 720);
-	uint8_t *b = frame.getBuffer().get();
+// 	ArgbFrame frame(1280, 720);
+// 	uint8_t *b = frame.getBuffer().get();
 
-	for (int i = 0; i < frame.getFrameSizeInBytes(); ++i)
-		b[i] = (i%256);
+// 	for (int i = 0; i < frame.getFrameSizeInBytes(); ++i)
+// 		b[i] = (i%256);
 
-	boost::thread t([&sink, &frame]{
-		EXPECT_NO_THROW(*sink << frame);
-		EXPECT_TRUE(sink->isLastWriteSuccessful());
-	});
+// 	boost::thread t([&sink, &frame]{
+// 		EXPECT_NO_THROW(*sink << frame);
+// 		std::cout << "wrote" << std::endl;
+// 		EXPECT_TRUE(sink->isLastWriteSuccessful());
+// 	});
 
-	int socket = ipc_setupSubSinkSocket(handle.c_str());
-	ASSERT_TRUE(socket >= 0);
+// 	int socket = ipc_setupSubSinkSocket(handle.c_str());
+// 	ASSERT_TRUE(socket >= 0);
 
-	size_t bufSz = frame.getFrameSizeInBytes();
-	uint8_t *buf = (uint8_t*)malloc(sizeof(uint8_t)*bufSz);
-	int readBytes = 0;
+// 	size_t bufSz = frame.getFrameSizeInBytes();
+// 	uint8_t *buf = (uint8_t*)malloc(sizeof(uint8_t)*bufSz);
+// 	int readBytes = 0;
 	
-	int r = ipc_readData(socket, buf, bufSz);
+// 	int r = ipc_readData(socket, buf, bufSz);
 
-	ASSERT_EQ(r, bufSz);
-	EXPECT_TRUE(sink->isLastWriteSuccessful());
+// 	ASSERT_EQ(r, bufSz);
+// 	EXPECT_TRUE(sink->isLastWriteSuccessful());
 
-	t.join(); 
-	sink.reset();
-}
-
-TEST(TestNanoSink, TestWriteAndReadFrame)
-{
-	std::string handle = "testnano";
-	boost::shared_ptr<NanoMsgSink> sink;
-	EXPECT_NO_THROW(sink.reset(new NanoMsgSink(handle)));
-	sink->setShouldWriteFrameNo(true);
-
-	ArgbFrame frame(1280, 720);
-	uint8_t *b = frame.getBuffer().get();
-
-	for (int i = 0; i < frame.getFrameSizeInBytes(); ++i)
-		b[i] = (i%256);
-	frame.setFrameNumber(111);
-
-	boost::thread t([&sink, &frame]{
-		EXPECT_NO_THROW(*sink << frame);
-		EXPECT_TRUE(sink->isLastWriteSuccessful());
-	});
-
-	int socket = ipc_setupSubSinkSocket(handle.c_str());
-	ASSERT_TRUE(socket >= 0);
-
-	size_t bufSz = frame.getFrameSizeInBytes();
-	uint8_t *buf = (uint8_t*)malloc(sizeof(uint8_t)*bufSz);
-	int readBytes = 0;
-	unsigned int frameNo;
-
-	int r = ipc_readFrame(socket, &frameNo, buf, bufSz);
-
-	EXPECT_EQ(111, frameNo);
-	ASSERT_EQ(r, bufSz+sizeof(unsigned int));
-	EXPECT_TRUE(sink->isLastWriteSuccessful());
-
-	t.join(); 
-	sink.reset();
-}
+// 	t.join(); 
+// 	sink.reset();
+// }
 #endif
 
 #if 0

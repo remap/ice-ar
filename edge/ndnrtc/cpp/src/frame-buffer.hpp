@@ -350,6 +350,10 @@ namespace ndnrtc
         
         std::string
         shortdump() const;
+
+        void 
+        dumpSlotDictionary(std::stringstream&, 
+            const std::map<ndn::Name, boost::shared_ptr<BufferSlot>> &) const;
         
         void invalidate(const ndn::Name& slotPrefix);
         void invalidatePrevious(const ndn::Name& slotPrefix);
@@ -376,6 +380,8 @@ namespace ndnrtc
         virtual int64_t pendingSize() const = 0;
         virtual double sampleRate() const = 0;
         virtual double samplePeriod() const = 0;
+        virtual void attach(IPlaybackQueueObserver*) = 0;
+        virtual void detach(IPlaybackQueueObserver*) = 0;
     };
 
     /**

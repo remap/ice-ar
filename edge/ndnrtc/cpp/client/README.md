@@ -179,6 +179,54 @@ In order to launch headless app, several command-line arguments must be provided
 - `-n` (*statistics sampling interval*) -- statistics sampling period in milliseconds (**optional**, default is 100ms);
 - `-v` (*verbose mode*) -- verbose output for std::out (not for log file specified in config file).
 
+## Loopback test
+This is a quick test to verify ndnrtc-client was built correctly. Two instances (producer and consumer) should be run on the same machine, but in separate terminal windows. For more details and more advanced example see next section below.
+
+In a first terminal window, type:
+
+```Shell
+ndnsec-keygen /ndnrtc-loopback | ndnsec-install-cert -
+ndnsec-dump-certificate -i /ndnrtc-loopback > tests/policy_config/signing.cert
+mkdir loopback
+nfd-start &> /tmp/nfd.log
+./ndnrtc-client -c tests/loopback-producer.cfg -s /ndnrtc-loopback -p tests/policy_config/rule.conf -i producer -t 35
+```
+
+This will start ndnrtc-client with producer configuration and run it for 35 seconds.
+In a second terminal window, type:
+
+```Shell
+./ndnrtc-client -c tests/loopback-consumer.cfg -s /ndnrtc-loopback -p tests/policy_config/rule.conf -i consumer -t 30
+```
+
+This will start ndnrtc-client with consumer configuration, configured to fetch from previously started producer.
+Check `loopback` folder - it'll contain a number of `log` and `stat` files. It also contains raw video `producer-camera.320x240` received by the consumer (see below on how to use `ffmpeg` to encode it into `h264` video).
+
+### Process results
+If you want to process results, install [PyNDN2](https://github.com/named-data/PyNDN2/blob/master/INSTALL.md) first.
+Then, do this:
+
+```Shell
+cd loopback
+git clone https://github.com/peetonn/ndnrtc-tools && export PATH=$PATH:$(pwd)/ndnrtc-tools
+prep-logs.sh
+../resources/report-loopback.sh
+```
+
+Check out `.png` files of the generated plots inside the folder:
+ - `bitrates.png` - shows calculated bitrates for the incoming data on consumer side (*Payload* - actual data without NDN overhead, *Wire* - data with NDN overhead);
+ - `buffer.png` - shows durations (in milliseconds) of the frame buffer: playout part (assembled, ready-to-go frames) and pending part (frames, yet expected to arrive);
+ - `network.png` - shows calculated rates for various network-level packets: Interests, Data, Nacks, Application Nacks, etc.;
+ - `playback.png` - shows *DRD* estimation (Data Retrieval Delay) for packets, end-to-end playback latency estimation and Frame demand (Lambda) estimation - minimum number of pending frames;
+ - `segments.png` - producer-side printout of number of segments for each frame per data type (data/parity), per frame type (key/delta);
+ - `states.png` - consumer states changes over time (1 - Idle, 2 - Bootstrapping, 3 - Adjusting, 4 - Fetching). 
+
+If you want to watch received video, use `ffmpeg` to transcode it to `.mp4`:
+
+```Shell
+ffmpeg -f rawvideo -vcodec rawvideo -s 320x240 -r 25 -pix_fmt argb -i producer-camera.320x240 -c:v libx264 -preset ultrafast -qp 0 producer-camera.mp4
+```
+
 ## Simple example
 > To run simple example with headless client, one will need to have [NFD installed and configured](http://named-data.net/doc/NFD/current/INSTALL.html).
 
@@ -195,10 +243,10 @@ Here, I'll explain how to run a simple producer-consumer setup (on two machines 
  
 </details>
 
-<pre>
-$ ndnsec-keygen /ndnrtc-test | ndnsec-install-cert -
-$ ndnsec-dump-certificate -i /ndnrtc-test > tests/policy_config/signing.cert
-</pre>
+```Shell
+ndnsec-keygen /ndnrtc-test | ndnsec-install-cert -
+ndnsec-dump-certificate -i /ndnrtc-test > tests/policy_config/signing.cert
+```
 
 <details>
  <summary>#2 <b>Run producer</b> <i>(expand for more info)</i></summary>
@@ -207,10 +255,10 @@ $ ndnsec-dump-certificate -i /ndnrtc-test > tests/policy_config/signing.cert
  
 </details>
 
-<pre>
-$ nfd-start
-$ ./ndnrtc-client -c tests/sample-producer.cfg -s /ndnrtc-test -p tests/policy_config/rule.conf -i instance -t 100
-</pre>
+```Shell
+nfd-start
+./ndnrtc-client -c tests/sample-producer.cfg -s /ndnrtc-test -p tests/policy_config/rule.conf -i instance1 -t 100
+```
 
 Producer will generate two log files:
 
@@ -225,19 +273,18 @@ Producer will generate two log files:
  > Nothing's here :neckbeard:
 </details>
 
-<pre>
-$ cp <producer-ndnrtc-cpp-folder>/tests/policy_config/signing.cert <consumer-ndnrtc-cpp-folder>/tests/policy_config
-</pre>
-
+ ```Shell
+ cp <producer-ndn-rtc-cpp-folder>/tests/policy_config/signing.cert <consumer-ndn-rtc-cpp-folder>/tests/policy_config
+ ```
 <details>
  <summary>#4 <b>Run consumer</b></summary>
  
  > Nothing's here :expressionless:
 </details>
  
- <pre>
- $ ./ndnrtc-client -c tests/sample-consumer.cfg -s /ndnrtc-test -p tests/policy_config/rule.conf -i instance2 -t 50 -v
- </pre>
+```Shell
+./ndnrtc-client -c tests/sample-consumer.cfg -s /ndnrtc-test -p tests/policy_config/rule.conf -i instance2 -t 50 -v
+```
  
 Consumer will generate multiple files:
 
@@ -254,6 +301,6 @@ Consumer will generate multiple files:
   - `/tmp/playback-ndnrtc-test-instance1-sound.stat`
   
 **To convert video into viewable format, use `ffmpeg`:**
-<pre>
+```Shell
 ffmpeg -f rawvideo -vcodec rawvideo -s 320x240 -r 25 -pix_fmt argb -i /tmp/instance1-camera.320x240 -c:v libx264 -preset ultrafast -qp 0 instance1-camera.mp4
-</pre>
+```
