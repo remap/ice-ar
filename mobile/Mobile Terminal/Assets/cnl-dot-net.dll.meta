@@ -1,6 +1,6 @@
 fileFormatVersion: 2
-guid: ee8eb246dc95942c78664bff80e4879e
-timeCreated: 1526407040
+guid: 2f53599051c1a48118598e1cb1a5f024
+timeCreated: 1517330150
 licenseType: Free
 PluginImporter:
   externalObjects: {}
@@ -11,15 +11,9 @@ PluginImporter:
   isOverridable: 0
   platformData:
   - first:
-      Android: Android
-    second:
-      enabled: 1
-      settings:
-        CPU: ARMv7
-  - first:
       Any: 
     second:
-      enabled: 0
+      enabled: 1
       settings: {}
   - first:
       Editor: Editor
@@ -27,6 +21,12 @@ PluginImporter:
       enabled: 0
       settings:
         DefaultValueInitialized: true
+  - first:
+      Windows Store Apps: WindowsStoreApps
+    second:
+      enabled: 0
+      settings:
+        CPU: AnyCPU
   userData: 
   assetBundleName: 
   assetBundleVariant: 
