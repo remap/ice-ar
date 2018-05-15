@@ -25,7 +25,7 @@ using System;
 using GoogleARCore.TextureReader;
 
 [UnmanagedFunctionPointerAttribute (CallingConvention.Cdecl)]
-public delegate void NdnRtcLibLogHandler (string message);
+public delegate void NdnRtcLibLogHandler ([MarshalAs(UnmanagedType.LPStr)]string message);
 
 public struct LocalStreamParams
 {
@@ -34,7 +34,6 @@ public struct LocalStreamParams
 	public int fecOn;
 	public int typeIsVideo;
 	public int ndnSegmentSize;
-	public int ndnDataFreshnessPeriodMs;
 	public int frameWidth;
 	public int frameHeight;
 	public int startBitrate;
@@ -45,8 +44,21 @@ public struct LocalStreamParams
 	public string threadName;
 }
 
+public struct FrameInfo
+{
+    [MarshalAs(UnmanagedType.I8)]
+    public Int64 timestamp_;
+    [MarshalAs(UnmanagedType.I4)]
+    public int playbackNo_;
+    [MarshalAs(UnmanagedType.LPStr)]
+    public string ndnName_;
+}
+
 public class NdnRtcWrapper
 {
+    [DllImport ("ndnrtc")]
+    public static extern IntPtr ndnrtc_getVersion();
+
 	[DllImport ("ndnrtc")]
 	public static extern bool ndnrtc_init (string hostname, string path, 
 	                                       string signingIdentity, string instanceId, NdnRtcLibLogHandler logHandler);
@@ -85,6 +97,9 @@ public class NdnRtcWrapper
 	[DllImport ("ndnrtc")]
 	public static extern int ndnrtc_LocalVideoStream_incomingArgbFrame (IntPtr stream,
 	uint width, uint height, IntPtr argbFrameData, uint frameSize);
+
+    [DllImport ("ndnrtc")]
+    public static extern FrameInfo ndnrtc_LocalVideoStream_getLastPublishedInfo(IntPtr stream);
 }
 
 public class LocalVideoStream
@@ -95,11 +110,12 @@ public class LocalVideoStream
 
 	public LocalVideoStream (LocalStreamParams p)
 	{
-
 		if (sinkCallbackDelegate == null)
 			sinkCallbackDelegate = new NdnRtcLibLogHandler (loggerSinkHandler);
 
+        Debug.Log ("Will create ndnrtc local video stream...");
 		ndnrtcHandle_ = NdnRtcWrapper.ndnrtc_createLocalStream (p, sinkCallbackDelegate);
+        Debug.Log ("Created ndnrtc local video stream");
 
 		basePrefix = Marshal.PtrToStringAnsi (NdnRtcWrapper.ndnrtc_LocalStream_getBasePrefix (ndnrtcHandle_));
 		fullPrefix = Marshal.PtrToStringAnsi (NdnRtcWrapper.ndnrtc_LocalStream_getPrefix (ndnrtcHandle_));
@@ -115,7 +131,7 @@ public class LocalVideoStream
 
 	public int processIncomingFrame (TextureReaderApi.ImageFormatType format, int width, int height, IntPtr pixelBuffer, int bufferSize)
 	{
-		Debug.Log ("[ndnrtc::videostream] incoming image format " + format + " size " + width + "x" + height);
+		// Debug.Log ("[ndnrtc::videostream] incoming image format " + format + " size " + width + "x" + height);
 
 		unsafe { 
 			byte* ptr = (byte*)pixelBuffer.ToPointer ();
@@ -151,13 +167,16 @@ public class LocalVideoStream
 
 			//IntPtr buffer = new IntPtr (pinnedBuffer.AddrOfPinnedObject ().ToInt64 ());
 
-//		public static extern int ndnrtc_LocalVideoStream_incomingARGBFrame (IntPtr stream,
-//			uint width, uint height, IntPtr argbFrameData, uint frameSize);
-			int frameNo = NdnRtcWrapper.ndnrtc_LocalVideoStream_incomingArgbFrame (ndnrtcHandle_, (uint)width, (uint)height, pixelBuffer, (uint)bufferSize);
-			//Debug.Log ("frameNo = " + frameNo);
-			//pinnedBuffer.Free ();
+        // publish frame using NDN-RTC
+        // return: res < 0 -- frame was skipped due to encoder decision (or library was busy publishing frame)
+        //         res >= 0 -- playback number of pbulished frame
+        int res = NdnRtcWrapper.ndnrtc_LocalVideoStream_incomingArgbFrame (ndnrtcHandle_, (uint)width, (uint)height, pixelBuffer, (uint)bufferSize);
 
-			return frameNo;
+        // query additional latest published frame information
+        FrameInfo finfo = NdnRtcWrapper.ndnrtc_LocalVideoStream_getLastPublishedInfo (ndnrtcHandle_);
+        Debug.Log ("res: " + res + " frameNo: " + finfo.playbackNo_ + " timestamp: " + finfo.timestamp_ + " ndn name: " + finfo.ndnName_);
+
+        return res > 0 ? finfo.playbackNo_ : res;
 	}
 
 
@@ -183,6 +202,9 @@ public class NdnRtc : MonoBehaviour
 		bool res;
 
 		try {
+            string version = Marshal.PtrToStringAnsi ( NdnRtcWrapper.ndnrtc_getVersion() );
+            Debug.Log ( "NDN-RTC version " + version );
+
 			res = NdnRtcWrapper.ndnrtc_init ("localhost", Application.persistentDataPath, signingIdentity, 
 				instanceId, libraryCallbackDelegate);
 
@@ -198,7 +220,6 @@ public class NdnRtc : MonoBehaviour
 				p.gop = 30;
 				p.startBitrate = 300;
 				p.maxBitrate = 7000;
-				p.ndnDataFreshnessPeriodMs = 2000;
 				p.ndnSegmentSize = 8000;
 				p.typeIsVideo = 1;
 				p.streamName = "back_camera";
