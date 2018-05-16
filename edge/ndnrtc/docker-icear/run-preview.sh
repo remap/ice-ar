@@ -12,6 +12,6 @@ while true; do
 		sleep 0.5
 	done; 
 
-	/ice-ar/edge/misc/nanopipe-adaptor/nanopipe $SINKFILE /preview/mt-out
+	/ice-ar/edge/ndnrtc/cpp/nanopipe-adaptor $SINKFILE /preview/mt-out
 done;
 

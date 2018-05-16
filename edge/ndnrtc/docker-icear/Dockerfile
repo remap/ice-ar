@@ -47,13 +47,9 @@ RUN git clone https://chromium.googlesource.com/chromium/tools/depot_tools.git \
 	&& echo OPENFECDIR=/openfec_v1.4.2 >> build/share/config.site \
 	&& echo WEBRTCDIR=/webrtc-checkout/src >> build/share/config.site \
 	&& ./configure --prefix=$(pwd)/build \
-	&& make && make install && make ndnrtc-client \
+	&& make && make install && make ndnrtc-client && make nanopipe-adaptor \
 	&& cd /webrtc-checkout/src \
 	&& rm -Rf tools-webrtc/ tools/ testing/ resources/ infra/ data/ buildtools/ build_overrides/ build/ base/ .git webrtc/ third_party/
-
-# build nanopipe adaptor - for previewing incoming video
-RUN cd /ice-ar/edge/misc/nanopipe-adaptor \
-	&& g++ nanopipe.c ipc-shim.c -std=c++11 -I/usr/local/include -L/usr/local/lib -lnanomsg -onanopipe
 
 # cleanup
 RUN apt-get remove -y wget autoconf automake libtool cmake git build-essential libconfig9 lsb-release protobuf-compiler
