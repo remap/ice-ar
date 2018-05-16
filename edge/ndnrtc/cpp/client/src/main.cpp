@@ -224,6 +224,10 @@ int run(const struct Args &args)
     rendererThread.join();
     rendererIo.stop();
 
+    rendererWork.reset();
+    rendererThread.join();
+    rendererIo.stop();
+
     // NOTE: this is temporary sleep. should fix simple-log for flushing all log records before release
     sleep(1);
     ndnlog::new_api::Logger::releaseAsyncLogging();

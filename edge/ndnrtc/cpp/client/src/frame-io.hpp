@@ -11,12 +11,13 @@
 #include <stdlib.h>
 #include <boost/shared_ptr.hpp>
 #include <atomic>
+#include <ndnrtc/interfaces.hpp>
 
 //******************************************************************************
 class RawFrame {
 public:
     RawFrame(unsigned int width, unsigned int height);
-    virtual ~RawFrame(){}
+    virtual ~RawFrame();
 
     virtual unsigned long getFrameSizeInBytes() const = 0;
     unsigned int getWidth() const { return width_; }
@@ -24,12 +25,12 @@ public:
     virtual void getFrameResolution(unsigned int& width, unsigned int& height) const = 0;
     boost::shared_ptr<uint8_t> getBuffer() const { return buffer_; }
 
-    void setFrameNumber(unsigned int fNo) { frameNo_ = fNo; }
-    unsigned int getFrameNumber() const { return frameNo_; }
+    void setFrameInfo(const ndnrtc::FrameInfo& frameInfo);
+    const ndnrtc::FrameInfo& getFrameInfo() const { return frameInfo_; };
 
-protected:
+  protected:
     unsigned int width_, height_;
-    unsigned int frameNo_;
+    ndnrtc::FrameInfo frameInfo_;
 
     virtual void setBuffer(const long& bufSize, boost::shared_ptr<uint8_t> buf) 
     { bufferSize_ = bufSize; buffer_ = buf; }
@@ -72,28 +73,31 @@ class IFrameSink {
 public:
     virtual IFrameSink& operator<<(const RawFrame& frame) = 0;
     virtual std::string getName() = 0;
-    virtual bool isLastWriteSuccessful() = 0;
     virtual bool isBusy() = 0;
-    virtual void setShouldWriteFrameNo(bool) = 0;
+    virtual bool isLastWriteSuccessful() = 0;
+    virtual void setWriteFrameInfo(bool) = 0;
+    virtual bool isWritingFrameInfo() const = 0;
 };
 
 /**
  * File-based frame sink
  */
-class FileSink : public IFrameSink, public FileFrameStorage {
-public:
-    FileSink(const std::string& path):FileFrameStorage(path),writeFrameNo_(false),isLastWriteSuccessful_(false){ openFile(); }
-    IFrameSink& operator<<(const RawFrame& frame);
+class FileSink : public IFrameSink, public FileFrameStorage
+{
+  public:
+    FileSink(const std::string &path) : FileFrameStorage(path), writeFrameInfo_(false) { openFile(); }
+    IFrameSink &operator<<(const RawFrame &frame);
     std::string getName() { return path_; }
 
     bool isLastWriteSuccessful() { return isLastWriteSuccessful_; }
     // TODO: whether file writing can be busy, probably, need to be tested
     bool isBusy() { return false; }
-    void setShouldWriteFrameNo(bool b) { writeFrameNo_ = b; }
+    void setWriteFrameInfo(bool b) { writeFrameInfo_ = b; }
+    bool isWritingFrameInfo() const { return writeFrameInfo_; }
 
-private:
-    FILE* openFile_impl(std::string path);
-    bool writeFrameNo_;
+  private:
+    FILE *openFile_impl(std::string path);
+    bool writeFrameInfo_;
     std::atomic<bool> isLastWriteSuccessful_;
 };
 
@@ -113,12 +117,13 @@ public:
 
     bool isLastWriteSuccessful() { return isLastWriteSuccessful_; }
     bool isBusy() { return isWriting_; }
-    void setShouldWriteFrameNo(bool b) { writeFrameNo_ = b; }
+    void setWriteFrameInfo(bool b) { writeFrameInfo_ = b; }
+    bool isWritingFrameInfo() const { return writeFrameInfo_; }
 
 private:
     std::string pipePath_;
     int pipe_;
-    bool writeFrameNo_;
+    bool writeFrameInfo_;
     std::atomic<bool> isLastWriteSuccessful_, isWriting_;
 
     void createPipe(const std::string& path);
@@ -138,11 +143,12 @@ public:
     virtual std::string getName() { return handle_; }
     virtual bool isBusy() { return false; }
     bool isLastWriteSuccessful() { return isLastWriteSuccessful_; }
-    void setShouldWriteFrameNo(bool b) { writeFrameNo_ = b; }
+    void setWriteFrameInfo(bool b) { writeFrameInfo_ = b; }
+    bool isWritingFrameInfo() const { return writeFrameInfo_; }
 
 private:
     std::string handle_;
-    bool isLastWriteSuccessful_, writeFrameNo_;
+    bool writeFrameInfo_, isLastWriteSuccessful_;
     int nnSocket_;
 };
 #endif

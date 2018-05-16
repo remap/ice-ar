@@ -34,7 +34,7 @@
  *      http://stackoverflow.com/questions/15778774/using-ffmpeg-to-losslessly-convert-yuv-to-another-format-for-editing-in-adobe-pr
  */
 
-typedef boost::shared_ptr<IFrameSink>(*SinkFactoryCreate)(const std::string&);
+typedef std::function<boost::shared_ptr<IFrameSink>(const std::string&)> SinkFactoryCreate;
 
 class RendererInternal : public ndnrtc::IExternalRenderer{
 public:
@@ -49,7 +49,7 @@ public:
     ~RendererInternal();
     
     virtual uint8_t* getFrameBuffer(int width, int height);
-    virtual void renderBGRAFrame(int64_t timestamp, uint frameNo, int width, int height,
+    virtual void renderBGRAFrame(const ndnrtc::FrameInfo&, int width, int height,
                          const uint8_t* buffer);
     
 private:

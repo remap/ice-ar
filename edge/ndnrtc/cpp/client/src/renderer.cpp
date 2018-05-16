@@ -13,8 +13,13 @@
 
 using namespace std;
 
+<<<<<<< HEAD
 RendererInternal::RendererInternal(const std::string sinkName, SinkFactoryCreate sinkFactoryCreate,
                                    boost::asio::io_service& io, bool suppressBadSink)
+=======
+RendererInternal::RendererInternal(const std::string sinkName, SinkFactoryCreate sinkFactoryCreate, 
+        boost::asio::io_service& io, bool suppressBadSink)
+>>>>>>> 2a44bfa8a5e5189fe113a80dcd0b15933cb05b2d
     : sinkName_(sinkName), createSink_(sinkFactoryCreate), io_(io),
       frameCount_(0), isDumping_(true), suppressBadSink_(suppressBadSink),
       frame_(new ArgbFrame(0, 0))
@@ -43,13 +48,14 @@ uint8_t *RendererInternal::getFrameBuffer(int width, int height)
 
         LogInfo("") << "receiving frame of resolution " << width << "x" << height
                     << "(" << frame_->getFrameSizeInBytes() << " bytes per frame)."
-                    << (isDumping_ ? string(" writing to ") + sink_->getName() : "") << std::endl;
+                    << (isDumping_ ? string(" writing to ") + sink_->getName() : "")
+                    << " writing frame info: " << sink_->isWritingFrameInfo() << std::endl;
     }
 
     return frame_->getBuffer().get();
 }
 
-void RendererInternal::renderBGRAFrame(int64_t timestamp, uint frameNo, int width, int height,
+void RendererInternal::renderBGRAFrame(const ndnrtc::FrameInfo& frameInfo, int width, int height,
                                        const uint8_t *buffer)
 {
     if (!frame_.get())
@@ -59,11 +65,14 @@ void RendererInternal::renderBGRAFrame(int64_t timestamp, uint frameNo, int widt
         throw runtime_error("wrong frame size supplied");
 
     // do whatever we need, i.e. drop frame, render it, write to file, etc.
-    LogDebug("") << "received frame " << frameNo 
+    LogDebug("") << "received frame " << frameInfo.playbackNo_ 
                  << " (" << width << "x" << height << ") at "
-                 << timestamp << " ms"
-                 << ", frame count: " << frameCount_ << std::endl;
+                 << frameInfo.timestamp_ << " ms"
+                 << ", frame count: " << frameCount_ 
+                 << ", NDN name: " << frameInfo.ndnName_
+                 << std::endl;
 
+    frame_->setFrameInfo(frameInfo);
     dumpFrame();
     frameCount_++;
 }
@@ -118,11 +127,11 @@ void RendererInternal::dumpFrame()
         io_.dispatch([this]{
             *sink_ << *frame_;
             if (sink_->isLastWriteSuccessful())
-                LogDebug("") << "dumped frame " << frame_->getFrameNumber() 
+                LogDebug("") << "dumped frame " << frame_->getFrameInfo().playbackNo_ 
                     << " (" << frame_->getFrameSizeInBytes() 
                     << " bytes)" << std::endl;
             else
-                LogWarn("") << "couldn't dump frame " << frame_->getFrameNumber() 
+                LogWarn("") << "couldn't dump frame " << frame_->getFrameInfo().playbackNo_
                     << "(" << frame_->getFrameSizeInBytes() 
                     << " bytes). disk space issues/pipe is not open?" << std::endl;
         });
