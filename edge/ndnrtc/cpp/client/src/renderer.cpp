@@ -13,13 +13,8 @@
 
 using namespace std;
 
-<<<<<<< HEAD
-RendererInternal::RendererInternal(const std::string sinkName, SinkFactoryCreate sinkFactoryCreate,
-                                   boost::asio::io_service& io, bool suppressBadSink)
-=======
 RendererInternal::RendererInternal(const std::string sinkName, SinkFactoryCreate sinkFactoryCreate, 
-        boost::asio::io_service& io, bool suppressBadSink)
->>>>>>> 2a44bfa8a5e5189fe113a80dcd0b15933cb05b2d
+                                   boost::asio::io_service& io, bool suppressBadSink)
     : sinkName_(sinkName), createSink_(sinkFactoryCreate), io_(io),
       frameCount_(0), isDumping_(true), suppressBadSink_(suppressBadSink),
       frame_(new ArgbFrame(0, 0))
