@@ -849,7 +849,7 @@ void reverse_argb(char* buf, int size){
 
 }
 
-image load_raw_image_cv(char *filename, int w, int h, int channels, unsigned int *frameNo)
+image load_raw_image_cv(char *filename, int w, int h, int channels, NanoPipeFrameInfo *finfo)
 {
 #ifndef USE_NANOMSG
     if (frame_pipe_ < 0)
@@ -918,14 +918,22 @@ image load_raw_image_cv(char *filename, int w, int h, int channels, unsigned int
         printf("> read frame #%u (%d bytes total, %d iterations)\n",
             *frameNo, c, nIter);
 #else
-        int ret = ipc_readFrame(frame_socket_, frameNo, buffer, bufferSize);
+        static unsigned char frameHeader[512];
+        int ret = ipc_readFrame(frame_socket_, frameHeader, buffer, bufferSize);
 
         if (ret < 0)
             printf("> error reading from socket (%s): %s (%d) \n", 
                 filename, ipc_lastErrorCode(), ipc_lastError());
         else
-            printf("> read frame #%u (%d bytes total)\n",
-                *frameNo, ret);
+        {
+            finfo->timestamp_ = ((NanoPipeFrameInfo*)frameHeader)->timestamp_;
+            finfo->playbackNo_ = ((NanoPipeFrameInfo*)frameHeader)->playbackNo_;
+            size_t stringOffset = sizeof(finfo) - sizeof(char*);
+            strcpy(finfo->ndnName_, frameHeader+stringOffset);
+
+            printf("> read frame #%u %s (%d bytes total)\n",
+                finfo->playbackNo_, finfo->ndnName_, ret);
+        }
 #endif
         
     } // read frame block
@@ -954,9 +962,9 @@ image load_raw_image_cv(char *filename, int w, int h, int channels, unsigned int
     return out;
 }
 
-image load_raw_image(char *filename, int w, int h, int c, unsigned int *frameNo)
+image load_raw_image(char *filename, int w, int h, int c, NanoPipeFrameInfo *finfo)
 {
-    image out = load_raw_image_cv(filename, w, h, c, frameNo);
+    image out = load_raw_image_cv(filename, w, h, c, finfo);
     if((h && w) && (h != out.h || w != out.w)){
         image resized = resize_image(out, w, h);
         free_image(out);

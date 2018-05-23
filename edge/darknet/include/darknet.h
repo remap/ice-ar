@@ -606,6 +606,13 @@ float train_networks(network *nets, int n, data d, int interval);
 void sync_nets(network *nets, int n, int interval);
 void harmless_update_network_gpu(network net);
 #endif
+
+typedef struct {
+    unsigned long long timestamp_;
+    int playbackNo_;
+    char* ndnName_;
+} NanoPipeFrameInfo;
+
 void save_image_png(image im, const char *name);
 void get_next_batch(data d, int n, int offset, float *X, float *y);
 void grayscale_image_3c(image im);
@@ -649,7 +656,7 @@ void free_network(network net);
 void set_batch_network(network *net, int b);
 void set_temp_network(network net, float t);
 image load_image(char *filename, int w, int h, int c);
-image load_raw_image(char *filename, int w, int h, int c, unsigned int *frameNo);
+image load_raw_image(char *filename, int w, int h, int c, NanoPipeFrameInfo *info);
 image load_image_color(char *filename, int w, int h);
 image make_image(int w, int h, int c);
 image resize_image(image im, int w, int h);
