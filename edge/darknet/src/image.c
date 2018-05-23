@@ -919,6 +919,7 @@ image load_raw_image_cv(char *filename, int w, int h, int channels, NanoPipeFram
             *frameNo, c, nIter);
 #else
         static unsigned char frameHeader[512];
+        memset(frameHeader, 0, 512);
         int ret = ipc_readFrame(frame_socket_, frameHeader, buffer, bufferSize);
 
         if (ret < 0)
@@ -929,7 +930,7 @@ image load_raw_image_cv(char *filename, int w, int h, int channels, NanoPipeFram
             finfo->timestamp_ = ((NanoPipeFrameInfo*)frameHeader)->timestamp_;
             finfo->playbackNo_ = ((NanoPipeFrameInfo*)frameHeader)->playbackNo_;
             size_t stringOffset = sizeof(finfo) - sizeof(char*);
-            strcpy(finfo->ndnName_, frameHeader+stringOffset);
+            strcpy(finfo->ndnName_, (char*)(frameHeader+stringOffset));
 
             printf("> read frame #%u %s (%d bytes total)\n",
                 finfo->playbackNo_, finfo->ndnName_, ret);
