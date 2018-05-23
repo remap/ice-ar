@@ -714,7 +714,7 @@ void ndnrtc_detector(char *datacfg, char *cfgfile, char *weightfile, char *filen
         if (nms) do_nms_obj(boxes, probs, l.w*l.h*l.n, l.classes, nms);
         //else if (nms) do_nms_sort(boxes, probs, l.w*l.h*l.n, l.classes, nms);
 
-        draw_detections_ndnrtc(im, l.w*l.h*l.n, thresh, boxes, probs, masks, names, alphabet, l.classes, frameNo,
+        draw_detections_ndnrtc(im, l.w*l.h*l.n, thresh, boxes, probs, masks, names, alphabet, l.classes, frameInfo,
             annotationsFile, previewFile);
 
         free_image(im);
