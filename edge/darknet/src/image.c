@@ -128,11 +128,11 @@ void dump_annotations(NanoPipeFrameInfo finfo, cJSON *array, const char *filenam
         cJSON_AddItemToObject(item, "annotations", array);
         cJSON_AddItemToObject(item, "playbackNo", cJSON_CreateNumber(finfo.playbackNo_));
         cJSON_AddItemToObject(item, "timestamp", cJSON_CreateNumber(finfo.timestamp_));
-        cJSON_AddItemToObject(item, "ndn_name", cJSON_CreateString(finfo.ndnName_));
+        cJSON_AddItemToObject(item, "frameName", cJSON_CreateString(finfo.ndnName_));
         cJSON_AddItemToObject(item, "engine", cJSON_CreateString("yolo"));
 
-        char *jsonString = cJSON_Print(item);
-        printf("> dumping json: %s\n",jsonString);
+        char *jsonString = cJSON_PrintUnformatted(item);
+        printf("> dumping json: %s\n", jsonString);
         cJSON_DetachItemFromObject(item, "annotations");
         cJSON_Delete(item);
 
