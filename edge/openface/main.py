@@ -160,8 +160,8 @@ def processFrames(socket, frameWidth, frameHeight):
 
 #******************************************************************************
 def usage():
-    print "\t"+sys.argv[0]+" [--frame-width=, --frame-height=, --input=, --output=, --preview=] --dlibmodel=<dlib model path> --torchmodel=<torch model path> --labels=<labels file>, --reps=<reps file> [pipe file]"
     print "usage: "
+    print "\t"+sys.argv[0]+" [--frame-width=, --frame-height=, --input=, --output=, --preview=] --dlibmodel=<dlib model path> --torchmodel=<torch model path> --labels=<labels file>, --reps=<reps file> [pipe file]"
 
 def main():
     global dlibObject, dumpSocket, torchNn, torchModelPath, imagePipeName, dlibModelPath
