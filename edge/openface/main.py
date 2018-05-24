@@ -34,12 +34,15 @@ imagePipe = None
 
 def dumpImage(img):
     global imagePipe, imagePipeName
-    if not imagePipe:
-        if not os.path.exists(imagePipeName):
-            os.mkfifo(imagePipeName, 0644)
-        imagePipe = os.open(imagePipeName, os.O_WRONLY)
-    else:
-        os.write(imagePipe, img.tobytes())
+    try:
+        if not imagePipe:
+            if not os.path.exists(imagePipeName):
+                os.mkfifo(imagePipeName, 0644)
+            imagePipe = os.open(imagePipeName, os.O_WRONLY|os.O_NONBLOCK|os.O_EXCL)
+        else:
+            os.write(imagePipe, img.tobytes())
+    except OSError as e:
+        imagePipe = None
 
 def drawBox(img, rect, label):
     cv2.rectangle(img, (rect.left(), rect.top()), (rect.right(), rect.bottom()), (0,0,255), 2)
@@ -67,7 +70,7 @@ def readFrame(socket, frameSize):
     if not err:
         headerStruct = struct.Struct('Q I %ds' % strLen)
         timestamp, frameNo, frameName = headerStruct.unpack(headerBuf)
-    return timestamp, frameNo, frameName, err
+    return timestamp, frameNo, str(frameName.strip(b'\x00').decode()), frame, err
 
 def getAnnotationFromRect(r, w, h):
     annotation = {}
