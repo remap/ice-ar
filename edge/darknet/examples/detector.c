@@ -686,10 +686,14 @@ void ndnrtc_detector(char *datacfg, char *cfgfile, char *weightfile, char *filen
     printf("> see preview at %s (ffplay -f rawvideo -vcodec rawvideo -s %dx%d -pix_fmt bgra -i %s)\n", 
             previewFile, frame_width, frame_height, previewFile);
 
-    while(1){
+    static char frameName[512];
+    static NanoPipeFrameInfo frameInfo = {0, 0, frameName};
 
-        unsigned int frameNo;
-        image im = load_raw_image(input,frame_width,frame_height,0, &frameNo);
+    while(1){
+        unsigned int frameNo = 0;
+        memset(frameName, 0, 512);
+
+        image im = load_raw_image(input,frame_width,frame_height,0, &frameInfo);
         image sized = letterbox_image(im, net.w, net.h);
         layer l = net.layers[net.n-1];
 
@@ -710,7 +714,7 @@ void ndnrtc_detector(char *datacfg, char *cfgfile, char *weightfile, char *filen
         if (nms) do_nms_obj(boxes, probs, l.w*l.h*l.n, l.classes, nms);
         //else if (nms) do_nms_sort(boxes, probs, l.w*l.h*l.n, l.classes, nms);
 
-        draw_detections_ndnrtc(im, l.w*l.h*l.n, thresh, boxes, probs, masks, names, alphabet, l.classes, frameNo,
+        draw_detections_ndnrtc(im, l.w*l.h*l.n, thresh, boxes, probs, masks, names, alphabet, l.classes, frameInfo,
             annotationsFile, previewFile);
 
         free_image(im);

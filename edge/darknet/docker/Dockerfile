@@ -17,5 +17,6 @@ ENV FRAME_WIDTH=320
 ENV FRAME_HEIGHT=180
 ENV OUTPUT=/out/ice-annotations
 ENV PREVIEW=/preview/yolo-out
+ENV THRESHOLD=0.1
 
-CMD cd /ice-ar/edge/darknet && ./darknet detector ndnrtc cfg/coco.data cfg/yolo.cfg yolo.weights -input $INPUT -w $FRAME_WIDTH -h $FRAME_HEIGHT -output $OUTPUT -preview $PREVIEW
+CMD cd /ice-ar/edge/darknet && ./darknet detector ndnrtc cfg/coco.data cfg/yolo.cfg yolo.weights -input $INPUT -w $FRAME_WIDTH -h $FRAME_HEIGHT -output $OUTPUT -preview $PREVIEW -thresh $THRESHOLD

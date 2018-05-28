@@ -272,7 +272,7 @@ std::string readAnnotations(int pipe, unsigned int &frameNo, std::string &engine
     
     if (item)
     {
-      cJSON *fNo = cJSON_GetObjectItem(item, "frameNo");
+      cJSON *fNo = cJSON_GetObjectItem(item, "playbackNo");
       cJSON *eng = cJSON_GetObjectItem(item, "engine");
       cJSON *array = cJSON_GetObjectItem(item, "annotations");
 

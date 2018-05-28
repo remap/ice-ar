@@ -3,7 +3,7 @@
 
 while true; do
 	while [ -z "$SINK" ]; do
-		SINK=`cat $CONSUMER_CONFIG | gawk ' match($0, /sink.?=.*"(.*)";/, a) { print a[1] }'`
+                SINK=`cat icear-consumer.cfg | awk '/sink\s?=\s?{/,/.*}$/ { print }' | gawk ' match($0, /name.?=.*"(.*)";/, a) { print a[1] }'`
 		sleep 0.2
 	done;
 

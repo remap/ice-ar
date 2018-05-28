@@ -84,7 +84,7 @@ static int feature_socket_ = -1; // yolo->ndnrtc: publish features
 
 // #endif
 
-void dump_annotations(unsigned int frameNo, cJSON *array, const char *filename)
+void dump_annotations(NanoPipeFrameInfo finfo, cJSON *array, const char *filename)
 {
     const char *annotationsPipe = filename;
 
@@ -126,11 +126,13 @@ void dump_annotations(unsigned int frameNo, cJSON *array, const char *filename)
         cJSON *item = cJSON_CreateObject();
         
         cJSON_AddItemToObject(item, "annotations", array);
-        cJSON_AddItemToObject(item, "frameNo", cJSON_CreateNumber(frameNo));
+        cJSON_AddItemToObject(item, "playbackNo", cJSON_CreateNumber(finfo.playbackNo_));
+        cJSON_AddItemToObject(item, "timestamp", cJSON_CreateNumber(finfo.timestamp_));
+        cJSON_AddItemToObject(item, "frameName", cJSON_CreateString(finfo.ndnName_));
         cJSON_AddItemToObject(item, "engine", cJSON_CreateString("yolo"));
 
-        char *jsonString = cJSON_Print(item);
-        // printf("> sending json: %s\n",jsonString);
+        char *jsonString = cJSON_PrintUnformatted(item);
+        printf("> dumping json: %s\n", jsonString);
         cJSON_DetachItemFromObject(item, "annotations");
         cJSON_Delete(item);
 
@@ -370,7 +372,7 @@ image **load_alphabet()
 }
 
 void draw_detections_ndnrtc(image im, int num, float thresh, box *boxes, float **probs, float **masks, char **names, 
-    image **alphabet, int classes, unsigned int frameNo, const char *annotationsFile, const char *previewFile)
+    image **alphabet, int classes, NanoPipeFrameInfo finfo, const char *annotationsFile, const char *previewFile)
 {
     int i;
     cJSON *annotations = cJSON_CreateArray();
@@ -392,7 +394,7 @@ void draw_detections_ndnrtc(image im, int num, float thresh, box *boxes, float *
             }
 
             //printf("%d %s: %.0f%%\n", i, names[class], prob*100);
-            printf("detected %s: %.0f%%\n", names[class], prob*100);
+            //printf("detected %s: %.0f%%\n", names[class], prob*100);
             int offset = class*123457 % classes;
             float red = get_color(2,offset,classes);
             float green = get_color(1,offset,classes);
@@ -458,7 +460,7 @@ void draw_detections_ndnrtc(image im, int num, float thresh, box *boxes, float *
 
     if (cJSON_GetArraySize(annotations) > 0)
     {
-        dump_annotations(frameNo, annotations, annotationsFile);
+        dump_annotations(finfo, annotations, annotationsFile);
     }
     else
         printf("> nothing passed threshold %.2f (%d detected)\n", thresh, num);
@@ -849,7 +851,7 @@ void reverse_argb(char* buf, int size){
 
 }
 
-image load_raw_image_cv(char *filename, int w, int h, int channels, unsigned int *frameNo)
+image load_raw_image_cv(char *filename, int w, int h, int channels, NanoPipeFrameInfo *finfo)
 {
 #ifndef USE_NANOMSG
     if (frame_pipe_ < 0)
@@ -918,14 +920,23 @@ image load_raw_image_cv(char *filename, int w, int h, int channels, unsigned int
         printf("> read frame #%u (%d bytes total, %d iterations)\n",
             *frameNo, c, nIter);
 #else
-        int ret = ipc_readFrame(frame_socket_, frameNo, buffer, bufferSize);
+        static unsigned char frameHeader[512];
+        memset(frameHeader, 0, 512);
+        int ret = ipc_readFrame(frame_socket_, frameHeader, buffer, bufferSize);
 
         if (ret < 0)
             printf("> error reading from socket (%s): %s (%d) \n", 
                 filename, ipc_lastErrorCode(), ipc_lastError());
         else
-            printf("> read frame #%u (%d bytes total)\n",
-                *frameNo, ret);
+        {
+            finfo->timestamp_ = ((NanoPipeFrameInfo*)frameHeader)->timestamp_;
+            finfo->playbackNo_ = ((NanoPipeFrameInfo*)frameHeader)->playbackNo_;
+            size_t stringOffset = sizeof(NanoPipeFrameInfo) - sizeof(char*);
+            strcpy(finfo->ndnName_, (char*)(frameHeader+stringOffset));
+
+            printf("> read frame #%u %s (%d bytes total)\n",
+                finfo->playbackNo_, finfo->ndnName_, ret);
+        }
 #endif
         
     } // read frame block
@@ -954,9 +965,9 @@ image load_raw_image_cv(char *filename, int w, int h, int channels, unsigned int
     return out;
 }
 
-image load_raw_image(char *filename, int w, int h, int c, unsigned int *frameNo)
+image load_raw_image(char *filename, int w, int h, int c, NanoPipeFrameInfo *finfo)
 {
-    image out = load_raw_image_cv(filename, w, h, c, frameNo);
+    image out = load_raw_image_cv(filename, w, h, c, finfo);
     if((h && w) && (h != out.h || w != out.w)){
         image resized = resize_image(out, w, h);
         free_image(out);
