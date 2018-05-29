@@ -29,7 +29,7 @@ import json
 import subprocess
 import numpy
 import glob
-
+import urllib
 from pymongo import MongoClient
 from copy import deepcopy
 from bson.objectid import ObjectId
@@ -69,7 +69,8 @@ class QueryHandler(tornado.web.RequestHandler):
 
         global workerQueues, debug
         print("New query request "+str(self.request))
-        data = json.loads(self.request.body.decode('utf-8')) 
+	intermediate = str(self.request.body.decode('utf-8'))
+        data = json.loads(urllib.unquote(intermediate).decode('utf8')) 
         print("Got these annotations: "+str(data)+" and will make query now...")
         
         temp = []
