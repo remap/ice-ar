@@ -25,7 +25,6 @@ def main():
     #needs to have MongoDB daemon running on server -- mongod in terminal
     client = MongoClient()
     db = client.db
-    db.entries.drop()
     entr = db.entries
 
     if len(sys.argv) == 2:
