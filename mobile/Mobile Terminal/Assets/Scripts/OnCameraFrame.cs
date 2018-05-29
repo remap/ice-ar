@@ -11,6 +11,7 @@ using PlaynomicsPlugin;
 using Kalman;
 using System;
 using UnityEngine.Rendering;
+using UnityEngine.Networking;
 
 public class OnCameraFrame : MonoBehaviour {
 
@@ -24,9 +25,13 @@ public class OnCameraFrame : MonoBehaviour {
 	private AnnotationsFetcher aFetcher_;
 	private AnnotationsFetcher openFaceFetcher_;
 	private AssetBundleFetcher assetFetcher_;
+    private string semanticDbQueryUrl_;
     
+    // ---
+    // added by Peter
     private int test_frameCounter_; // delete this var. it is for testing only
     private string test_frameName_; // delete this var. it is for testing only
+    // --- end
 
 	private ConcurrentQueue<Dictionary<int, FrameObjectData>> frameBuffer;
 	private static ConcurrentQueue<BoxData> boundingBoxBufferToCalc;
@@ -79,6 +84,12 @@ public class OnCameraFrame : MonoBehaviour {
 			new Color (255f/255, 193f/255, 130f/255)
 		};
 			
+
+        // ---
+        // added by Peter
+        // TBD: this should not be hardcoded
+        semanticDbQueryUrl_ = "http://131.179.142.7:8888/query";
+        // --- end
 
 		// @Therese - these need to be moved somewhere to a higher-level entity as
 		// configuration parameters (may be changed frequently during testing)
@@ -288,6 +299,27 @@ public class OnCameraFrame : MonoBehaviour {
 		});
 	}
 
+    // ---
+    // added by Peter
+    // IEnumerator runWWW(WWW www)
+    IEnumerator runWWW(UnityWebRequest www)
+    {
+        Debug.Log("[semantic-db]: sending request...");
+
+        yield return www.SendWebRequest();
+
+        if (www.isNetworkError || www.isHttpError)
+        {
+            Debug.Log("[semantic-db]: query error " + www.error);
+        }
+        else
+        {
+            Debug.Log("[semantic-db]: got results back: "+www.downloadHandler.text);
+            byte[] results = www.downloadHandler.data;
+        }
+    }
+    // --- end
+
 	public void OnImageAvailable(TextureReaderApi.ImageFormatType format, int width, int height, IntPtr pixelBuffer, int bufferSize)
 	{
 		try{
@@ -302,6 +334,8 @@ public class OnCameraFrame : MonoBehaviour {
 		// int publishedFrameNo = NdnRtc.videoStream.processIncomingFrame (format, width, height, pixelBuffer, bufferSize);
 		Debug.Log ("Published frame number: " + publishedFrameNo);
         
+        // ---
+        // added by Peter
         // this is an example/testing code for FrameFetcher.
         // delete when it's not needed anymore
         if (publishedFrameNo >= 0)
@@ -321,6 +355,7 @@ public class OnCameraFrame : MonoBehaviour {
                     });
             }
         }
+        // --- end
 
 		if (publishedFrameNo >= 0) {
 				Debug.Log("create frame object frame number: " + publishedFrameNo);
@@ -340,6 +375,22 @@ public class OnCameraFrame : MonoBehaviour {
 				int frameNumber = publishedFrameNo; // storing frame number locally
 				string debuglog = jsonArrayString.Replace(System.Environment.NewLine, " ");
 				Debug.Log("Received annotations JSON (frame " + frameNumber + "): " + debuglog);
+
+                // ---
+                // added by Peter
+                // extracting "annotations" field from received JSON data for making querying the DB
+
+                // the query string needs to be JSON's "annotations" array
+                string queryString = "{\"annotations\":[{\"xleft\":0.37396889925003052,\"xright\":0.41286516189575195,\"ytop\":0.48137125372886658,\"ybottom\":0.55187106132507324,\"label\":\"cup\",\"prob\":0.18228136003017426},{\"xleft\":0.73392981290817261,\"xright\":0.81988757848739624,\"ytop\":0.5637977123260498,\"ybottom\":0.59101009368896484,\"label\":\"mouse\",\"prob\":0.16920529305934906}]}";
+
+                Debug.Log("[semantic-db]: will query db...");
+                // WWW wwwQuery = new WWW(semanticDbQueryUrl_, pData, headers);
+                UnityWebRequest wwwQuery = UnityWebRequest.Post(semanticDbQueryUrl_, queryString);
+                wwwQuery.SetRequestHeader("Content-Type", "application/json");
+                // StartCoroutine(runWWW(wwwQuery));
+                runWWW(wwwQuery);
+                // -- end
+
 				//Debug.Log("annotations string length: " + jsonArrayString.Length);
 				string[] testDebug = jsonArrayString.Split(']');
 				string formatDebug = testDebug[0] + "]";
