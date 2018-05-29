@@ -26,7 +26,7 @@ def main():
     #needs to have MongoDB daemon running on server -- mongod in terminal
     client = MongoClient()
     db = client.db
-    #db.entries.drop()
+    db.entries.drop()
     entr = db.entries
 
     if len(sys.argv) == 2:
@@ -45,7 +45,7 @@ def main():
             curr = json.loads(curr)
 
             hist = entr.find_one({"oid": curr["timestamp"]})
-            entry = {"oid": curr["timestamp"], "objects": [], "labels": []}
+            entry = {"oid": curr["timestamp"], "name": curr["frameName"], "objects": [], "labels": []}
 
             temp = []
             seen = []
@@ -108,15 +108,15 @@ def main():
                 if count > 15:
                     continue
 
-                curr = entr.find_one({"_id": document["_id"]})
-                currobjs = curr["objects"]
+                curs = entr.find_one({"_id": document["_id"]})
+                currobjs = curs["objects"]
                 probs = []
                 for key, value in numprobs.iteritems():
                     for currobj in currobjs:
                         if currobj["label"] == key:
                             probs.append(float(currobj["prob"]) * float(value))
                 if len(probs) > 0:
-                    pairs[curr["oid"]] = sum(probs)
+                    pairs[curs["name"]] = sum(probs)
                 count = count + 1
 
             sortedpairs = sorted(pairs.items(), key=operator.itemgetter(1))
