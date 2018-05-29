@@ -305,7 +305,7 @@ void dumpAnnotations(int pipe, std::string annotations)
     if (db_pipe >= 0)
     {
         // remove all newlines
-        boost::replace_all(annotations, "\r\n", "");
+        // boost::replace_all(annotations, "\r\n", "");
 
         cout << "> dumping annotations to DB: " << annotations << std::endl;
         int res = ipc_sendData(pipe, (void*)(annotations.c_str()), annotations.size());
