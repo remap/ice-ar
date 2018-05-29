@@ -26,7 +26,7 @@ def main():
     #needs to have MongoDB daemon running on server -- mongod in terminal
     client = MongoClient()
     db = client.db
-    db.entries.drop()
+    #db.entries.drop()
     entr = db.entries
 
     if len(sys.argv) == 2:
@@ -51,7 +51,7 @@ def main():
             seen = []
 
             numbered = []
-            numprobs = {}
+            #numprobs = {}
 
             if hist != None:
                 for j in hist["objects"]:
@@ -73,7 +73,7 @@ def main():
                 for ind, obj in enumerate(srtd):
                     obj["label"] = obj["label"] + str(ind)
                     numbered.append(obj["label"])
-                    numprobs[obj["label"]] = obj["prob"]
+                    #numprobs[obj["label"]] = obj["prob"]
                     entry["objects"].append(obj)
 
             entry["labels"] = numbered
@@ -83,6 +83,7 @@ def main():
             else:
                 entr.insert_one(entry)
 
+            """
             query = {"$in": []}
             for elem in numbered:
                 query["$in"].append(elem.encode("utf-8"))
@@ -125,7 +126,8 @@ def main():
             top3 = [i[0] for i in top3]
 
             print(top3)
-              
+            """
+
     else:
         print(" > failed to open nanomsg pipe: ipc://"+pipeName)
 
