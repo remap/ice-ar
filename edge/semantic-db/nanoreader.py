@@ -8,6 +8,7 @@ import _nanomsg_ctypes as nnc
 import struct
 import datetime
 import json
+import operator
 
 from pymongo import MongoClient
 from copy import deepcopy
@@ -25,6 +26,7 @@ def main():
     #needs to have MongoDB daemon running on server -- mongod in terminal
     client = MongoClient()
     db = client.db
+    #db.entries.drop()
     entr = db.entries
 
     if len(sys.argv) == 2:
@@ -49,6 +51,7 @@ def main():
             seen = []
 
             numbered = []
+            numprobs = {}
 
             if hist != None:
                 for j in hist["objects"]:
@@ -70,6 +73,7 @@ def main():
                 for ind, obj in enumerate(srtd):
                     obj["label"] = obj["label"] + str(ind)
                     numbered.append(obj["label"])
+                    numprobs[obj["label"]] = obj["prob"]
                     entry["objects"].append(obj)
 
             entry["labels"] = numbered
@@ -79,14 +83,12 @@ def main():
             else:
                 entr.insert_one(entry)
 
-            """
             query = {"$in": []}
             for elem in numbered:
                 query["$in"].append(elem.encode("utf-8"))
             query = {"labels": query}
 
             #t1 = timestampMs()
-            
             cursor = entr.aggregate(
                 [{"$match": query},
                 {"$unwind": "$labels"},
@@ -98,13 +100,32 @@ def main():
                 {"$sort": {"matches": -1}}]
             )
             #t2 = timestampMs()
-
             #print(t2-t1)
 
-            #for document in cursor: 
-            #    pprint(document)
-            """
-                    
+            count = 0
+            pairs = {}
+            for document in cursor: 
+                if count > 15:
+                    continue
+
+                curr = entr.find_one({"_id": document["_id"]})
+                currobjs = curr["objects"]
+                probs = []
+                for key, value in numprobs.iteritems():
+                    for currobj in currobjs:
+                        if currobj["label"] == key:
+                            probs.append(float(currobj["prob"]) * float(value))
+                if len(probs) > 0:
+                    pairs[curr["oid"]] = sum(probs)
+                count = count + 1
+
+            sortedpairs = sorted(pairs.items(), key=operator.itemgetter(1))
+            sortedpairs.reverse()
+            top3 = sortedpairs[:3]
+            top3 = [i[0] for i in top3]
+
+            print(top3)
+              
     else:
         print(" > failed to open nanomsg pipe: ipc://"+pipeName)
 
