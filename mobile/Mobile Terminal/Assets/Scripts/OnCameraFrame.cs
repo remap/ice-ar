@@ -24,6 +24,9 @@ public class OnCameraFrame : MonoBehaviour {
 	private AnnotationsFetcher aFetcher_;
 	private AnnotationsFetcher openFaceFetcher_;
 	private AssetBundleFetcher assetFetcher_;
+    
+    private int test_frameCounter_; // delete this var. it is for testing only
+    private string test_frameName_; // delete this var. it is for testing only
 
 	private ConcurrentQueue<Dictionary<int, FrameObjectData>> frameBuffer;
 	private static ConcurrentQueue<BoxData> boundingBoxBufferToCalc;
@@ -293,8 +296,24 @@ public class OnCameraFrame : MonoBehaviour {
 		System.TimeSpan elapsedSpan = new System.TimeSpan(elapsedTicks);
 		timestamp = elapsedSpan.TotalSeconds;
 			//Debug.Log("before call to ndnrtc");
-		int publishedFrameNo = NdnRtc.videoStream.processIncomingFrame (format, width, height, pixelBuffer, bufferSize);
+
+        FrameInfo finfo = NdnRtc.videoStream.processIncomingFrame (format, width, height, pixelBuffer, bufferSize);
+        int publishedFrameNo = finfo.playbackNo_;
+		// int publishedFrameNo = NdnRtc.videoStream.processIncomingFrame (format, width, height, pixelBuffer, bufferSize);
 		Debug.Log ("Published frame number: " + publishedFrameNo);
+        
+        // this is an example/testing code for FrameFetcher.
+        // delete when it's not needed anymore
+        if (publishedFrameNo >= 0)
+        {
+            test_frameCounter_ ++;
+            if (test_frameCounter_ % 30 == 0) // every 30 frames - remember frame name
+                test_frameName_ = finfo.ndnName_;
+            if (test_frameCounter_ % 50 == 0) // fetch frame
+            {
+                NdnRtc.frameFetcher.fetch(test_frameName_, NdnRtc.videoStream);
+            }
+        }
 
 		if (publishedFrameNo >= 0) {
 				Debug.Log("create frame object frame number: " + publishedFrameNo);

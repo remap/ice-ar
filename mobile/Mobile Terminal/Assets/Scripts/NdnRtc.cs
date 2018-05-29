@@ -27,6 +27,15 @@ using GoogleARCore.TextureReader;
 [UnmanagedFunctionPointerAttribute (CallingConvention.Cdecl)]
 public delegate void NdnRtcLibLogHandler ([MarshalAs(UnmanagedType.LPStr)]string message);
 
+[UnmanagedFunctionPointerAttribute (CallingConvention.Cdecl)]
+public delegate IntPtr FrameFetcherBufferAlloc ([MarshalAs(UnmanagedType.LPStr)]string frameName,
+                                                int width, int heght);
+
+[UnmanagedFunctionPointerAttribute (CallingConvention.Cdecl)]
+public delegate void FrameFetcherFrameFetched ([MarshalAs(UnmanagedType.LPStr)]string frameName,
+                                               int width, int height, IntPtr frameBuffer);
+
+
 public struct LocalStreamParams
 {
 	public string basePrefix;
@@ -42,6 +51,7 @@ public struct LocalStreamParams
 	public int dropFrames;
 	public string streamName;
 	public string threadName;
+    public string storagePath;
 }
 
 public struct FrameInfo
@@ -100,6 +110,12 @@ public class NdnRtcWrapper
 
     [DllImport ("ndnrtc")]
     public static extern FrameInfo ndnrtc_LocalVideoStream_getLastPublishedInfo(IntPtr stream);
+
+    [DllImport ("ndnrtc")]
+    public static extern void ndnrtc_FrameFetcher_fetch(IntPtr stream,
+                                                        string frameName,
+                                                        FrameFetcherBufferAlloc bufferAllocFunc,
+                                                        FrameFetcherFrameFetched frameFetched);
 }
 
 public class LocalVideoStream
@@ -129,7 +145,12 @@ public class LocalVideoStream
 		NdnRtcWrapper.ndnrtc_destroyLocalStream (ndnrtcHandle_);
 	}
 
-	public int processIncomingFrame (TextureReaderApi.ImageFormatType format, int width, int height, IntPtr pixelBuffer, int bufferSize)
+    public IntPtr getHandle() 
+    {
+        return ndnrtcHandle_;
+    }
+
+	public FrameInfo processIncomingFrame (TextureReaderApi.ImageFormatType format, int width, int height, IntPtr pixelBuffer, int bufferSize)
 	{
 		// Debug.Log ("[ndnrtc::videostream] incoming image format " + format + " size " + width + "x" + height);
 
@@ -154,31 +175,19 @@ public class LocalVideoStream
 			}
 		}
 
-//		uint offset = imageData.stride;
-//		uint yPlaneSize = imageData.stride * imageData.height;
-//		uint vPlaneSize = (imageData.stride / 2) * (imageData.height / 2);
-//		uint uvPLaneSize = yPlaneSize / 2;
-
-			//GCHandle pinnedBuffer = GCHandle.Alloc (switchAB, GCHandleType.Pinned);
-
-//		IntPtr yPlane = new IntPtr (pinnedBuffer.AddrOfPinnedObject ().ToInt64 () + offset);
-//		offset += yPlaneSize;
-//		IntPtr uvPlane = new IntPtr (pinnedBuffer.AddrOfPinnedObject ().ToInt64 () + offset);
-
-			//IntPtr buffer = new IntPtr (pinnedBuffer.AddrOfPinnedObject ().ToInt64 ());
-
         // publish frame using NDN-RTC
         // return: res < 0 -- frame was skipped due to encoder decision (or library was busy publishing frame)
-        //         res >= 0 -- playback number of pbulished frame
+        //         res >= 0 -- playback number of published frame
         int res = NdnRtcWrapper.ndnrtc_LocalVideoStream_incomingArgbFrame (ndnrtcHandle_, (uint)width, (uint)height, pixelBuffer, (uint)bufferSize);
 
         // query additional latest published frame information
         FrameInfo finfo = NdnRtcWrapper.ndnrtc_LocalVideoStream_getLastPublishedInfo (ndnrtcHandle_);
         Debug.Log ("res: " + res + " frameNo: " + finfo.playbackNo_ + " timestamp: " + finfo.timestamp_ + " ndn name: " + finfo.ndnName_);
 
-        return res > 0 ? finfo.playbackNo_ : res;
+        if (res < 0) finfo.playbackNo_ = -1;
+        // return res > 0 ? finfo.playbackNo_ : res;
+        return finfo;
 	}
-
 
 	static private void loggerSinkHandler (string logMessage)
 	{
@@ -186,12 +195,65 @@ public class LocalVideoStream
 	}
 }
 
+public class FrameFetcher 
+{
+    private IntPtr frameBuffer;
+    private FrameFetcherBufferAlloc bufferAllocDelegate;
+    private FrameFetcherFrameFetched frameFetchedDelegate;
+
+    public FrameFetcher()
+    {
+        frameBuffer = IntPtr.Zero;
+    }
+
+    ~FrameFetcher()
+    {
+        if (frameBuffer != IntPtr.Zero)
+            Marshal.FreeHGlobal(frameBuffer);
+    }
+
+    public void fetch(string frameName, LocalVideoStream stream)
+    {
+        bufferAllocDelegate = new FrameFetcherBufferAlloc(bufferAllocate);
+        frameFetchedDelegate = new FrameFetcherFrameFetched(frameFetched);
+
+        NdnRtcWrapper.ndnrtc_FrameFetcher_fetch(stream.getHandle(),
+                                                frameName,
+                                                bufferAllocDelegate,
+                                                frameFetchedDelegate);
+    }
+
+    private IntPtr bufferAllocate (string frameName, int width, int height)
+    {
+        int bytesSize = width*height*4;
+
+        Debug.Log ("[frame-fetcher] Buffer allocate "+bytesSize + " bytes");
+
+        if (frameBuffer != IntPtr.Zero)
+            Marshal.FreeHGlobal(frameBuffer);
+        frameBuffer = Marshal.AllocHGlobal(width*height*4); // ARGB frame
+
+        return frameBuffer;
+    }
+
+    private void frameFetched(string frameName, int width, int height, IntPtr bufferArgb)
+    {
+        if (width > 0 && height > 0)
+        {
+            Debug.Log ("[frame-fetcher] Frame fetched: "+frameName);
+        }
+        else
+        {
+            Debug.Log ("[frame-fetcher] Frame couldn't be fetched: "+frameName);
+        }
+    }
+}
 
 public class NdnRtc : MonoBehaviour
 {
-
 	static private NdnRtcLibLogHandler libraryCallbackDelegate;
 	static public LocalVideoStream videoStream;
+    static public FrameFetcher frameFetcher;
 
 	public static void Initialize (string signingIdentity, string instanceId)
 	{
@@ -224,8 +286,10 @@ public class NdnRtc : MonoBehaviour
 				p.typeIsVideo = 1;
 				p.streamName = "back_camera";
 				p.threadName = "vp9";
+                p.storagePath = Application.persistentDataPath + "/ndnrtc_storage";
 
 				videoStream = new LocalVideoStream (p);
+                frameFetcher = new FrameFetcher();
 			}
 		} catch (System.Exception e) {
 			Debug.LogError ("Error initializing NDN-RTC: " + e.Message);
