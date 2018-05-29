@@ -230,6 +230,8 @@ void handler(int sig) {
 //******************************************************************************
 static std::string pipeName = "/tmp/ice-annotations";
 static int feature_pipe = -1;
+static std::string dbPipeName = "/out/ice-annotations";
+static int db_pipe = -1;
 
 int create_pipe(const char* fname)
 {
@@ -261,13 +263,28 @@ void reopen_readpipe(const char* fname, int* pipe)
     } while (*pipe < 0);
 }
 
+void dumpAnnotations(int pipe, std::string annotations)
+{
+    // remove all newlines
+    string::size_type pos = 0;
+    while ( ( pos = annotations.find ("\r\n",pos) ) != string::npos )
+        annotations.erase ( pos, 2 );
+
+    cout << "> dumping annotations to DB: " << annotations << std::endl;
+    int res = ipc_sendData(pipe, (void*)annotations.c_str(), annotations.size());
+    cout << "> dumped annotations to DB socket" << std::endl;
+}
+
 std::string readAnnotations(int pipe, unsigned int &frameNo, std::string &engine)
 {
   char *annotations;
   int len = ipc_readData(feature_pipe, (void**)&annotations);
-  
+
   if (len > 0)
   {
+    // pass it forward to a 1-to-M pipe
+    dumpAnnotations(db_pipe, std::string(annotations));
+
     cJSON *item = cJSON_Parse(annotations);
     
     if (item)
@@ -297,6 +314,7 @@ std::string readAnnotations(int pipe, unsigned int &frameNo, std::string &engine
 
   return "";
 }
+
 //******************************************************************************
 int main(int argc, char** argv)
 {
@@ -304,9 +322,9 @@ int main(int argc, char** argv)
   std::srand(std::time(0));
 
   // usage: test-annotations-example <basePrefix> <userId> <serviceName> <annotationsFile>
-  if (argc < 5)
+  if (argc < 6)
   {
-    std::cout << "usage: " << argv[0] << " <basePrefix> <userId> <serviceName> <annotationsFile>" << std::endl;
+    std::cout << "usage: " << argv[0] << " <basePrefix> <userId> <serviceName> <annotationsFile> <dbPipeFile>" << std::endl;
     exit(1);
   }
 
@@ -314,6 +332,7 @@ int main(int argc, char** argv)
   std::string userId = std::string(argv[2]);      // "peter";
   std::string service = std::string(argv[3]);     // "object_recognizer";
   pipeName = std::string(argv[4]);
+  dbPipeName = std::string(argv[5]);
 
   try {
     boost::asio::io_service io;
@@ -340,6 +359,7 @@ int main(int argc, char** argv)
     servicePrefix.append(userId).append(service);
     
     std::cout << "> reading annotations from " << pipeName << std::endl;
+    std::cout << "> passing annotations to " << dbPipeName << std::endl;
     std::cout << "> will publish under " << servicePrefix << std::endl;
 
     bool enabled = true;
@@ -383,6 +403,20 @@ int main(int argc, char** argv)
         else
           printf("> opened feature socket (%s)\n", pipeName.c_str());
     }
+    // Open db pipe...
+    if (db_pipe < 0)
+    {
+        db_pipe = ipc_setupSubSinkSocket(dbPipeName.c_str());
+        if (db_pipe < 0)
+        {
+            printf("> failed to setup socket %s: %s (%d)\n", 
+                dbPipeName.c_str(), ipc_lastError(), ipc_lastErrorCode());
+            exit(1);
+        }
+        else
+          printf("> opened db socket (%s)\n", dbPipeName.c_str());
+    }
+
     while(enabled){
       
       std::string engine;
