@@ -280,13 +280,38 @@ int writeExactly(uint8_t *buffer, size_t bufSize, int pipe)
 
 void dumpAnnotations(int pipe, std::string annotations)
 {
-    // remove all newlines
-    boost::replace_all(annotations, "\r\n", "");
+    // Open db pipe...
+    if (db_pipe < 0)
+    {
+        // db_pipe = create_pipe(dbPipeName.c_str());
+        // db_pipe = open(dbPipeName.c_str(), O_WRONLY|O_NONBLOCK|O_EXCL);
 
-    cout << "> dumping annotations to DB: " << annotations << std::endl;
-    // int res = ipc_sendData(pipe, (void*)(annotations.c_str()), annotations.size());
-    int res = writeExactly((uint8_t*)(annotations.c_str()), annotations.size(), pipe);
-    cout << "> dumped annotations to DB socket" << std::endl;
+        // if (db_pipe < 0)
+        //     printf("> failed to open socket %s: %s (%d)\n", 
+        //         dbPipeName.c_str(), strerror(errno), errno);
+        // else
+        //     printf("> opened db socket (%s)\n", dbPipeName.c_str());
+        db_pipe = ipc_setupSubSinkSocket(dbPipeName.c_str());
+        if (db_pipe < 0)
+        {
+            printf("> failed to setup socket %s: %s (%d)\n", 
+                dbPipeName.c_str(), ipc_lastError(), ipc_lastErrorCode());
+            exit(1);
+        }
+        else
+          printf("> opened db socket (%s)\n", dbPipeName.c_str());
+    }
+
+    if (db_pipe >= 0)
+    {
+        // remove all newlines
+        boost::replace_all(annotations, "\r\n", "");
+
+        cout << "> dumping annotations to DB: " << annotations << std::endl;
+        int res = ipc_sendData(pipe, (void*)(annotations.c_str()), annotations.size());
+        // int res = writeExactly((uint8_t *)(annotations.c_str()), annotations.size(), pipe);
+        cout << "> dumped annotations to DB socket" << std::endl;
+    }
 }
 
 std::string readAnnotations(int pipe, unsigned int &frameNo, std::string &engine)
@@ -416,29 +441,6 @@ int main(int argc, char** argv)
         }
         else
           printf("> opened feature socket (%s)\n", pipeName.c_str());
-    }
-    // Open db pipe...
-    if (db_pipe < 0)
-    {
-        db_pipe = create_pipe(dbPipeName.c_str());
-        db_pipe = open(dbPipeName.c_str(), O_WRONLY|O_NONBLOCK|O_EXCL);
-
-        if (db_pipe < 0)
-        {
-            printf("> failed to setup socket %s: %s (%d)\n", 
-                dbPipeName.c_str(), strerror(errno), errno);
-            exit(1);
-        }
-
-        // db_pipe = ipc_setupSubSinkSocket(dbPipeName.c_str());
-        // if (db_pipe < 0)
-        // {
-        //     printf("> failed to setup socket %s: %s (%d)\n", 
-        //         dbPipeName.c_str(), ipc_lastError(), ipc_lastErrorCode());
-        //     exit(1);
-        // }
-        // else
-         printf("> opened db socket (%s)\n", dbPipeName.c_str());
     }
 
     while(enabled){
