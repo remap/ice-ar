@@ -195,25 +195,35 @@ public class LocalVideoStream
 	}
 }
 
+
+public delegate void OnFrameFetched (string frameName, int width, int height, byte [] argbBuffer);
+public delegate void OnFrameFetchFailure(string frameName);
+
 public class FrameFetcher 
 {
-    private IntPtr frameBuffer;
+    private IntPtr frameBuffer_;
     private FrameFetcherBufferAlloc bufferAllocDelegate;
     private FrameFetcherFrameFetched frameFetchedDelegate;
+    private OnFrameFetched onFrameFetched_;
+    private OnFrameFetchFailure onFrameFetchFailure_;
 
     public FrameFetcher()
     {
-        frameBuffer = IntPtr.Zero;
+        frameBuffer_ = IntPtr.Zero;
     }
 
     ~FrameFetcher()
     {
-        if (frameBuffer != IntPtr.Zero)
-            Marshal.FreeHGlobal(frameBuffer);
+        if (frameBuffer_ != IntPtr.Zero)
+            Marshal.FreeHGlobal(frameBuffer_);
     }
 
-    public void fetch(string frameName, LocalVideoStream stream)
+    public void fetch(string frameName, LocalVideoStream stream, 
+                      OnFrameFetched onFrameFetched, OnFrameFetchFailure onFrameFetchFailure)
     {
+        onFrameFetched_ = onFrameFetched;
+        onFrameFetchFailure_ = onFrameFetchFailure;
+
         bufferAllocDelegate = new FrameFetcherBufferAlloc(bufferAllocate);
         frameFetchedDelegate = new FrameFetcherFrameFetched(frameFetched);
 
@@ -229,11 +239,11 @@ public class FrameFetcher
 
         Debug.Log ("[frame-fetcher] Buffer allocate "+bytesSize + " bytes");
 
-        if (frameBuffer != IntPtr.Zero)
-            Marshal.FreeHGlobal(frameBuffer);
-        frameBuffer = Marshal.AllocHGlobal(width*height*4); // ARGB frame
+        if (frameBuffer_ != IntPtr.Zero)
+            Marshal.FreeHGlobal(frameBuffer_);
+        frameBuffer_ = Marshal.AllocHGlobal(width*height*4); // ARGB frame
 
-        return frameBuffer;
+        return frameBuffer_;
     }
 
     private void frameFetched(string frameName, int width, int height, IntPtr bufferArgb)
@@ -241,10 +251,18 @@ public class FrameFetcher
         if (width > 0 && height > 0)
         {
             Debug.Log ("[frame-fetcher] Frame fetched: "+frameName);
+            
+            // copy to managed code and return
+            int len = width*height*4;
+            byte [] buf = new byte[len];
+            Marshal.Copy(bufferArgb, buf, 0, len);
+
+            onFrameFetched_(frameName, width, height, buf);
         }
         else
         {
             Debug.Log ("[frame-fetcher] Frame couldn't be fetched: "+frameName);
+            onFrameFetchFailure_(frameName);
         }
     }
 }
