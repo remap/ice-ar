@@ -8,7 +8,8 @@ RUN cd /ice-ar/edge/darknet && wget https://pjreddie.com/media/files/yolo.weight
 
 RUN apt-get remove -y git cmake wget lsb-release python-pip
 
-RUN mkdir /in /out /preview
+RUN mkdir /in /out /preview /yolo-data
+RUN ln -s /yolo-data /ice-ar/edge/darknet/yolo-data
 
 ENV LD_LIBRARY_PATH=/usr/local/lib
 
@@ -18,5 +19,9 @@ ENV FRAME_HEIGHT=180
 ENV OUTPUT=/out/ice-annotations
 ENV PREVIEW=/preview/yolo-out
 ENV THRESHOLD=0.1
+ENV DATA_FILE=cfg/coco.data
+ENV YOLO_CFG=cfg/yolo.cfg
+ENV YOLO_WEIGHTS=yolo.weights
+ENV ENGINE=yolo
 
-CMD cd /ice-ar/edge/darknet && ./darknet detector ndnrtc cfg/coco.data cfg/yolo.cfg yolo.weights -input $INPUT -w $FRAME_WIDTH -h $FRAME_HEIGHT -output $OUTPUT -preview $PREVIEW -thresh $THRESHOLD
+CMD cd /ice-ar/edge/darknet && ./darknet detector ndnrtc $DATA_FILE $YOLO_CFG $YOLO_WEIGHTS -input $INPUT -w $FRAME_WIDTH -h $FRAME_HEIGHT -output $OUTPUT -preview $PREVIEW -thresh $THRESHOLD
