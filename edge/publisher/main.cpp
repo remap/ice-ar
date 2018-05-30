@@ -278,12 +278,12 @@ int writeExactly(uint8_t *buffer, size_t bufSize, int pipe)
     return written;
 }
 
-void dumpAnnotations(int pipe, std::string annotations)
+void dumpAnnotations(std::string annotations)
 {
     // Open db pipe...
     if (db_pipe < 0)
     {
-        db_pipe = ipc_setupPubSourceSocket(dbPipeName.c_str());
+        db_pipe = ipc_setupPubSinkSocket(dbPipeName.c_str());
         if (db_pipe < 0)
         {
             printf("> failed to setup socket %s: %s (%d)\n", 
@@ -297,7 +297,7 @@ void dumpAnnotations(int pipe, std::string annotations)
     if (db_pipe >= 0)
     {
         // remove all newlines
-        boost::replace_all(annotations, "\r\n", "");
+        // boost::replace_all(annotations, "\r\n", "");
 
         cout << "> dumping annotations to DB: " << annotations << std::endl;
         int res = ipc_sendData(db_pipe, (void*)(annotations.c_str()), annotations.size());
@@ -317,7 +317,7 @@ std::string readAnnotations(int pipe, unsigned int &frameNo, std::string &engine
   if (len > 0)
   {
     // pass it forward to a 1-to-M pipe
-    dumpAnnotations(db_pipe, std::string(annotations));
+    dumpAnnotations(std::string(annotations));
 
     cJSON *item = cJSON_Parse(annotations);
     
