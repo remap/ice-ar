@@ -149,6 +149,7 @@
      <Compile Include="Assets\Scripts\OnCameraFrame.cs" />
      <Compile Include="Assets\Scripts\PooledObject.cs" />
      <Compile Include="Assets\Scripts\RingBuffer.cs" />
+     <Compile Include="Assets\Scripts\UnityMainThreadDispatcher.cs" />
      <Compile Include="Assets\TextMesh Pro\Examples &amp; Extras\Scripts\Benchmark01.cs" />
      <Compile Include="Assets\TextMesh Pro\Examples &amp; Extras\Scripts\Benchmark01_UGUI.cs" />
      <Compile Include="Assets\TextMesh Pro\Examples &amp; Extras\Scripts\Benchmark02.cs" />
