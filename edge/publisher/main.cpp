@@ -24,6 +24,7 @@
 #include <boost/asio.hpp>
 #include <boost/thread/mutex.hpp>
 #include <boost/thread.hpp>
+#include <boost/algorithm/string.hpp>
 
 #include "ipc-shim.h"
 #include "cJSON.h"
@@ -263,16 +264,49 @@ void reopen_readpipe(const char* fname, int* pipe)
     } while (*pipe < 0);
 }
 
-void dumpAnnotations(int pipe, std::string annotations)
-{
-    // remove all newlines
-    string::size_type pos = 0;
-    while ( ( pos = annotations.find ("\r\n",pos) ) != string::npos )
-        annotations.erase ( pos, 2 );
+int writeExactly(uint8_t *buffer, size_t bufSize, int pipe)
+{   
+    int written = 0, r = 0; 
+    int keepWriting = 0;
 
-    cout << "> dumping annotations to DB: " << annotations << std::endl;
-    int res = ipc_sendData(pipe, (void*)annotations.c_str(), annotations.size());
-    cout << "> dumped annotations to DB socket" << std::endl;
+    do {
+        r = write(pipe, buffer+written, bufSize-written);
+        if (r > 0) written += r;
+        keepWriting = (r > 0 && written != bufSize) || (r < 0 && errno == EAGAIN);
+    } while (keepWriting == 1);
+
+    return written;
+}
+
+void dumpAnnotations(const char* annotations, size_t len)
+{
+    // Open db pipe...
+    if (db_pipe < 0)
+    {
+        db_pipe = ipc_setupPubSinkSocket(dbPipeName.c_str());
+        if (db_pipe < 0)
+        {
+            printf("> failed to setup socket %s: %s (%d)\n", 
+                dbPipeName.c_str(), ipc_lastError(), ipc_lastErrorCode());
+            exit(1);
+        }
+        else
+          printf("> opened db socket (%s)\n", dbPipeName.c_str());
+    }
+
+    if (db_pipe >= 0)
+    {
+        // remove all newlines
+        // boost::replace_all(annotations, "\r\n", "");
+
+        cout << "> dumping annotations to DB... " << std::endl;
+        int res = ipc_sendData(db_pipe, (void*)(annotations), len);
+
+        if (res < 0)
+            cout << "> error dumping annotations (" << ipc_lastErrorCode() << "): " << ipc_lastError() << std::endl;
+        else
+            cout << "> dumped annotations to DB socket" << std::endl;
+    }
 }
 
 std::string readAnnotations(int pipe, unsigned int &frameNo, std::string &engine)
@@ -283,7 +317,7 @@ std::string readAnnotations(int pipe, unsigned int &frameNo, std::string &engine
   if (len > 0)
   {
     // pass it forward to a 1-to-M pipe
-    dumpAnnotations(db_pipe, std::string(annotations));
+    dumpAnnotations(annotations, len);
 
     cJSON *item = cJSON_Parse(annotations);
     
@@ -310,6 +344,7 @@ std::string readAnnotations(int pipe, unsigned int &frameNo, std::string &engine
     }
     else
       cout << "> error parsing JSON: " << annotations << endl;
+    free(annotations);
   }
 
   return "";
@@ -402,19 +437,6 @@ int main(int argc, char** argv)
         }
         else
           printf("> opened feature socket (%s)\n", pipeName.c_str());
-    }
-    // Open db pipe...
-    if (db_pipe < 0)
-    {
-        db_pipe = ipc_setupSubSinkSocket(dbPipeName.c_str());
-        if (db_pipe < 0)
-        {
-            printf("> failed to setup socket %s: %s (%d)\n", 
-                dbPipeName.c_str(), ipc_lastError(), ipc_lastErrorCode());
-            exit(1);
-        }
-        else
-          printf("> opened db socket (%s)\n", dbPipeName.c_str());
     }
 
     while(enabled){

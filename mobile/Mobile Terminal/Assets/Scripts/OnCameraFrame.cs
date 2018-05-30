@@ -302,21 +302,48 @@ public class OnCameraFrame : MonoBehaviour {
     // ---
     // added by Peter
     // IEnumerator runWWW(WWW www)
-    public IEnumerator runWWW(UnityWebRequest www)
+    IEnumerator runWWW(string queryString)
     {
-        Debug.Log("[semantic-db]: sending request...");
+        var data = System.Text.Encoding.ASCII.GetBytes(queryString);
 
-        yield return www.SendWebRequest();
+        using (UnityWebRequest www = new UnityWebRequest(semanticDbQueryUrl_))
+        {
+            www.SetRequestHeader("Content-Type", "application/json");
+            www.uploadHandler = new UploadHandlerRaw( data );
+            
+            Debug.Log("[semantic-db]: yield");
+            yield return www.SendWebRequest();
 
-        if (www.isNetworkError || www.isHttpError)
-        {
-            Debug.Log("[semantic-db]: query error " + www.error);
+            if (www.isNetworkError || www.isHttpError)
+            {
+                Debug.Log("[semantic-db]: query error " + www.error);
+            }
+            else
+            {
+                Debug.Log("[semantic-db]: got results back: "+www.downloadHandler.text);
+                byte[] results = www.downloadHandler.data;
+            }
         }
-        else
-        {
-            Debug.Log("[semantic-db]: got results back: "+www.downloadHandler.text);
-            byte[] results = www.downloadHandler.data;
-        }
+
+        // UnityWebRequest www = UnityWebRequest.Post(semanticDbQueryUrl_);
+        // UnityWebRequest www = new UnityWebRequest(semanticDbQueryUrl_, UnityWebRequest.kHttpVerbPOST);
+        // www.SetRequestHeader("Content-Type", "application/json");
+        // // raw uploader for server that doesn't understand utf8
+        // www.uploadHandler = new UploadHandlerRaw( data );
+
+        // yield return www.SendWebRequest();
+
+        // Debug.Log("request finished");
+
+        // if (www.isNetworkError || www.isHttpError)
+        // {
+        //     Debug.Log("[semantic-db]: query error " + www.error);
+        // }
+        // else
+        // {
+        //     Debug.Log("[semantic-db]: got results back: "+www.downloadHandler.text);
+        //     byte[] results = www.downloadHandler.data;
+        // }
     }
     // --- end
 
@@ -383,12 +410,7 @@ public class OnCameraFrame : MonoBehaviour {
                 // the query string needs to be JSON's "annotations" array
                 string queryString = "{\"annotations\":[{\"xleft\":0.37396889925003052,\"xright\":0.41286516189575195,\"ytop\":0.48137125372886658,\"ybottom\":0.55187106132507324,\"label\":\"cup\",\"prob\":0.18228136003017426},{\"xleft\":0.73392981290817261,\"xright\":0.81988757848739624,\"ytop\":0.5637977123260498,\"ybottom\":0.59101009368896484,\"label\":\"mouse\",\"prob\":0.16920529305934906}]}";
 
-                Debug.Log("[semantic-db]: will query db...");
-                // WWW wwwQuery = new WWW(semanticDbQueryUrl_, pData, headers);
-                UnityWebRequest wwwQuery = UnityWebRequest.Post(semanticDbQueryUrl_, queryString);
-                wwwQuery.SetRequestHeader("Content-Type", "application/json");
-                // StartCoroutine(runWWW(wwwQuery));
-                runWWW(wwwQuery);
+                UnityMainThreadDispatcher.Instance().Enqueue(runWWW(queryString));
                 // -- end
 
 				//Debug.Log("annotations string length: " + jsonArrayString.Length);

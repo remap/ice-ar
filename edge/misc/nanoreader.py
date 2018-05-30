@@ -9,6 +9,7 @@ import _nanomsg_ctypes as nnc
 import struct
 import datetime
 import json
+import time
 
 def usage():
     print "usage: "

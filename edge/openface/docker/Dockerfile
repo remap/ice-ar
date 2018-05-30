@@ -1,6 +1,5 @@
 FROM peetonn/ice-ar-base:latest
 LABEL maintainer "Peter Gusev <peter@remap.ucla.edu>"
-ARG DEBUG_VER=unknown
 
 RUN apt-get install -y gawk \
 	&& pip2 install numpy dlib pandas scipy scikit-learn scikit-image opencv-python
@@ -19,6 +18,7 @@ RUN git clone --recursive https://github.com/cmusatyalab/openface.git \
 	&& cd /openface/models \
 	&& ./get-models.sh
 
+ARG DEBUG_VER=unknown
 RUN DEBUG_VER=${DEBUG_VER} git clone --recursive https://github.com/remap/ice-ar
 RUN apt-get remove -y git cmake wget lsb-release python-pip
 
