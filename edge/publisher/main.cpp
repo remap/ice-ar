@@ -278,7 +278,7 @@ int writeExactly(uint8_t *buffer, size_t bufSize, int pipe)
     return written;
 }
 
-void dumpAnnotations(std::string annotations)
+void dumpAnnotations(const char* annotations, size_t len)
 {
     // Open db pipe...
     if (db_pipe < 0)
@@ -299,8 +299,8 @@ void dumpAnnotations(std::string annotations)
         // remove all newlines
         // boost::replace_all(annotations, "\r\n", "");
 
-        cout << "> dumping annotations to DB: " << annotations << std::endl;
-        int res = ipc_sendData(db_pipe, (void*)(annotations.c_str()), annotations.size());
+        cout << "> dumping annotations to DB... " << std::endl;
+        int res = ipc_sendData(db_pipe, (void*)(annotations), len);
 
         if (res < 0)
             cout << "> error dumping annotations (" << ipc_lastErrorCode() << "): " << ipc_lastError() << std::endl;
@@ -317,7 +317,7 @@ std::string readAnnotations(int pipe, unsigned int &frameNo, std::string &engine
   if (len > 0)
   {
     // pass it forward to a 1-to-M pipe
-    dumpAnnotations(std::string(annotations));
+    dumpAnnotations(annotations, len);
 
     cJSON *item = cJSON_Parse(annotations);
     
@@ -344,6 +344,7 @@ std::string readAnnotations(int pipe, unsigned int &frameNo, std::string &engine
     }
     else
       cout << "> error parsing JSON: " << annotations << endl;
+    free(annotations);
   }
 
   return "";

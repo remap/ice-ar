@@ -47,7 +47,7 @@ case "$1" in
         ;;
     "publisher")
         docker rm publisher 2>/dev/null
-        docker run --rm --name publisher -v /var/run:/var/run -v $HOME/.ndn:/root/.ndn -v $JSON_VOL:/in -v $DB_VOL:/out -ti \
+        docker run --name --rm publisher -v /var/run:/var/run -v $HOME/.ndn:/root/.ndn -v $JSON_VOL:/in -v $DB_VOL:/out -ti \
         $PUBLISHER_IMAGE
         ;;
     "db")
