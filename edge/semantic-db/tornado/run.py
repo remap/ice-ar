@@ -130,7 +130,7 @@ class QueryHandler(tornado.web.RequestHandler):
         sortedpairs = sorted(pairs.items(), key=operator.itemgetter(1))
         sortedpairs.reverse()
         top3 = sortedpairs[:3]
-        top3 = [i[0] for i in top3]
+        top3 = {key: value for (key, value) in top3}
 
         print(top3)
 

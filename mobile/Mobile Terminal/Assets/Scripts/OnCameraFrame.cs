@@ -302,7 +302,7 @@ public class OnCameraFrame : MonoBehaviour {
     // ---
     // added by Peter
     // IEnumerator runWWW(WWW www)
-    IEnumerator runWWW(UnityWebRequest www)
+    public IEnumerator runWWW(UnityWebRequest www)
     {
         Debug.Log("[semantic-db]: sending request...");
 
