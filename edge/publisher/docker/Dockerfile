@@ -27,5 +27,6 @@ ENV BASE_PREFIX=/icear/user
 ENV USER_ID=peter
 ENV SERVICE=object_recognizer
 ENV INPUT=/in/ice-annotations
+ENV OUTPUT=/out/ice-annotations
 
-CMD /ice-ar/edge/publisher/ice-publisher $BASE_PREFIX $USER_ID $SERVICE $INPUT
+CMD /ice-ar/edge/publisher/ice-publisher $BASE_PREFIX $USER_ID $SERVICE $INPUT $OUTPUT
