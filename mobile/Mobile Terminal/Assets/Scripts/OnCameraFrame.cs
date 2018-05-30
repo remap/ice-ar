@@ -310,13 +310,19 @@ public class OnCameraFrame : MonoBehaviour {
         {
             www.SetRequestHeader("Content-Type", "application/json");
             www.uploadHandler = new UploadHandlerRaw( data );
+            //General purpose DownloadHandler subclass. Must be explicitly instantiated if not calling 
+            //UnityWebRequest.post() or .get()
+            www.downloadHandler = new DownloadHandlerBuffer(); 
             
-            Debug.Log("[semantic-db]: yield");
             yield return www.SendWebRequest();
 
             if (www.isNetworkError || www.isHttpError)
             {
                 Debug.Log("[semantic-db]: query error " + www.error);
+            }
+            else if (www.downloadHandler == null)
+            {
+                Debug.Log("[semantic-db]: downloadhandler is null");
             }
             else
             {
@@ -411,10 +417,11 @@ public class OnCameraFrame : MonoBehaviour {
                 string queryString = "{\"annotations\":[{\"xleft\":0.37396889925003052,\"xright\":0.41286516189575195,\"ytop\":0.48137125372886658,\"ybottom\":0.55187106132507324,\"label\":\"cup\",\"prob\":0.18228136003017426},{\"xleft\":0.73392981290817261,\"xright\":0.81988757848739624,\"ytop\":0.5637977123260498,\"ybottom\":0.59101009368896484,\"label\":\"mouse\",\"prob\":0.16920529305934906}]}";
 
                 UnityMainThreadDispatcher.Instance().Enqueue(runWWW(queryString));
+                //StartCoroutine(runWWW(queryString));   //Alternative method
                 // -- end
 
-				//Debug.Log("annotations string length: " + jsonArrayString.Length);
-				string[] testDebug = jsonArrayString.Split(']');
+                //Debug.Log("annotations string length: " + jsonArrayString.Length);
+                string[] testDebug = jsonArrayString.Split(']');
 				string formatDebug = testDebug[0] + "]";
 				try{
 				Dictionary<int, FrameObjectData> frameObjects = frameBuffer.Dequeue();
