@@ -141,6 +141,7 @@
      <Compile Include="Assets\Scripts\FaceProcessor.cs" />
      <Compile Include="Assets\Scripts\FrameObjectData.cs" />
      <Compile Include="Assets\Scripts\FramePoolManager.cs" />
+     <Compile Include="Assets\Scripts\ImageController.cs" />
      <Compile Include="Assets\Scripts\LabelBackground.cs" />
      <Compile Include="Assets\Scripts\LabelData.cs" />
      <Compile Include="Assets\Scripts\LenseObjects.cs" />
