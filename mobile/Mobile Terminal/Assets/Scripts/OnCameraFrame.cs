@@ -179,6 +179,7 @@ public class OnCameraFrame : MonoBehaviour {
                 box.label = temp.label;
                 boxData.Add(box);
             }
+        }
 
         if(boxData.Count > 0)
             CreateBoxes(boxData);
@@ -224,7 +225,7 @@ public class OnCameraFrame : MonoBehaviour {
         });
     }
 
-    IEnumerator runWWW(string queryString)
+    IEnumerator runDbQuery(string queryString)
     {
         var data = System.Text.Encoding.ASCII.GetBytes(queryString);
 
@@ -311,7 +312,7 @@ public class OnCameraFrame : MonoBehaviour {
 
                 string queryString = "{\"annotations\":[{\"xleft\":0.37396889925003052,\"xright\":0.41286516189575195,\"ytop\":0.48137125372886658,\"ybottom\":0.55187106132507324,\"label\":\"cup\",\"prob\":0.18228136003017426},{\"xleft\":0.73392981290817261,\"xright\":0.81988757848739624,\"ytop\":0.5637977123260498,\"ybottom\":0.59101009368896484,\"label\":\"mouse\",\"prob\":0.16920529305934906}]}";
 
-                UnityMainThreadDispatcher.Instance().Enqueue(runWWW(queryString));
+                UnityMainThreadDispatcher.Instance().Enqueue(runDbQuery(queryString));
 
                 string[] testDebug = jsonArrayString.Split(']');
                 string formatDebug = testDebug[0] + "]";
