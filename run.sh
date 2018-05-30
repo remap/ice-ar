@@ -10,7 +10,9 @@ PUBLISHER_IMAGE=peetonn/ice-ar:publisher-new
 
 RAWVIDEO_VOL=rawvideoVol
 JSON_VOL=annotationsVol
-DB_VOL=$EDGE_ENV_FOLDER
+DB_VOL=/tmp/dbingest
+
+mkdir -p $DB_VOL
 
 case "$1" in
 	"consumer")
@@ -47,6 +49,10 @@ case "$1" in
         docker rm publisher 2>/dev/null
         docker run --rm --name publisher -v /var/run:/var/run -v $HOME/.ndn:/root/.ndn -v $JSON_VOL:/in -v $DB_VOL:/out -ti \
         $PUBLISHER_IMAGE
+        ;;
+    "db")
+        python edge/semantic-db/nanoreader.py $DB_VOL/ice-annotations &
+        python edge/semantic-db/tornado/run.py
         ;;
     *)
         echo "> unknown argument "$1
