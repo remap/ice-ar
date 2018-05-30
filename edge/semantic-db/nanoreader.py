@@ -41,11 +41,16 @@ def main():
     s.set_string_option(SUB, SUB_SUBSCRIBE, '')
     if s:
         while True:
-            curr = s.recv()
-            curr = json.loads(curr)
+            try:
+                jsonString = s.recv()
+                curr = json.loads(jsonString)
 
-            hist = entr.find_one({"oid": curr["timestamp"]})
-            entry = {"oid": curr["timestamp"], "name": curr["frameName"], "objects": [], "labels": []}
+                hist = entr.find_one({"oid": curr["timestamp"]})
+                entry = {"oid": curr["timestamp"], "name": curr["frameName"], "objects": [], "labels": []}
+            except:
+                print("json parsing failed: "+str(sys.exc_info()[0]))
+                print("failed json string: "+jsonString)
+                continue
 
             temp = []
             seen = []
