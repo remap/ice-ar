@@ -32,7 +32,7 @@ public delegate IntPtr FrameFetcherBufferAlloc ([MarshalAs(UnmanagedType.LPStr)]
                                                 int width, int heght);
 
 [UnmanagedFunctionPointerAttribute (CallingConvention.Cdecl)]
-public delegate void FrameFetcherFrameFetched ([MarshalAs(UnmanagedType.LPStr)]string frameName,
+public delegate void FrameFetcherFrameFetched (FrameInfo frameInfo,
                                                int width, int height, IntPtr frameBuffer);
 
 
@@ -196,7 +196,7 @@ public class LocalVideoStream
 }
 
 
-public delegate void OnFrameFetched (string frameName, int width, int height, byte [] argbBuffer);
+public delegate void OnFrameFetched(FrameInfo finfo, int width, int height, byte [] argbBuffer);
 public delegate void OnFrameFetchFailure(string frameName);
 
 public class FrameFetcher 
@@ -246,23 +246,25 @@ public class FrameFetcher
         return frameBuffer_;
     }
 
-    private void frameFetched(string frameName, int width, int height, IntPtr bufferArgb)
+    private void frameFetched(FrameInfo frameInfo, int width, int height, IntPtr bufferArgb)
     {
         if (width > 0 && height > 0)
         {
-            Debug.Log ("[frame-fetcher] Frame fetched: "+frameName);
+            Debug.Log ("[frame-fetcher] Frame fetched: "+frameInfo.ndnName_);
             
             // copy to managed code and return
             int len = width*height*4;
             byte [] buf = new byte[len];
             Marshal.Copy(bufferArgb, buf, 0, len);
 
-            onFrameFetched_(frameName, width, height, buf);
+            FrameInfo finfoCopy = frameInfo;
+
+            onFrameFetched_(finfoCopy, width, height, buf);
         }
         else
         {
-            Debug.Log ("[frame-fetcher] Frame couldn't be fetched: "+frameName);
-            onFrameFetchFailure_(frameName);
+            Debug.Log ("[frame-fetcher] Frame couldn't be fetched: "+frameInfo.ndnName_);
+            onFrameFetchFailure_(frameInfo.ndnName_);
         }
     }
 }

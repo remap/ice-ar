@@ -373,8 +373,8 @@ public class OnCameraFrame : MonoBehaviour {
             if (test_frameCounter_ % 50 == 0) // fetch frame
             {
                 NdnRtc.frameFetcher.fetch(test_frameName_, NdnRtc.videoStream,
-                    delegate(string frameName, int w, int h, byte[] argBuffer){
-                        Debug.Log ("FrameFetcher: Succesfully fetched frame "+ frameName);
+                    delegate(FrameInfo fi, int w, int h, byte[] argBuffer){
+                        Debug.Log ("FrameFetcher: Succesfully fetched frame "+ fi.ndnName_);
                         Debug.Log ("FrameFetcher: Will render is somewhere...");
                     },
                     delegate(string frameName){
