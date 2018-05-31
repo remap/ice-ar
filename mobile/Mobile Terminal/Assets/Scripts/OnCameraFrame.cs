@@ -11,7 +11,6 @@ using PlaynomicsPlugin;
 using Kalman;
 using System;
 using UnityEngine.Rendering;
-using UnityEngine.Networking;
 
 public class OnCameraFrame : MonoBehaviour {
 
@@ -25,7 +24,7 @@ public class OnCameraFrame : MonoBehaviour {
     private AnnotationsFetcher yoloFetcher_;
     private AnnotationsFetcher openFaceFetcher_;
     private AssetBundleFetcher assetFetcher_;
-    private string semanticDbQueryUrl_;
+    private SemanticDbController dbController_;
     
     // ---
     // added by Peter
@@ -83,13 +82,8 @@ public class OnCameraFrame : MonoBehaviour {
             new Color (252f/255, 187f/255, 255f/255),
             new Color (255f/255, 193f/255, 130f/255)
         };
-            
 
-        // ---
-        // added by Peter
-        // TBD: this should not be hardcoded
-        semanticDbQueryUrl_ = "http://131.179.142.7:8888/query";
-        // --- end
+        dbController_ = new SemanticDbController("http://131.179.142.7:8888/query");
 
         // @Therese - these need to be moved somewhere to a higher-level entity as
         // configuration parameters (may be changed frequently during testing)
@@ -225,34 +219,8 @@ public class OnCameraFrame : MonoBehaviour {
         });
     }
 
-    IEnumerator runDbQuery(string queryString)
-    {
-        var data = System.Text.Encoding.ASCII.GetBytes(queryString);
+    public void processDbQueryReply() {
 
-        using (UnityWebRequest www = new UnityWebRequest(semanticDbQueryUrl_))
-        {
-            www.SetRequestHeader("Content-Type", "application/json");
-            www.uploadHandler = new UploadHandlerRaw( data );
-            //General purpose DownloadHandler subclass. Must be explicitly instantiated if not calling 
-            //UnityWebRequest.post() or .get()
-            www.downloadHandler = new DownloadHandlerBuffer(); 
-            
-            yield return www.SendWebRequest();
-
-            if (www.isNetworkError || www.isHttpError)
-            {
-                Debug.Log("[semantic-db]: query error " + www.error);
-            }
-            else if (www.downloadHandler == null)
-            {
-                Debug.Log("[semantic-db]: downloadhandler is null");
-            }
-            else
-            {
-                Debug.Log("[semantic-db]: got results back: "+www.downloadHandler.text);
-                byte[] results = www.downloadHandler.data;
-            }
-        }
     }
 
     public void OnImageAvailable(TextureReaderApi.ImageFormatType format, int width, int height, IntPtr pixelBuffer, int bufferSize)
@@ -310,9 +278,17 @@ public class OnCameraFrame : MonoBehaviour {
 
                 Debug.Log("Received annotations JSON (frame " + frameNumber + "): " + debuglog);
 
-                string queryString = "{\"annotations\":[{\"xleft\":0.37396889925003052,\"xright\":0.41286516189575195,\"ytop\":0.48137125372886658,\"ybottom\":0.55187106132507324,\"label\":\"cup\",\"prob\":0.18228136003017426},{\"xleft\":0.73392981290817261,\"xright\":0.81988757848739624,\"ytop\":0.5637977123260498,\"ybottom\":0.59101009368896484,\"label\":\"mouse\",\"prob\":0.16920529305934906}]}";
-
-                UnityMainThreadDispatcher.Instance().Enqueue(runDbQuery(queryString));
+                dbController_.runQuery(jsonArrayString, 
+                                       delegate(DbReply reply, string errorMessage){
+                                           if (reply != null)
+                                           {
+                                                Debug.Log("[semantic-db]: got reply from DB. entries: "+reply.entries.Length);
+                                           }
+                                           else
+                                           {
+                                               Debug.Log("[semantic-db]: db request error "+errorMessage);
+                                           }
+                                       });
 
                 string[] testDebug = jsonArrayString.Split(']');
                 string formatDebug = testDebug[0] + "]";
