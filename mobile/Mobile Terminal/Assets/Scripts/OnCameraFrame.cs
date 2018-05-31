@@ -25,6 +25,8 @@ public class OnCameraFrame : MonoBehaviour {
     private AnnotationsFetcher openFaceFetcher_;
     private AssetBundleFetcher assetFetcher_;
     private SemanticDbController dbController_;
+    private float dbQueryRate_;
+    private DateTime lastDbQuery_;
     
     // ---
     // added by Peter
@@ -83,6 +85,8 @@ public class OnCameraFrame : MonoBehaviour {
             new Color (255f/255, 193f/255, 130f/255)
         };
 
+        lastDbQuery_ = System.DateTime.Now;
+        dbQueryRate_ = 0.5f; // once every 2 seconds
         dbController_ = new SemanticDbController("http://131.179.142.7:8888/query");
 
         // @Therese - these need to be moved somewhere to a higher-level entity as
@@ -277,18 +281,21 @@ public class OnCameraFrame : MonoBehaviour {
                 string debuglog = jsonArrayString.Replace(System.Environment.NewLine, " ");
 
                 Debug.Log("Received annotations JSON (frame " + frameNumber + "): " + debuglog);
-
-                dbController_.runQuery(jsonArrayString, 
-                                       delegate(DbReply reply, string errorMessage){
-                                           if (reply != null)
-                                           {
-                                                Debug.Log("[semantic-db]: got reply from DB. entries: "+reply.entries.Length);
-                                           }
-                                           else
-                                           {
-                                               Debug.Log("[semantic-db]: db request error "+errorMessage);
-                                           }
-                                       });
+                if ( (float)(System.DateTime.Now - lastDbQuery_).TotalSeconds >= (1f / dbQueryRate_) )
+                {
+                    lastDbQuery_ = System.DateTime.Now;
+                    dbController_.runQuery(jsonArrayString, 
+                                           delegate(DbReply reply, string errorMessage){
+                                               if (reply != null)
+                                               {
+                                                    Debug.Log("[semantic-db]: got reply from DB. entries: "+reply.entries.Length);
+                                               }
+                                               else
+                                               {
+                                                   Debug.Log("[semantic-db]: db request error "+errorMessage);
+                                               }
+                                           });
+                }
 
                 string[] testDebug = jsonArrayString.Split(']');
                 string formatDebug = testDebug[0] + "]";
