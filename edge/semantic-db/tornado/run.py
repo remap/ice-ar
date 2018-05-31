@@ -130,11 +130,16 @@ class QueryHandler(tornado.web.RequestHandler):
 
         sortedpairs = sorted(pairs.items(), key=operator.itemgetter(1))
         sortedpairs.reverse()
-        top3 = sortedpairs[:3]
-        top3 = {key: value for (key, value) in top3}
+
+        # get top N values
+        N = 4
+        top = sortedpairs[:N]
+        # top =  {key: value for (key, value) in top }
+        top = [ {"frameName": k, "simLevel": v} for k,v in top ]
+        reply = { "entries": top }
 
         self.set_status(200)
-        self.finish(json.dumps(top3))
+        self.finish(json.dumps(reply))
 
 ####
 def signal_handler(signum, frame):
