@@ -20,11 +20,16 @@ public class OnCameraFrame : MonoBehaviour {
     public System.DateTime begin;
     public FramePoolManager frameMgr;
     public BoundingBoxPoolManager boxMgr;
+    public ImageController imageController_;
+
     private FaceProcessor faceProcessor_;
     private AnnotationsFetcher yoloFetcher_;
     private AnnotationsFetcher openFaceFetcher_;
     private AssetBundleFetcher assetFetcher_;
     private SemanticDbController dbController_;
+    private float dbQueryRate_;
+    private DateTime lastDbQuery_;
+    private DateTime lastKeyFrame_; //Used to keep the updating of UI elements roughly in sync with DB query rate
     
     // ---
     // added by Peter
@@ -51,6 +56,11 @@ public class OnCameraFrame : MonoBehaviour {
         QualitySettings.vSyncCount = 0;  // VSync must be disabled
         Application.targetFrameRate = 30;
         begin = System.DateTime.Now;
+    }
+
+    public void changeDbQueryRate(float newRate)
+    {
+        dbQueryRate_ = 1/newRate;
     }
 
     void Start()
@@ -83,6 +93,9 @@ public class OnCameraFrame : MonoBehaviour {
             new Color (255f/255, 193f/255, 130f/255)
         };
 
+        lastDbQuery_ = System.DateTime.Now;
+        lastKeyFrame_ = System.DateTime.Now;
+        dbQueryRate_ = 0.5f; // once every 2 seconds
         dbController_ = new SemanticDbController("http://131.179.142.7:8888/query");
 
         // @Therese - these need to be moved somewhere to a higher-level entity as
@@ -178,6 +191,7 @@ public class OnCameraFrame : MonoBehaviour {
         if(boxData.Count > 0)
             CreateBoxes(boxData);
     }
+
 
     public void CreateBoxes(List<CreateBoxData> boxes)
     {
@@ -277,18 +291,32 @@ public class OnCameraFrame : MonoBehaviour {
                 string debuglog = jsonArrayString.Replace(System.Environment.NewLine, " ");
 
                 Debug.Log("Received annotations JSON (frame " + frameNumber + "): " + debuglog);
-
-                dbController_.runQuery(jsonArrayString, 
-                                       delegate(DbReply reply, string errorMessage){
-                                           if (reply != null)
-                                           {
-                                                Debug.Log("[semantic-db]: got reply from DB. entries: "+reply.entries.Length);
-                                           }
-                                           else
-                                           {
-                                               Debug.Log("[semantic-db]: db request error "+errorMessage);
-                                           }
-                                       });
+                if ( (float)(System.DateTime.Now - lastDbQuery_).TotalSeconds >= (1f / dbQueryRate_) )
+                {
+                    lastDbQuery_ = System.DateTime.Now;
+                    dbController_.runQuery(jsonArrayString, 
+                                           delegate(DbReply reply, string errorMessage){
+                                               if (reply != null)
+                                               {
+                                                    Debug.Log("[semantic-db]: got reply from DB. entries: "+reply.entries.Length);
+                                                    foreach (var entry in reply.entries)
+                                                    {
+                                                        NdnRtc.fetch(entry.frameName, NdnRtc.videoStream,
+                                                            delegate(FrameInfo fi, int w, int h, byte[] argbBuffer){
+                                                                Debug.Log ("[ff-task]: Succesfully fetched frame "+ fi.ndnName_);
+                                                                imageController_.enqueueFrame(new FetchedUIFrame(argbBuffer, fi.timestamp_, entry.simLevel));
+                                                            },
+                                                            delegate(string frameName){
+                                                                Debug.Log ("[ff-task]: Failed to fetch "+frameName);
+                                                            });
+                                                    }
+                                               }
+                                               else
+                                               {
+                                                   Debug.Log("[semantic-db]: db request error "+errorMessage);
+                                               }
+                                           });
+                }
 
                 string[] testDebug = jsonArrayString.Split(']');
                 string formatDebug = testDebug[0] + "]";
@@ -306,10 +334,18 @@ public class OnCameraFrame : MonoBehaviour {
                     {
                         if(data.annotationData[i].prob >= 0.5f)
                         {
-                            Debug.Log("test: " + data.annotationData.Length);
-                            Debug.Log("test label: " + data.annotationData[i].label + " test xleft: " + data.annotationData[i].xleft
+                            Debug.Log("[debug-annotations] test: " + data.annotationData.Length);
+                            Debug.Log("[debug-annotations] test label: " + data.annotationData[i].label + " test xleft: " + data.annotationData[i].xleft
                                 + " test xright: " + data.annotationData[i].xright + " test ytop: " + (1-data.annotationData[i].ytop) + " test ybottom: " + (1-data.annotationData[i].ybottom));
                         }
+                    }
+
+                        Debug.Log("[debug-annotations] Right before if");
+                    if ( (float)(System.DateTime.Now - lastKeyFrame_).TotalSeconds >= (1f / dbQueryRate_) ) //We only want to update our debug UI at (roughly) the query rate
+                    {
+                            Debug.Log("[debug-annotations] Inside of if");
+                            lastKeyFrame_ = System.DateTime.Now;
+                            imageController_.updateDebugText(data);
                     }
 
 
