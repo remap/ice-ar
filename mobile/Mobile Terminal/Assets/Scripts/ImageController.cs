@@ -22,6 +22,7 @@ public struct FetchedUIFrame
 
 public class ImageController : MonoBehaviour {
 
+    public Text debugPanelText;
     public RawImage r0;
     public RawImage r1;
     public RawImage r2;
@@ -60,6 +61,22 @@ public class ImageController : MonoBehaviour {
         Debug.Log("[img-controller] null SimilarityLevel UI component");
         return null;
     }
+
+    public void updateDebugText(AnnotationData data)
+    {
+        Debug.Log("[img-controller] inside updateDebugText()");
+        string debugText = "";
+        for (int i = 0; i < data.annotationData.Length; i++)
+        {
+            if (data.annotationData[i].prob >= 0.5f)
+            {
+                Debug.Log("[img-controller] inside updateDebugText() and inside if");
+                debugText += data.annotationData[i].label + ": " + data.annotationData[i].prob + "\n";
+            }
+        }
+        debugPanelText.text = debugText;
+    }
+   
 
     // Use this for initialization
     void Start () {
