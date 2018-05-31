@@ -289,6 +289,17 @@ public class OnCameraFrame : MonoBehaviour {
                                                if (reply != null)
                                                {
                                                     Debug.Log("[semantic-db]: got reply from DB. entries: "+reply.entries.Length);
+                                                    foreach (var entry in reply.entries)
+                                                    {
+                                                        NdnRtc.fetch(entry.frameName, NdnRtc.videoStream,
+                                                            delegate(FrameInfo fi, int w, int h, byte[] argBuffer){
+                                                                Debug.Log ("[ff-task]: Succesfully fetched frame "+ fi.ndnName_);
+                                                                Debug.Log ("[ff-task]: Will render is somewhere...");
+                                                            },
+                                                            delegate(string frameName){
+                                                                Debug.Log ("[ff-task]: Failed to fetch "+frameName);
+                                                            });
+                                                    }
                                                }
                                                else
                                                {

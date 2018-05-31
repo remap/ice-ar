@@ -23,6 +23,7 @@ using UnityEngine;
 using System.Runtime.InteropServices;
 using System;
 using GoogleARCore.TextureReader;
+using System.Threading;
 
 [UnmanagedFunctionPointerAttribute (CallingConvention.Cdecl)]
 public delegate void NdnRtcLibLogHandler ([MarshalAs(UnmanagedType.LPStr)]string message);
@@ -269,11 +270,73 @@ public class FrameFetcher
     }
 }
 
+public class FrameFetchingTask {
+    public string frameName_;
+    private OnFrameFetched onFrameFetched_;
+    private OnFrameFetchFailure onFrameFetchFailure_;
+    private FrameFetcher ff_;
+    private LocalVideoStream stream_;
+    private OnCompleted onCompleted_;
+
+    public delegate void OnCompleted(FrameFetchingTask ffTask);
+
+    /**
+     * Will call callbacks on MainThread
+     */
+    public FrameFetchingTask(string frameName, LocalVideoStream stream,
+                             OnFrameFetched onFrameFetched, 
+                             OnFrameFetchFailure onFrameFetchedFailure)
+    {
+        frameName_ = frameName;
+        stream_ = stream;
+        onFrameFetched_ = onFrameFetched;
+        onFrameFetchFailure_ = onFrameFetchedFailure;
+    }
+
+    /**
+     * Will call onCompleted on current thread
+     */
+    public void run(OnCompleted onCompleted)
+    {
+        onCompleted_ = onCompleted;
+
+        ff_ = new FrameFetcher();
+        ff_.fetch(frameName_, stream_,
+                 delegate(FrameInfo fi, int w, int h, byte[] argbBuffer){
+                        Debug.Log ("[ff-task]: succesfully fetched frame "+ fi.ndnName_);
+                        onFrameFetched_(fi, w, h, argbBuffer);
+                        onCompleted(this);
+                    },
+                    delegate(string frameName){
+                        Debug.Log ("[ff-task]]: failed to fetch "+frameName);
+                        onFrameFetchFailure_(frameName);
+                        onCompleted(this);
+                    });
+    }
+}
+
 public class NdnRtc : MonoBehaviour
 {
+    static private Thread frameFetchingThread_;
+    static private Semaphore queueSem_;
+    static private System.Collections.Generic.Queue<FrameFetchingTask> frameFetchingTaskQueue_;
+    static private HashSet<FrameFetchingTask> activeTasks_;
+    static private bool runFrameFetching_;
+
 	static private NdnRtcLibLogHandler libraryCallbackDelegate;
 	static public LocalVideoStream videoStream;
-    static public FrameFetcher frameFetcher;
+
+    public static void fetch(string frameName, LocalVideoStream stream, 
+                             OnFrameFetched onFrameFetched, 
+                             OnFrameFetchFailure onFrameFetchFailure)
+    {
+        frameFetchingTaskQueue_.Enqueue(new FrameFetchingTask(frameName, stream, 
+                                                              onFrameFetched, 
+                                                              onFrameFetchFailure));
+        Debug.Log("[ff-task]: enqueued task for "+frameName+". queue size "+frameFetchingTaskQueue_.Count);
+
+        queueSem_.Release();
+    }
 
 	public static void Initialize (string signingIdentity, string instanceId)
 	{
@@ -309,7 +372,31 @@ public class NdnRtc : MonoBehaviour
                 p.storagePath = Application.persistentDataPath + "/ndnrtc_storage";
 
 				videoStream = new LocalVideoStream (p);
-                frameFetcher = new FrameFetcher();
+
+                runFrameFetching_ = true;
+                queueSem_ = new Semaphore(0, 30); // up to 30 requests. why not?...
+                activeTasks_ = new HashSet<FrameFetchingTask>();
+                frameFetchingTaskQueue_ = new System.Collections.Generic.Queue<FrameFetchingTask>();
+                frameFetchingThread_ = new Thread(new ThreadStart(delegate() {
+                    while (runFrameFetching_)
+                    {
+                        Debug.Log("[ff-task-worker]: waiting for new tasks...");
+                        // lock on semaphore / event
+                        queueSem_.WaitOne();
+
+                        // deque
+                        FrameFetchingTask ffTask = frameFetchingTaskQueue_.Dequeue();
+
+                        Debug.Log("[ff-task-worker]: running task for " + ffTask.frameName_);
+                        activeTasks_.Add(ffTask);
+                        ffTask.run(delegate(FrameFetchingTask fft){
+                            Debug.Log("[ff-task-worker]: task completed: "+fft.frameName_);
+                            // cleanup when we are done
+                            activeTasks_.Remove(fft);
+                        });
+                    } // while
+                }));
+                frameFetchingThread_.Start();
 			}
 		} catch (System.Exception e) {
 			Debug.LogError ("Error initializing NDN-RTC: " + e.Message);
@@ -318,7 +405,10 @@ public class NdnRtc : MonoBehaviour
 
 	public static void Release ()
 	{
-		NdnRtcWrapper.ndnrtc_deinit ();
+        runFrameFetching_ = false;
+        queueSem_.Release();
+        frameFetchingThread_.Join();
+        NdnRtcWrapper.ndnrtc_deinit ();
 	}
 
 	// Use this for initialization
