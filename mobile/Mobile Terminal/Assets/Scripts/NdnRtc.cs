@@ -281,7 +281,7 @@ public class FrameFetchingTask {
     public delegate void OnCompleted(FrameFetchingTask ffTask);
 
     /**
-     * Will call callbacks on MainThread
+     * Will call callbacks on current thread
      */
     public FrameFetchingTask(string frameName, LocalVideoStream stream,
                              OnFrameFetched onFrameFetched, 

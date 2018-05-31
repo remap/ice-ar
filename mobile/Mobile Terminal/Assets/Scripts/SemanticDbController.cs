@@ -53,8 +53,11 @@ public class SemanticDbController  {
 
     public void runQuery(string jsonAnnotationString, OnDbResult onDbResult)
     {
-        // TBD: process jsonAnnotationsString to retrieve "annotations" dictionary from it
-        string queryString = "{\"annotations\":[{\"xleft\":0.37396889925003052,\"xright\":0.41286516189575195,\"ytop\":0.48137125372886658,\"ybottom\":0.55187106132507324,\"label\":\"cup\",\"prob\":0.18228136003017426},{\"xleft\":0.73392981290817261,\"xright\":0.81988757848739624,\"ytop\":0.5637977123260498,\"ybottom\":0.59101009368896484,\"label\":\"mouse\",\"prob\":0.16920529305934906}]}";
+        // NOTE: it is expected that jsonAnnotationString is a json array, i.e. it looks like
+        // [ { annotation1 }, { annotation2 }, ... ]
+
+        string compactString = jsonAnnotationString.Replace(System.Environment.NewLine, "");
+        string queryString = "{\"annotations\":"+compactString+"}";
 
         callbacks_[queryString] = onDbResult;
         UnityMainThreadDispatcher.Instance().Enqueue(runDbQuery(queryString));
