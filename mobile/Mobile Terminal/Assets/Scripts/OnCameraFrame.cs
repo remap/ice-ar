@@ -20,6 +20,8 @@ public class OnCameraFrame : MonoBehaviour {
     public System.DateTime begin;
     public FramePoolManager frameMgr;
     public BoundingBoxPoolManager boxMgr;
+    public ImageController imageController_;
+
     private FaceProcessor faceProcessor_;
     private AnnotationsFetcher yoloFetcher_;
     private AnnotationsFetcher openFaceFetcher_;
@@ -292,9 +294,9 @@ public class OnCameraFrame : MonoBehaviour {
                                                     foreach (var entry in reply.entries)
                                                     {
                                                         NdnRtc.fetch(entry.frameName, NdnRtc.videoStream,
-                                                            delegate(FrameInfo fi, int w, int h, byte[] argBuffer){
+                                                            delegate(FrameInfo fi, int w, int h, byte[] argbBuffer){
                                                                 Debug.Log ("[ff-task]: Succesfully fetched frame "+ fi.ndnName_);
-                                                                Debug.Log ("[ff-task]: Will render is somewhere...");
+                                                                imageController_.enqueueFrame(argbBuffer);
                                                             },
                                                             delegate(string frameName){
                                                                 Debug.Log ("[ff-task]: Failed to fetch "+frameName);

@@ -11,14 +11,24 @@ public class ImageController : MonoBehaviour {
     public RawImage r2;
     public RawImage r3;
     public RawImage r4;
-    public int refreshRate = 5;
+    public int refreshRate = 1;
 
     private List<Texture2D> textures;
+    
+    private Queue<byte[]> fetchedFrames;
+    private int nFramesToRetain_;
+
     private bool allowNewMemories;
 
+    public void enqueueFrame(byte [] frameArgbData) {
+        Debug.Log("[img-controller] enqueued frame");
+        fetchedFrames.Enqueue(frameArgbData);
+    }
 
     // Use this for initialization
     void Start () {
+        nFramesToRetain_ = 4;
+        fetchedFrames = new Queue<byte[]>();
 
         /*
         ///******************METHOD 1*********************************************************
@@ -66,12 +76,12 @@ public class ImageController : MonoBehaviour {
 
         textures = new List<Texture2D>();
 
-        for (int i = 0; i < imageData.Count; i++)
-        {
-            Texture2D tempTex = new Texture2D(1, 1);
-            tempTex.LoadImage(imageData[i]);
-            textures.Add(tempTex);
-        }
+        // for (int i = 0; i < imageData.Count; i++)
+        // {
+        //     Texture2D tempTex = new Texture2D(1, 1);
+        //     tempTex.LoadImage(imageData[i]);
+        //     textures.Add(tempTex);
+        // }
 
 
         /*
@@ -102,22 +112,42 @@ public class ImageController : MonoBehaviour {
 
     // Update is called once per frame
     void Update () {
-		if (allowNewMemories)
+        // if have new frames - dequeue them into our textures array
+        while (fetchedFrames.Count > 0)
         {
-            StartCoroutine(UpdateMemories());
+            Debug.Log("[img-controller] dequeuing frames "+fetchedFrames.Count);
+
+            Texture2D tex = new Texture2D(320, 180, TextureFormat.ARGB32, false);
+            tex.LoadRawTextureData(fetchedFrames.Dequeue());
+            tex.Apply();
+            textures.Insert(0, tex);
+
+            allowNewMemories = true;
         }
+
+        while (textures.Count > nFramesToRetain_)
+            textures.RemoveAt(textures.Count-1);
+
+        if (allowNewMemories)
+            UpdateMemories();
 	}
 
     //https://answers.unity.com/questions/132154/how-to-limit-the-players-rate-of-fire.html
     //https://docs.unity3d.com/ScriptReference/WaitForSeconds.html
-    IEnumerator UpdateMemories()
+    // IEnumerator UpdateMemories()
+    void UpdateMemories()
     {
+        Debug.Log("[img-controller] updating memories");
+
+        if (textures.Count > 0)
+            r1.texture = textures[0]; //Random.Range(0, textures.Count)];
+        if (textures.Count > 1)
+            r2.texture = textures[1]; //Random.Range(0, textures.Count)];
+        if (textures.Count > 2)
+            r3.texture = textures[2]; //Random.Range(0, textures.Count)];
+        if (textures.Count > 3)
+            r4.texture = textures[3]; //Random.Range(0, textures.Count)];
+
         allowNewMemories = false;
-        r1.texture = textures[Random.Range(0, textures.Count)];
-        r2.texture = textures[Random.Range(0, textures.Count)];
-        r3.texture = textures[Random.Range(0, textures.Count)];
-        r4.texture = textures[Random.Range(0, textures.Count)];
-        yield return new WaitForSeconds(refreshRate);
-        allowNewMemories = true;
     }
 }
