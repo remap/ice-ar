@@ -296,7 +296,7 @@ public class OnCameraFrame : MonoBehaviour {
                                                         NdnRtc.fetch(entry.frameName, NdnRtc.videoStream,
                                                             delegate(FrameInfo fi, int w, int h, byte[] argbBuffer){
                                                                 Debug.Log ("[ff-task]: Succesfully fetched frame "+ fi.ndnName_);
-                                                                imageController_.enqueueFrame(argbBuffer);
+                                                                imageController_.enqueueFrame(new FetchedUIFrame(argbBuffer, fi.timestamp_, entry.simLevel));
                                                             },
                                                             delegate(string frameName){
                                                                 Debug.Log ("[ff-task]: Failed to fetch "+frameName);

@@ -1,113 +1,89 @@
-﻿using System.Collections;
+﻿using System;
+using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
 //using UnityEngine.Windows;
 using System.IO; //https://forum.unity.com/threads/unityengine-windows.222416/
 
+public struct FetchedUIFrame
+{
+    public byte[] argbData_;
+    public Int64 timestamp_;
+    public float simLevel_;
+
+    public FetchedUIFrame(byte[] argbData, Int64 timestamp, float simLevel)
+    {
+        argbData_ = argbData;
+        timestamp_ = timestamp;
+        simLevel_ = simLevel;
+    }
+}
+
 public class ImageController : MonoBehaviour {
 
+    public RawImage r0;
     public RawImage r1;
     public RawImage r2;
     public RawImage r3;
-    public RawImage r4;
     public int refreshRate = 1;
 
+    private Text[] memoryText;
+    private Image[] memorySimLevel;
+
     private List<Texture2D> textures;
-    
-    private Queue<byte[]> fetchedFrames;
+    private List<string> frameTimestamps;
+    private List<float> frameSimLevels; //Similarity level of memory frames to captured key frame
+    //To-Do: Test if including/excluding frameSimLevels significantly alters performance--it feels like the app has been running slower
+    //       since I added similarity levels to the UI
+
+
+    private Queue<FetchedUIFrame> fetchedFrames;
     private int nFramesToRetain_;
+    private const float frameHeight = 324;
 
     private bool allowNewMemories;
 
-    public void enqueueFrame(byte [] frameArgbData) {
+    public void enqueueFrame(FetchedUIFrame frameData) {
         Debug.Log("[img-controller] enqueued frame");
-        fetchedFrames.Enqueue(frameArgbData);
+        fetchedFrames.Enqueue(frameData);
+    }
+
+    private Image findSimilarityUIComponent(Image[] imagesInChild)
+    {
+        foreach(Image img in imagesInChild)
+        {
+            if (img.tag == "% Similar")
+                return img;
+        }
+
+        Debug.Log("[img-controller] null SimilarityLevel UI component");
+        return null;
     }
 
     // Use this for initialization
     void Start () {
         nFramesToRetain_ = 4;
-        fetchedFrames = new Queue<byte[]>();
-
-        /*
-        ///******************METHOD 1*********************************************************
-        //byte[] imageData = File.ReadAllBytes("Assets/Resources/Images/Color Supernova.jpg");
-
-        ///******************METHOD 2*********************************************************
-        byte[] imageData;
-
-        //If loading a jpg via Resources.load, we must change the image to a .bytes extension instead
-        // //https://docs.unity3d.com/Manual/class-TextAsset.html
-        TextAsset img = Resources.Load("ImagesBytes/ColorSupernova") as TextAsset; 
-        imageData = img.bytes;
-
-        Debug.Log(imageData.Length);
-
-        ///************* COMMON FOR METHOD 1 AND METHOD 2 *****************************************
-        Texture2D tex = new Texture2D(1, 1);
-        tex.LoadImage(imageData);
-        r1.texture = tex;
-        //*** https://forum.unity.com/threads/unityengine-texture2d-loadimage-is-missing.467202/  --> 
-        //          https://docs.unity3d.com/2017.1/Documentation/ScriptReference/ImageConversion.LoadImage.html
-        */
-
-
-        List<byte[]> imageData = new List<byte[]>();
+        fetchedFrames = new Queue<FetchedUIFrame>();
         allowNewMemories = true;
 
-        TextAsset img = Resources.Load("ImagesBytes/ColorSupernova") as TextAsset;
-        imageData.Add(img.bytes);
-        img = Resources.Load("ImagesBytes/Bokeh") as TextAsset;
-        imageData.Add(img.bytes);
-        img = Resources.Load("ImagesBytes/Color1") as TextAsset;
-        imageData.Add(img.bytes);
-        img = Resources.Load("ImagesBytes/Color2") as TextAsset;
-        imageData.Add(img.bytes);
-        img = Resources.Load("ImagesBytes/Color3") as TextAsset;
-        imageData.Add(img.bytes);
-        img = Resources.Load("ImagesBytes/People1") as TextAsset;
-        imageData.Add(img.bytes);
-        img = Resources.Load("ImagesBytes/Setting1") as TextAsset;
-        imageData.Add(img.bytes);
-        img = Resources.Load("ImagesBytes/TheBed") as TextAsset;
-        imageData.Add(img.bytes);
-
-
         textures = new List<Texture2D>();
+        frameTimestamps = new List<string>();
+        frameSimLevels = new List<float>();
 
-        // for (int i = 0; i < imageData.Count; i++)
-        // {
-        //     Texture2D tempTex = new Texture2D(1, 1);
-        //     tempTex.LoadImage(imageData[i]);
-        //     textures.Add(tempTex);
-        // }
+        memoryText = new Text[4];
+        memoryText[0] = r0.gameObject.GetComponentsInChildren<Text>()[0];
+        memoryText[1] = r1.gameObject.GetComponentsInChildren<Text>()[0];
+        memoryText[2] = r2.gameObject.GetComponentsInChildren<Text>()[0];
+        memoryText[3] = r3.gameObject.GetComponentsInChildren<Text>()[0];
 
-
-        /*
-        Resources.Load("Images/Color Supernova") as Texture; //https://answers.unity.com/questions/318921/correct-folder-for-resourcesload-.html
-
-        Texture2D tex = new Texture2D(width, height);
-        tex.LoadImage(byteArray);
-        renderer.material.mainTexture = tex;
-        */
+        memorySimLevel = new Image[4];
+        memorySimLevel[0] = findSimilarityUIComponent(r0.gameObject.GetComponentsInChildren<Image>());
+        memorySimLevel[1] = findSimilarityUIComponent(r1.gameObject.GetComponentsInChildren<Image>());
+        memorySimLevel[2] = findSimilarityUIComponent(r2.gameObject.GetComponentsInChildren<Image>());
+        memorySimLevel[3] = findSimilarityUIComponent(r3.gameObject.GetComponentsInChildren<Image>());
 
 
-        /*
-        Texture2D tempTex = new Texture2D(400, 400);
-
-        var colorArray = new Color32[imageData.Length / 4];
-        for (var i = 0; i < 10000; i += 4)  //imageData.Length
-        {
-            var color = new Color32(imageData[i + 0], imageData[i + 1], imageData[i + 2], imageData[i + 3]);
-            colorArray[i / 4] = color;
-        }
-
-        tempTex.SetPixels32(colorArray);
-        r1.texture = tempTex; //https://forum.unity.com/threads/how-to-set-new-texture-to-rawimage.266283/
-        */
-
-        
     }
 
     // Update is called once per frame
@@ -118,36 +94,67 @@ public class ImageController : MonoBehaviour {
             Debug.Log("[img-controller] dequeuing frames "+fetchedFrames.Count);
 
             Texture2D tex = new Texture2D(320, 180, TextureFormat.ARGB32, false);
-            tex.LoadRawTextureData(fetchedFrames.Dequeue());
+            //To-Do: Figure out why frame RGB data is reversed (across the vertical axis). Maybe texture format is not ARGB32?
+            //       Could try using Array.reverse(), but that's probably too slow 
+            //       See: https://gamedev.stackexchange.com/questions/108444/unity-texture2d-raw-data-textureformat-problem
+            FetchedUIFrame tempUIFrame = fetchedFrames.Dequeue();
+            tex.LoadRawTextureData(tempUIFrame.argbData_);
             tex.Apply();
             textures.Insert(0, tex);
+            frameTimestamps.Insert(0, (new DateTime(1970, 1, 1) + TimeSpan.FromMilliseconds(tempUIFrame.timestamp_)).ToString("MM/dd/yyyy HH:mm:ss"));
+            frameSimLevels.Insert(0, tempUIFrame.simLevel_);
+            //To-Do: Format above to PST (or w/e your regional time is). Right now I think it's about 7 or 8 hours ahead of our time
 
             allowNewMemories = true;
         }
 
         while (textures.Count > nFramesToRetain_)
-            textures.RemoveAt(textures.Count-1);
+            textures.RemoveAt(textures.Count - 1);
+        while (frameTimestamps.Count > nFramesToRetain_)
+            frameTimestamps.RemoveAt(frameTimestamps.Count - 1);
+        while (frameSimLevels.Count > nFramesToRetain_)
+            frameSimLevels.RemoveAt(frameSimLevels.Count - 1);
 
         if (allowNewMemories)
             UpdateMemories();
 	}
 
-    //https://answers.unity.com/questions/132154/how-to-limit-the-players-rate-of-fire.html
-    //https://docs.unity3d.com/ScriptReference/WaitForSeconds.html
-    // IEnumerator UpdateMemories()
+
     void UpdateMemories()
     {
         Debug.Log("[img-controller] updating memories");
 
-        if (textures.Count > 0)
-            r1.texture = textures[0]; //Random.Range(0, textures.Count)];
-        if (textures.Count > 1)
-            r2.texture = textures[1]; //Random.Range(0, textures.Count)];
-        if (textures.Count > 2)
-            r3.texture = textures[2]; //Random.Range(0, textures.Count)];
-        if (textures.Count > 3)
-            r4.texture = textures[3]; //Random.Range(0, textures.Count)];
-
+        if (textures.Count > 0) //hopefully fixed
+        {
+            r0.texture = textures[0]; //Random.Range(0, textures.Count)];
+            memoryText[0].text = frameTimestamps[0];
+            
+            //See: https://forum.unity.com/threads/setting-top-and-bottom-on-a-recttransform.265415/
+            memorySimLevel[0].rectTransform.offsetMin = new Vector2(memorySimLevel[0].rectTransform.offsetMin.x, 0);
+            memorySimLevel[0].rectTransform.offsetMax = new Vector2(memorySimLevel[0].rectTransform.offsetMax.x, -1 * frameHeight * frameSimLevels[0]);
+        }
+        if (textures.Count > 1) //fluctate from top
+        { 
+            r1.texture = textures[1]; //Random.Range(0, textures.Count)];
+            memoryText[1].text = frameTimestamps[1];
+            memorySimLevel[1].rectTransform.offsetMin = new Vector2(memorySimLevel[1].rectTransform.offsetMin.x, 0);
+            memorySimLevel[1].rectTransform.offsetMax = new Vector2(memorySimLevel[1].rectTransform.offsetMax.x, -1 * frameHeight * frameSimLevels[1]);
+        }
+        if (textures.Count > 2) // ??
+        {
+            r2.texture = textures[2]; //Random.Range(0, textures.Count)];
+            memoryText[2].text = frameTimestamps[2];
+            memorySimLevel[2].rectTransform.offsetMin = new Vector2(memorySimLevel[2].rectTransform.offsetMin.x, 0);
+            memorySimLevel[2].rectTransform.offsetMax = new Vector2(memorySimLevel[2].rectTransform.offsetMax.x, -1 * frameHeight * frameSimLevels[2]);
+        }
+        if (textures.Count > 3) //max all time
+        {
+            r3.texture = textures[3]; //Random.Range(0, textures.Count)];
+            memoryText[3].text = frameTimestamps[3];
+            memorySimLevel[3].rectTransform.offsetMin = new Vector2(memorySimLevel[3].rectTransform.offsetMin.x, 0);
+            memorySimLevel[3].rectTransform.offsetMax = new Vector2(memorySimLevel[3].rectTransform.offsetMax.x, -1 * frameHeight * frameSimLevels[3]);
+        }
+          
         allowNewMemories = false;
     }
 }
