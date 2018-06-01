@@ -29,7 +29,9 @@ public class OnCameraFrame : MonoBehaviour {
     private SemanticDbController dbController_;
     private float dbQueryRate_;
     private DateTime lastDbQuery_;
-    
+    private DateTime lastKeyFrame_; //Used to keep the updating of UI elements roughly in sync with DB query rate
+
+
     // ---
     // added by Peter
     private int test_frameCounter_; // delete this var. it is for testing only
@@ -57,7 +59,12 @@ public class OnCameraFrame : MonoBehaviour {
         begin = System.DateTime.Now;
     }
 
-    void Start()
+    public void changeDbQueryRate(float newRate)
+    {
+        dbQueryRate_ = 1/newRate;
+    }
+
+void Start()
     {
         TextureReaderComponent.OnImageAvailableCallback += OnImageAvailable;
         //timestamp = gameObject.GetComponent<TangoARScreen> ().m_screenUpdateTime;
@@ -88,6 +95,7 @@ public class OnCameraFrame : MonoBehaviour {
         };
 
         lastDbQuery_ = System.DateTime.Now;
+        lastKeyFrame_ = System.DateTime.Now;
         dbQueryRate_ = 0.5f; // once every 2 seconds
         dbController_ = new SemanticDbController("http://131.179.142.7:8888/query");
 
@@ -326,12 +334,19 @@ public class OnCameraFrame : MonoBehaviour {
                     {
                         if(data.annotationData[i].prob >= 0.5f)
                         {
-                            Debug.Log("test: " + data.annotationData.Length);
-                            Debug.Log("test label: " + data.annotationData[i].label + " test xleft: " + data.annotationData[i].xleft
+                            Debug.Log("[debug-annotations] test: " + data.annotationData.Length);
+                            Debug.Log("[debug-annotations] test label: " + data.annotationData[i].label + " test xleft: " + data.annotationData[i].xleft
                                 + " test xright: " + data.annotationData[i].xright + " test ytop: " + (1-data.annotationData[i].ytop) + " test ybottom: " + (1-data.annotationData[i].ybottom));
                         }
                     }
-
+            
+                    Debug.Log("[debug-annotations] Right before if");
+                    if ((float)(System.DateTime.Now - lastKeyFrame_).TotalSeconds >= (1f / dbQueryRate_)) //We only want to update our debug UI at (roughly) the query rate
+                    {
+                            Debug.Log("[debug-annotations] Inside of if");
+                            lastKeyFrame_ = System.DateTime.Now;
+                            imageController_.updateDebugText(data);
+                    }
 
                     Debug.Log("Frame number annotations: " + frameNumber);
                     Debug.Log ("Frame info camera position: " + temp.camPos);
