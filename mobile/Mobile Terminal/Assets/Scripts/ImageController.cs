@@ -20,8 +20,10 @@ public struct FetchedUIFrame
     }
 }
 
-public class ImageController : MonoBehaviour {
+public class ImageController : MonoBehaviour
+{
 
+    public Text debugPanelText;
     public RawImage r0;
     public RawImage r1;
     public RawImage r2;
@@ -44,14 +46,15 @@ public class ImageController : MonoBehaviour {
 
     private bool allowNewMemories;
 
-    public void enqueueFrame(FetchedUIFrame frameData) {
+    public void enqueueFrame(FetchedUIFrame frameData)
+    {
         Debug.Log("[img-controller] enqueued frame");
         fetchedFrames.Enqueue(frameData);
     }
 
     private Image findSimilarityUIComponent(Image[] imagesInChild)
     {
-        foreach(Image img in imagesInChild)
+        foreach (Image img in imagesInChild)
         {
             if (img.tag == "% Similar")
                 return img;
@@ -61,8 +64,74 @@ public class ImageController : MonoBehaviour {
         return null;
     }
 
+    public void updateDebugText(AnnotationData data)
+    {
+        Debug.Log("[img-controller] inside updateDebugText()");
+        string debugText = "";
+        for (int i = 0; i < data.annotationData.Length; i++)
+        {
+            if (data.annotationData[i].prob >= 0.5f)
+            {
+                Debug.Log("[img-controller] inside updateDebugText() and inside if");
+                debugText += data.annotationData[i].label + ": " + data.annotationData[i].prob + "\n";
+            }
+        }
+        debugPanelText.text = debugText;
+    }
+
+    //Code from: https://stackoverflow.com/questions/11/calculate-relative-time-in-c-sharp
+    public string timeAgo(long yourDateMilliseconds)
+    {
+        const int SECOND = 1;
+        const int MINUTE = 60 * SECOND;
+        const int HOUR = 60 * MINUTE;
+        const int DAY = 24 * HOUR;
+        const int MONTH = 30 * DAY;
+
+        DateTime history = new DateTime(1970, 1, 1, 0, 0, 0, DateTimeKind.Utc) + TimeSpan.FromMilliseconds(yourDateMilliseconds);
+        history = history.ToLocalTime();
+        //var ts = new TimeSpan(DateTime.Now.ToLocalTime().Ticks - TimeSpan.FromMilliseconds(yourDateMilliseconds).Ticks);
+        var ts = new TimeSpan(DateTime.Now.ToLocalTime().Ticks - history.Ticks);
+
+        double delta = Math.Abs(ts.TotalSeconds);
+
+        if (delta < 1 * MINUTE)
+            return ts.Seconds == 1 ? "one second ago" : ts.Seconds + " seconds ago";
+
+        if (delta < 2 * MINUTE)
+            return "a minute ago";
+
+        if (delta < 45 * MINUTE)
+            return ts.Minutes + " minutes ago";
+
+        if (delta < 90 * MINUTE)
+            return "an hour ago";
+
+        if (delta < 24 * HOUR)
+            return ts.Hours + " hours ago";
+
+        if (delta < 48 * HOUR)
+            return "yesterday";
+
+        if (delta < 30 * DAY)
+            return ts.Days + " days ago";
+
+        if (delta < 12 * MONTH)
+        {
+            int months = Convert.ToInt32(Math.Floor((double)ts.Days / 30));
+            return months <= 1 ? "one month ago" : months + " months ago";
+        }
+        else
+        {
+            int years = Convert.ToInt32(Math.Floor((double)ts.Days / 365));
+            return years <= 1 ? "one year ago" : years + " years ago";
+        }
+    }
+
+
     // Use this for initialization
-    void Start () {
+    void Start()
+    {
         nFramesToRetain_ = 4;
         fetchedFrames = new Queue<FetchedUIFrame>();
         allowNewMemories = true;
@@ -87,11 +156,12 @@ public class ImageController : MonoBehaviour {
     }
 
     // Update is called once per frame
-    void Update () {
+    void Update()
+    {
         // if have new frames - dequeue them into our textures array
         while (fetchedFrames.Count > 0)
         {
-            Debug.Log("[img-controller] dequeuing frames "+fetchedFrames.Count);
+            Debug.Log("[img-controller] dequeuing frames " + fetchedFrames.Count);
 
             Texture2D tex = new Texture2D(320, 180, TextureFormat.ARGB32, false);
             //To-Do: Figure out why frame RGB data is reversed (across the vertical axis). Maybe texture format is not ARGB32?
@@ -101,7 +171,8 @@ public class ImageController : MonoBehaviour {
             tex.LoadRawTextureData(tempUIFrame.argbData_);
             tex.Apply();
             textures.Insert(0, tex);
-            frameTimestamps.Insert(0, (new DateTime(1970, 1, 1) + TimeSpan.FromMilliseconds(tempUIFrame.timestamp_)).ToString("MM/dd/yyyy HH:mm:ss"));
+            //frameTimestamps.Insert(0, (new DateTime(1970, 1, 1) + TimeSpan.FromMilliseconds(tempUIFrame.timestamp_)).ToLocalTime().ToString("MM/dd/yyyy HH:mm:ss"));
+            frameTimestamps.Insert(0, timeAgo(tempUIFrame.timestamp_));
             frameSimLevels.Insert(0, tempUIFrame.simLevel_);
             //To-Do: Format above to PST (or w/e your regional time is). Right now I think it's about 7 or 8 hours ahead of our time
 
@@ -117,7 +188,7 @@ public class ImageController : MonoBehaviour {
 
         if (allowNewMemories)
             UpdateMemories();
-	}
+    }
 
 
     void UpdateMemories()
@@ -128,13 +199,13 @@ public class ImageController : MonoBehaviour {
         {
             r0.texture = textures[0]; //Random.Range(0, textures.Count)];
             memoryText[0].text = frameTimestamps[0];
-            
+
             //See: https://forum.unity.com/threads/setting-top-and-bottom-on-a-recttransform.265415/
             memorySimLevel[0].rectTransform.offsetMin = new Vector2(memorySimLevel[0].rectTransform.offsetMin.x, 0);
             memorySimLevel[0].rectTransform.offsetMax = new Vector2(memorySimLevel[0].rectTransform.offsetMax.x, -1 * frameHeight * frameSimLevels[0]);
         }
         if (textures.Count > 1) //fluctate from top
-        { 
+        {
             r1.texture = textures[1]; //Random.Range(0, textures.Count)];
             memoryText[1].text = frameTimestamps[1];
             memorySimLevel[1].rectTransform.offsetMin = new Vector2(memorySimLevel[1].rectTransform.offsetMin.x, 0);
@@ -154,7 +225,7 @@ public class ImageController : MonoBehaviour {
             memorySimLevel[3].rectTransform.offsetMin = new Vector2(memorySimLevel[3].rectTransform.offsetMin.x, 0);
             memorySimLevel[3].rectTransform.offsetMax = new Vector2(memorySimLevel[3].rectTransform.offsetMax.x, -1 * frameHeight * frameSimLevels[3]);
         }
-          
+
         allowNewMemories = false;
     }
 }

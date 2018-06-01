@@ -14,7 +14,7 @@ public class BoundingBoxPoolManager : MonoBehaviour {
 	public Dictionary<string, List<BoundingBox>> boundingBoxObjects;
 
 
-	public void CreateBoundingBoxObject(Vector3 position, float x, float y, float z, string label, Color color)
+	public void CreateBoundingBoxObject(Vector3 position, float x, float y, float z, string label, Color color, bool render=true)
 	{
 
 		string guid = System.Guid.NewGuid().ToString();
@@ -59,10 +59,13 @@ public class BoundingBoxPoolManager : MonoBehaviour {
 
 		Debug.Log ("fontsize: " + spawnText.mesh.fontSize + "; depth: " + depth.ToString("F2"));
 
-		spawnText.mesh.SetText(label + " - " + depth.ToString("F2") + "m");
+        if(render)
+		    spawnText.mesh.SetText(label + " - " + depth.ToString("F2") + "m");
+        else
+            spawnText.mesh.SetText("");
 
-		//set rect transform to size of text
-		spawnText.rect.sizeDelta = new Vector2 (spawnText.mesh.preferredWidth, spawnText.mesh.preferredHeight);
+        //set rect transform to size of text
+        spawnText.rect.sizeDelta = new Vector2 (spawnText.mesh.preferredWidth, spawnText.mesh.preferredHeight);
 		//move label up based on text size
 		spawnText.rect.transform.position = spawnText.rect.transform.position + new Vector3 (0, (spawnText.mesh.preferredHeight / 2), 0);
 		//set label background
