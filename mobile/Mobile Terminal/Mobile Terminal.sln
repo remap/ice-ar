@@ -1,7 +1,7 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio 2015
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Mobile Terminal.CSharp", "Mobile Terminal.CSharp.csproj", "{0F020F46-198C-07F3-19DC-26E87E123E50}"
+# Visual Studio for Mac
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Mobile Terminal", "Mobile Terminal.csproj", "{F4B2AE29-2E2D-7FF1-B0CA-E2B72D7B801B}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -9,10 +9,10 @@ Global
 		Release|Any CPU = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
-		{0F020F46-198C-07F3-19DC-26E87E123E50}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{0F020F46-198C-07F3-19DC-26E87E123E50}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{0F020F46-198C-07F3-19DC-26E87E123E50}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{0F020F46-198C-07F3-19DC-26E87E123E50}.Release|Any CPU.Build.0 = Release|Any CPU
+		{F4B2AE29-2E2D-7FF1-B0CA-E2B72D7B801B}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{F4B2AE29-2E2D-7FF1-B0CA-E2B72D7B801B}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{F4B2AE29-2E2D-7FF1-B0CA-E2B72D7B801B}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{F4B2AE29-2E2D-7FF1-B0CA-E2B72D7B801B}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

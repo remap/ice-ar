@@ -151,6 +151,7 @@
      <Compile Include="Assets\Scripts\PooledObject.cs" />
      <Compile Include="Assets\Scripts\RingBuffer.cs" />
      <Compile Include="Assets\Scripts\SemanticDbController.cs" />
+     <Compile Include="Assets\Scripts\SliderText.cs" />
      <Compile Include="Assets\Scripts\UnityMainThreadDispatcher.cs" />
      <Compile Include="Assets\TextMesh Pro\Examples &amp; Extras\Scripts\Benchmark01.cs" />
      <Compile Include="Assets\TextMesh Pro\Examples &amp; Extras\Scripts\Benchmark01_UGUI.cs" />
@@ -305,6 +306,9 @@
  </Reference>
  <Reference Include="UnityEditor.Purchasing">
  <HintPath>/Users/peetonn/Library/Unity/cache/packages/packages.unity.com/com.unity.purchasing@0.0.19/Editor/UnityEditor.Purchasing.dll</HintPath>
+ </Reference>
+ <Reference Include="SyntaxTree.VisualStudio.Unity.Bridge">
+ <HintPath>/Applications/Visual Studio.app/Contents/Resources/lib/monodevelop/AddIns/MonoDevelop.Unity/Editor/SyntaxTree.VisualStudio.Unity.Bridge.dll</HintPath>
  </Reference>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
