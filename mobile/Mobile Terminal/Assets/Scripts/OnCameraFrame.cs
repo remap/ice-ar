@@ -31,6 +31,8 @@ public class OnCameraFrame : MonoBehaviour {
     private DateTime lastDbQuery_;
     private DateTime lastKeyFrame_; //Used to keep the updating of UI elements roughly in sync with DB query rate
 
+    public bool renderBoundingBoxes;
+
 
     // ---
     // added by Peter
@@ -64,8 +66,15 @@ public class OnCameraFrame : MonoBehaviour {
         dbQueryRate_ = 1/newRate;
     }
 
+    public void changeBoundingBoxRendering(bool render)
+    {
+        renderBoundingBoxes = render;
+    }
+
 void Start()
     {
+        renderBoundingBoxes = true;
+
         TextureReaderComponent.OnImageAvailableCallback += OnImageAvailable;
         //timestamp = gameObject.GetComponent<TangoARScreen> ().m_screenUpdateTime;
         frameMgr = GameObject.FindObjectOfType<FramePoolManager>();
@@ -197,6 +206,8 @@ void Start()
     {
         //create bounding boxes
         Color c = colors [UnityEngine.Random.Range (0, colors.Count)];
+        if (!renderBoundingBoxes)
+            c.a = 0; //Make this box transparent
         for (int i = 0; i < boxes.Count; i++) {
             //Vector3 filteredPos = kalman.Update(boxes [i].position);
             boxMgr.CreateBoundingBoxObject (boxes[i].position, boxes [i].x, boxes [i].y, boxes [i].z, boxes [i].label, c);
