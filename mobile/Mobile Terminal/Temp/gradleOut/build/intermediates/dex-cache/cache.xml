@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<items version="2" >
+
+    <item
+        is-multidex="false"
+        jar="K:\More College Work\Z_REMAP\Unity AR Edge Node Project\ice-ar\mobile\Mobile Terminal\Temp\gradleOut\libs\unity-classes.jar"
+        jumboMode="false"
+        optimize="true"
+        revision="26.0.0"
+        sha1="2d302418aa3482b8db770278260340aed47dd37a">
+        <dex dex="K:\More College Work\Z_REMAP\Unity AR Edge Node Project\ice-ar\mobile\Mobile Terminal\Temp\gradleOut\build\intermediates\pre-dexed\release\unity-classes_0ac26c64e43e112afad8e8dc2f5ea9e6ea32dd42.jar" />
+    </item>
+
+</items>
