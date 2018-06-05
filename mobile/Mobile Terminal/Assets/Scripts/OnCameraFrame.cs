@@ -1,3 +1,5 @@
+#define ENABLE_LOG
+
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
@@ -12,15 +14,14 @@ using Kalman;
 using System;
 using UnityEngine.Rendering;
 
-public class OnCameraFrame : MonoBehaviour
+public class OnCameraFrame : MonoBehaviour, ILogComponent
 {
 
     public UnityEngine.UI.Text textbox;
-    public int frameNumber;
-    public double timestamp;
-    public System.DateTime begin;
-    public FramePoolManager frameMgr;
-    public BoundingBoxPoolManager boxMgr;
+    public double timestamp_;
+    public System.DateTime begin_;
+    public FramePoolManager frameMgr_;
+    public BoundingBoxPoolManager boxMgr_;
     public ImageController imageController_;
 
     private FaceProcessor faceProcessor_;
@@ -35,24 +36,18 @@ public class OnCameraFrame : MonoBehaviour
     public bool renderBoundingBoxes;
 
 
-    // ---
-    // added by Peter
-    private int test_frameCounter_; // delete this var. it is for testing only
-    private string test_frameName_; // delete this var. it is for testing only
-    // --- end
-
-    private ConcurrentQueue<Dictionary<int, FrameObjectData>> frameBuffer;
-    private static ConcurrentQueue<BoxData> boundingBoxBufferToCalc;
-    private static ConcurrentQueue<CreateBoxData> boundingBoxBufferToUpdate;
-    public List<CreateBoxData> boxData;
+    private ConcurrentQueue<Dictionary<int, FrameObjectData>> frameBuffer_;
+    private static ConcurrentQueue<BoxData> boundingBoxBufferToCalc_;
+    private static ConcurrentQueue<CreateBoxData> boundingBoxBufferToUpdate_;
+    public List<CreateBoxData> boxData_;
     //public RingBuffer<FrameObjectData> frameObjectBuffer;
     //public static RingBuffer<BoxData> boxBufferToCalc;
     //public static RingBuffer<CreateBoxData> boxBufferToUpdate;
-    public List<Color> colors;
-    Camera camForCalcThread;
-    Thread calc;
-    public Dictionary<string, Color> labelColors;
-    public Dictionary<string, IKalmanWrapper> kalman;
+    public List<Color> colors_;
+    Camera camForCalcThread_;
+    Thread calc_;
+    public Dictionary<string, Color> labelColors_;
+    public Dictionary<string, IKalmanWrapper> kalman_;
     public TextureReader TextureReaderComponent;
     public ARCoreBackgroundRenderer BackgroundRenderer;
 
@@ -60,7 +55,7 @@ public class OnCameraFrame : MonoBehaviour
     {
         QualitySettings.vSyncCount = 0;  // VSync must be disabled
         Application.targetFrameRate = 30;
-        begin = System.DateTime.Now;
+        begin_ = System.DateTime.Now;
     }
 
     public void changeDbQueryRate(float newRate)
@@ -75,64 +70,76 @@ public class OnCameraFrame : MonoBehaviour
 
     void Start()
     {
-        renderBoundingBoxes = true;
+        Debug.Message("initializing OnCameraFrame...");
 
-        TextureReaderComponent.OnImageAvailableCallback += OnImageAvailable;
-        //timestamp = gameObject.GetComponent<TangoARScreen> ().m_screenUpdateTime;
-        frameMgr = GameObject.FindObjectOfType<FramePoolManager>();
-        frameNumber = 0;
-        //frameObjects = new Dictionary<long, FrameObjectData> ();
-        boxMgr = GameObject.FindObjectOfType<BoundingBoxPoolManager>();
-        timestamp = 0;
-        frameBuffer = new ConcurrentQueue<Dictionary<int, FrameObjectData>>();
-        boundingBoxBufferToCalc = new ConcurrentQueue<BoxData>();
-        boundingBoxBufferToUpdate = new ConcurrentQueue<CreateBoxData>();
-        boxData = new List<CreateBoxData>();
-        //        frameObjectBuffer = new RingBuffer<FrameObjectData> (100000);
-        //        boxBufferToCalc = new RingBuffer<BoxData> (100000);
-        //        boxBufferToUpdate = new RingBuffer<CreateBoxData> (100000);
-        camForCalcThread = GameObject.Find("Camera").GetComponent("Camera") as Camera;
-        calc = new Thread(calculationsForBoundingBox);
-        calc.Start();
-        labelColors = new Dictionary<string, Color>();
-        kalman = new Dictionary<string, IKalmanWrapper>();
+        try
+        {
+            renderBoundingBoxes = true;
+            timestamp_ = 0;
 
-        colors = new List<Color> {
-            new Color (255f/255, 109f/255, 124f/255),
-            new Color (119f/255, 231f/255, 255f/255),
-            new Color (82f/255, 255f/255, 127f/255),
-            new Color (252f/255, 187f/255, 255f/255),
-            new Color (255f/255, 193f/255, 130f/255)
-        };
+            Debug.Log("adding callback for capturing camera frames");
+            TextureReaderComponent.OnImageAvailableCallback += OnImageAvailable;
 
-        lastDbQuery_ = System.DateTime.Now;
-        lastKeyFrame_ = System.DateTime.Now;
-        dbQueryRate_ = 0.5f; // once every 2 seconds
-        dbController_ = new SemanticDbController("http://131.179.142.7:8888/query");
+            frameMgr_ = GameObject.FindObjectOfType<FramePoolManager>();
+            boxMgr_ = GameObject.FindObjectOfType<BoundingBoxPoolManager>();
 
-        // @Therese - these need to be moved somewhere to a higher-level entity as
-        // configuration parameters (may be changed frequently during testing)
-        string rootPrefix = "/icear/user";
-        string userId = "peter"; // "mobile-terminal0";
-        string serviceType = "object_recognizer";
-        string serviceInstance = "yolo"; // "yolo";
-        string serviceInstance2 = "openface"; // "yolo";
+            Debug.Log("creating structures for frames and bounding boxes processing");
+            frameBuffer_ = new ConcurrentQueue<Dictionary<int, FrameObjectData>>();
+            boundingBoxBufferToCalc_ = new ConcurrentQueue<BoxData>();
+            boundingBoxBufferToUpdate_ = new ConcurrentQueue<CreateBoxData>();
+            boxData_ = new List<CreateBoxData>();
 
-        NdnRtc.Initialize(rootPrefix, userId);
-        faceProcessor_ = new FaceProcessor();
-        faceProcessor_.start();
+            Debug.Log("spawning box processing thread");
+            camForCalcThread_ = GameObject.Find("Camera").GetComponent("Camera") as Camera;
+            //calc_ = new Thread(calculationsForBoundingBox);
+            //calc_.Start();
 
-        assetFetcher_ = new AssetBundleFetcher(faceProcessor_);
+            labelColors_ = new Dictionary<string, Color>();
+            kalman_ = new Dictionary<string, IKalmanWrapper>();
 
-        string servicePrefix = rootPrefix + "/" + userId + "/" + serviceType;
-        // AnnotationsFetcher instance might also be a singleton class
-        // and initialized/created somewhere else. here just as an example
-        yoloFetcher_ = new AnnotationsFetcher(faceProcessor_, servicePrefix, serviceInstance);
-        openFaceFetcher_ = new AnnotationsFetcher(faceProcessor_, servicePrefix, serviceInstance2);
+            colors_ = new List<Color> {
+                new Color (255f/255, 109f/255, 124f/255),
+                new Color (119f/255, 231f/255, 255f/255),
+                new Color (82f/255, 255f/255, 127f/255),
+                new Color (252f/255, 187f/255, 255f/255),
+                new Color (255f/255, 193f/255, 130f/255)
+            };
 
-        // setup CNL logging 
-        ILOG.J2CsMapping.Util.Logging.Logger.getLogger("").setLevel(ILOG.J2CsMapping.Util.Logging.Level.FINE);
-        ILOG.J2CsMapping.Util.Logging.Logger.Write = delegate (string message) { Debug.Log(System.DateTime.Now + ": " + message); };
+            Debug.Log("initializing semantic db controller");
+            lastDbQuery_ = System.DateTime.Now;
+            lastKeyFrame_ = System.DateTime.Now;
+            dbQueryRate_ = 0.5f; // once every 2 seconds
+            dbController_ = new SemanticDbController("http://131.179.142.7:8888/query");
+
+            Debug.Log("initializing NDN modules");
+            // @Therese - these need to be moved somewhere to a higher-level entity as
+            // configuration parameters (may be changed frequently during testing)
+            string rootPrefix = "/icear/user";
+            string userId = "peter"; // "mobile-terminal0";
+            string serviceType = "object_recognizer";
+            string serviceInstance = "yolo"; // "yolo";
+            string serviceInstance2 = "openface"; // "yolo";
+
+            NdnRtc.Initialize(rootPrefix, userId);
+            faceProcessor_ = new FaceProcessor();
+            faceProcessor_.start();
+
+            assetFetcher_ = new AssetBundleFetcher(faceProcessor_);
+
+            string servicePrefix = rootPrefix + "/" + userId + "/" + serviceType;
+            // AnnotationsFetcher instance might also be a singleton class
+            // and initialized/created somewhere else. here just as an example
+            yoloFetcher_ = new AnnotationsFetcher(faceProcessor_, servicePrefix, serviceInstance);
+            openFaceFetcher_ = new AnnotationsFetcher(faceProcessor_, servicePrefix, serviceInstance2);
+
+            // setup CNL logging 
+            //ILOG.J2CsMapping.Util.Logging.Logger.getLogger("").setLevel(ILOG.J2CsMapping.Util.Logging.Level.FINE);
+            //ILOG.J2CsMapping.Util.Logging.Logger.Write = delegate (string message) { Debug.Log(System.DateTime.Now + ": " + message); };
+        }
+        catch (System.Exception e)
+        {
+            Debug.LogException(e);
+        }
     }
 
     public void OnDestroy()
@@ -143,21 +150,23 @@ public class OnCameraFrame : MonoBehaviour
 
     void Update()
     {
-        int max = boundingBoxBufferToUpdate.Count;
+        calculationsForBoundingBox();
+
+        int max = boundingBoxBufferToUpdate_.Count;
         for (int i = 0; i < max; i++)
         {
-            CreateBoxData temp = boundingBoxBufferToUpdate.Dequeue();
+            CreateBoxData temp = boundingBoxBufferToUpdate_.Dequeue();
             Debug.Log("frame number for box: " + temp.frameNum);
             textbox.text = "Yolo " + temp.frameNum;
             Debug.Log("queue size: " + i);
-            Color c = colors[UnityEngine.Random.Range(0, colors.Count)];
+            Color c = colors_[UnityEngine.Random.Range(0, colors_.Count)];
             List<BoundingBox> boundingBoxes;
             CreateBoxData box = new CreateBoxData();
             bool updatedBox = false;
             //found color for this label
             //boxMgr.CreateBoundingBoxObject (temp.position, temp.x, temp.y, temp.z, temp.label, c);
 
-            if (boxMgr.boundingBoxObjects.TryGetValue(temp.label, out boundingBoxes))
+            if (boxMgr_.boundingBoxObjects.TryGetValue(temp.label, out boundingBoxes))
             {
                 try
                 {
@@ -175,8 +184,8 @@ public class OnCameraFrame : MonoBehaviour
                         if (distance < 0.2f)
                         {
                             //Debug.Log ("Update found box");
-                            Vector3 filteredPos = kalman[boundingBoxes[j].guid].Update(temp.position);
-                            boxMgr.UpdateBoundingBoxObject(boundingBoxes[j], temp.position, temp.x, temp.y, temp.z, temp.label, temp.position);
+                            Vector3 filteredPos = kalman_[boundingBoxes[j].guid].Update(temp.position);
+                            boxMgr_.UpdateBoundingBoxObject(boundingBoxes[j], temp.position, temp.x, temp.y, temp.z, temp.label, temp.position);
                             Debug.Log("Update bounding box: " + temp.label);
                             updatedBox = true;
                         }
@@ -189,7 +198,7 @@ public class OnCameraFrame : MonoBehaviour
                         box.y = temp.y;
                         box.z = temp.z;
                         box.label = temp.label;
-                        boxData.Add(box);
+                        boxData_.Add(box);
                     }
                 }
                 catch (System.Exception e)
@@ -205,50 +214,52 @@ public class OnCameraFrame : MonoBehaviour
                 box.y = temp.y;
                 box.z = temp.z;
                 box.label = temp.label;
-                boxData.Add(box);
+                boxData_.Add(box);
             }
         }
 
-        if (boxData.Count > 0)
-            CreateBoxes(boxData);
+        if (boxData_.Count > 0)
+            CreateBoxes(boxData_);
     }
 
     public void CreateBoxes(List<CreateBoxData> boxes)
     {
+        Debug.LogFormat("hey! is the box mgr null? {0}", boxMgr_);
+
         //create bounding boxes
-        Color c = colors[UnityEngine.Random.Range(0, colors.Count)];
+        Color c = colors_[UnityEngine.Random.Range(0, colors_.Count)];
         if (!renderBoundingBoxes)
             c.a = 0; //Make this box transparent
         for (int i = 0; i < boxes.Count; i++)
         {
             //Vector3 filteredPos = kalman.Update(boxes [i].position);
             if (!renderBoundingBoxes)
-                boxMgr.CreateBoundingBoxObject(boxes[i].position, boxes[i].x, boxes[i].y, boxes[i].z, "", c, false);
-                //boxMgr.CreateBoundingBoxObject(boxes[i].position, boxes[i].x, boxes[i].y, boxes[i].z, "", c);
+                boxMgr_.CreateBoundingBoxObject(boxes[i].position, boxes[i].x, boxes[i].y, boxes[i].z, "", c, false);
+            //boxMgr.CreateBoundingBoxObject(boxes[i].position, boxes[i].x, boxes[i].y, boxes[i].z, "", c);
             else
-                boxMgr.CreateBoundingBoxObject(boxes[i].position, boxes[i].x, boxes[i].y, boxes[i].z, boxes[i].label, c);
+                boxMgr_.CreateBoundingBoxObject(boxes[i].position, boxes[i].x, boxes[i].y, boxes[i].z, boxes[i].label, c);
         }
-        boxData.Clear();
+        boxData_.Clear();
 
         //initialize Kalman filters
-        foreach (KeyValuePair<string, List<BoundingBox>> kvp in boxMgr.boundingBoxObjects)
+        foreach (KeyValuePair<string, List<BoundingBox>> kvp in boxMgr_.boundingBoxObjects)
         {
             for (int i = 0; i < kvp.Value.Count; i++)
             {
-                kalman[kvp.Value[i].guid] = new MatrixKalmanWrapper();
+                kalman_[kvp.Value[i].guid] = new MatrixKalmanWrapper();
             }
         }
-        Debug.Log("Kalman filters: " + kalman.Count);
+        Debug.Log("Kalman filters: " + kalman_.Count);
     }
 
     public void UpdateBoxes()
     {
-        foreach (KeyValuePair<string, List<BoundingBox>> kvp in boxMgr.boundingBoxObjects)
+        foreach (KeyValuePair<string, List<BoundingBox>> kvp in boxMgr_.boundingBoxObjects)
         {
             for (int i = 0; i < kvp.Value.Count; i++)
             {
-                Vector3 filteredPos = kalman[kvp.Value[i].guid].Update(kvp.Value[i].last);
-                boxMgr.UpdateBoundingBoxObject(kvp.Value[i], filteredPos, kvp.Value[i].x, kvp.Value[i].y, kvp.Value[i].z, kvp.Value[i].label.labelText, filteredPos);
+                Vector3 filteredPos = kalman_[kvp.Value[i].guid].Update(kvp.Value[i].last);
+                boxMgr_.UpdateBoundingBoxObject(kvp.Value[i], filteredPos, kvp.Value[i].x, kvp.Value[i].y, kvp.Value[i].z, kvp.Value[i].label.labelText, filteredPos);
             }
         }
     }
@@ -256,7 +267,8 @@ public class OnCameraFrame : MonoBehaviour
     public void fetchModel(string modelId)
     {
         var modelName = "/icear/content-publisher/avatars/" + modelId + ".model";
-        assetFetcher_.fetch(modelName, delegate (AssetBundle assetBundle) {
+        assetFetcher_.fetch(modelName, delegate (AssetBundle assetBundle)
+        {
             Debug.Log("Fetched asset bundle...");
             // TODO: load asset bundle into the scene, cache it locally, etc...
         });
@@ -272,135 +284,114 @@ public class OnCameraFrame : MonoBehaviour
         try
         {
             System.DateTime current = System.DateTime.Now;
-            long elapsedTicks = current.Ticks - begin.Ticks;
+            long elapsedTicks = current.Ticks - begin_.Ticks;
             System.TimeSpan elapsedSpan = new System.TimeSpan(elapsedTicks);
-            timestamp = elapsedSpan.TotalSeconds;
-            //Debug.Log("before call to ndnrtc");
+            timestamp_ = elapsedSpan.TotalSeconds;
+
+            Debug.LogFormat("pushing frame {0}x{1} to NDN-RTC...", width, height);
 
             FrameInfo finfo = NdnRtc.videoStream.processIncomingFrame(format, width, height, pixelBuffer, bufferSize);
             int publishedFrameNo = finfo.playbackNo_;
-            // int publishedFrameNo = NdnRtc.videoStream.processIncomingFrame (format, width, height, pixelBuffer, bufferSize);
-            Debug.Log("Published frame number: " + publishedFrameNo);
-
-            // ---
-            // added by Peter
-            // this is an example/testing code for FrameFetcher.
-            // delete when it's not needed anymore
-            // if (publishedFrameNo >= 0)
-            // {
-            //     test_frameCounter_ ++;
-            //     if (test_frameCounter_ % 30 == 0) // every 30 frames - remember frame name
-            //         test_frameName_ = finfo.ndnName_;
-            //     if (test_frameCounter_ % 50 == 0) // fetch frame
-            //     {
-            //         NdnRtc.frameFetcher.fetch(test_frameName_, NdnRtc.videoStream,
-            //             delegate(FrameInfo fi, int w, int h, byte[] argBuffer){
-            //                 Debug.Log ("FrameFetcher: Succesfully fetched frame "+ fi.ndnName_);
-            //                 Debug.Log ("FrameFetcher: Will render is somewhere...");
-            //             },
-            //             delegate(string frameName){
-            //                 Debug.Log ("FrameFetcher: Failed to fetch "+frameName);
-            //             });
-            //     }
-            // }
-            // --- end
 
             if (publishedFrameNo >= 0)
             {
-                Debug.Log("create frame object frame number: " + publishedFrameNo);
-                Debug.Log("create frame object timestamp: " + timestamp);
-                Debug.Log("create frame object position: " + Frame.Pose.position);
-                Debug.Log("create frame object rotation: " + Frame.Pose.rotation);
-                Debug.Log("create frame object camera: " + camForCalcThread.ToString());
-                frameMgr.CreateFrameObject(publishedFrameNo, timestamp, Frame.Pose.position, Frame.Pose.rotation, camForCalcThread);
+                Debug.LogFormat("create frame object #{0}, ts {1}, pos {2}, rot {3}, cam {4}",
+                                publishedFrameNo, timestamp_, Frame.Pose.position, Frame.Pose.rotation, camForCalcThread_.ToString());
 
-                frameBuffer.Enqueue(frameMgr.frameObjects);
-                Debug.Log("frame buffer enqueue: " + publishedFrameNo);
+                frameMgr_.CreateFrameObject(publishedFrameNo, timestamp_, Frame.Pose.position, Frame.Pose.rotation, camForCalcThread_);
+                frameBuffer_.Enqueue(frameMgr_.frameObjects);
+
                 // spawn fetching task for annotations of this frame
                 // once successfully received, delegate callback will be called
-                yoloFetcher_.fetchAnnotation(publishedFrameNo, delegate (string jsonArrayString) {
+                yoloFetcher_.fetchAnnotation(publishedFrameNo, delegate (string jsonArrayString)
+                {
                     int frameNumber = publishedFrameNo; // storing frame number locally
-                    string debuglog = jsonArrayString.Replace(System.Environment.NewLine, " ");
+                    string debugString = jsonArrayString.Replace(System.Environment.NewLine, "");
+                    var now = System.DateTime.Now;
+                    bool runQuery = false;
 
-                    Debug.Log("Received annotations JSON (frame " + frameNumber + "): " + debuglog);
-                    if ((float)(System.DateTime.Now - lastDbQuery_).TotalSeconds >= (1f / dbQueryRate_))
-                    {
-                        lastDbQuery_ = System.DateTime.Now;
-                        dbController_.runQuery(jsonArrayString,
-                                               delegate (DbReply reply, string errorMessage) {
-                                                   if (reply != null)
-                                                   {
-                                                       Debug.Log("[semantic-db]: got reply from DB. entries: " + reply.entries.Length);
-                                                       foreach (var entry in reply.entries)
-                                                       {
-                                                           NdnRtc.fetch(entry.frameName, NdnRtc.videoStream,
-                                                           delegate (FrameInfo fi, int w, int h, byte[] argbBuffer) {
-                                                                    Debug.Log("[ff-task]: Succesfully fetched frame " + fi.ndnName_);
-                                                                    imageController_.enqueueFrame(new FetchedUIFrame(argbBuffer, fi.timestamp_, entry.simLevel));
-                                                                },
-                                                           delegate (string frameName) {
-                                                                    Debug.Log("[ff-task]: Failed to fetch " + frameName);
-                                                                });
-                                                       }
-                                                   }
-                                                   else
-                                                   {
-                                                       Debug.Log("[semantic-db]: db request error " + errorMessage);
-                                                   }
-                                               });
-                    }
+                    Debug.LogFormat((ILogComponent)this, "fetched annotations JSON for {0}, length {1}: {2}", 
+                                    frameNumber, jsonArrayString.Length, debugString);
 
                     string[] testDebug = jsonArrayString.Split(']');
                     string formatDebug = testDebug[0] + "]";
+                
                     try
                     {
-                        Dictionary<int, FrameObjectData> frameObjects = frameBuffer.Dequeue();
-                        FrameObjectData temp;
-                        if (frameObjects.TryGetValue(frameNumber, out temp))
+                        // check if it's time to query Semantic DB...
+                        if ((float)(now - lastDbQuery_).TotalSeconds >= (1f / dbQueryRate_))
                         {
+                            runQuery = true;
+                            lastDbQuery_ = now;
+                            dbController_.runQuery(jsonArrayString,
+                                                   delegate (DbReply reply, string errorMessage)
+                            {
+                                if (reply != null)
+                                {
+                                    Debug.LogFormat(dbController_, "got reply from DB. entries {0} ", reply.entries.Length);
+                                    foreach (var entry in reply.entries)
+                                    {
+                                        NdnRtc.fetch(entry.frameName, NdnRtc.videoStream,
+                                        delegate (FrameInfo fi, int w, int h, byte[] argbBuffer)
+                                        {
+                                            Debug.LogFormat("[ff-task]: succesfully fetched frame {0}", fi.ndnName_);
+                                            imageController_.enqueueFrame(new FetchedUIFrame(argbBuffer, fi.timestamp_, entry.simLevel));
+                                        },
+                                        delegate (string frameName)
+                                        {
+                                            Debug.LogFormat("[ff-task]: failed to fetch {0}", frameName);
+                                        });
+                                    }
+                                }
+                                else
+                                {
+                                    Debug.ErrorFormat(dbController_, "db request error {0} ", errorMessage);
+                                }
+                            });
+                        } // if time for DB query
 
+                        Dictionary<int, FrameObjectData> frameObjects = frameBuffer_.Dequeue();
+                        FrameObjectData frameObjectData;
+
+                        if (frameObjects.TryGetValue(frameNumber, out frameObjectData))
+                        {
                             //AnnotationData[] data = JsonHelper.FromJson<AnnotationData>(jsonArrayString);
                             //try to print out how many characters the jsonArrayString has
                             string str = "{ \"annotationData\": " + formatDebug + "}";
                             AnnotationData data = JsonUtility.FromJson<AnnotationData>(str);
-                            for (int i = 0; i < data.annotationData.Length; i++)
-                            {
-                                if (data.annotationData[i].prob >= 0.5f)
-                                {
-                                    Debug.Log("[debug-annotations] test: " + data.annotationData.Length);
-                                    Debug.Log("[debug-annotations] test label: " + data.annotationData[i].label + " test xleft: " + data.annotationData[i].xleft
-                                        + " test xright: " + data.annotationData[i].xright + " test ytop: " + (1 - data.annotationData[i].ytop) + " test ybottom: " + (1 - data.annotationData[i].ybottom));
-                                }
-                            }
 
-                            Debug.Log("[debug-annotations] Right before if");
-                            if ((float)(System.DateTime.Now - lastKeyFrame_).TotalSeconds >= (1f / dbQueryRate_)) //We only want to update our debug UI at (roughly) the query rate
+#if DEVELOPMENT_BUILD
+                            for (int i = 0; i < data.annotationData.Length; i++)
+                                Debug.LogFormat((ILogComponent)this,
+                                                "annotation {0}: label {1} prob {2} xleft {3} xright {4} ytop {5} ybottom {6}",
+                                                i, data.annotationData[i].label, data.annotationData[i].prob,
+                                                data.annotationData[i].xleft, data.annotationData[i].xright,
+                                                data.annotationData[i].ytop, data.annotationData[i].ybottom);
+#endif
+
+                            if (runQuery) //We only want to update our debug UI at (roughly) the query rate
                             {
-                                Debug.Log("[debug-annotations] Inside of if");
-                                lastKeyFrame_ = System.DateTime.Now;
+                                lastKeyFrame_ = now;
                                 imageController_.updateDebugText(data);
                             }
 
-                            Debug.Log("Frame number annotations: " + frameNumber);
-                            Debug.Log("Frame info camera position: " + temp.camPos);
-                            Debug.Log("Frame info camera rotation: " + temp.camRot);
-                            //Debug.Log ("Frame info points number: " + temp.numPoints);
-                            Debug.Log("Frame info points: " + temp.points.ToString());
-                            Debug.Log("test time difference: " + (Mathf.Abs((float)(temp.timestamp - timestamp))) + " frame number: " + publishedFrameNo);
-
-                            //int boxCount = Mathf.Min(data.annotationData.Length, 2);
+                            Debug.LogFormat((ILogComponent)this,
+                                            "processing annotation for frame #{0}, cam pos {1}, cam rot {2}, points {3}, lifetime {4} sec",
+                                            frameNumber, frameObjectData.camPos, frameObjectData.camRot, frameObjectData.points,
+                                            Mathf.Abs((float)(frameObjectData.timestamp - timestamp_)));
+                            
                             int boxCount = data.annotationData.Length;
 
                             BoxData annoData = new BoxData();
-                            Debug.Log("box created boxdata");
+
                             annoData.frameNumber = frameNumber;
                             annoData.count = boxCount;
-                            annoData.points = temp.points;
-                            annoData.numPoints = temp.numPoints;
-                            annoData.cam = temp.cam;
-                            annoData.camPos = temp.camPos;
-                            annoData.camRot = temp.camRot;
-                            annoData.timestamp = temp.timestamp;
+                            annoData.points = frameObjectData.points;
+                            annoData.numPoints = frameObjectData.numPoints;
+                            annoData.cam = frameObjectData.cam;
+                            annoData.camPos = frameObjectData.camPos;
+                            annoData.camRot = frameObjectData.camRot;
+                            annoData.timestamp = frameObjectData.timestamp;
                             annoData.label = new string[boxCount];
                             annoData.xleft = new float[boxCount];
                             annoData.xright = new float[boxCount];
@@ -418,23 +409,21 @@ public class OnCameraFrame : MonoBehaviour
                                 annoData.prob[i] = data.annotationData[i].prob;
                             }
 
-                            Debug.Log("Received annotations box enqueue");
                             //boxBufferToCalc.Enqueue(annoData);
-                            boundingBoxBufferToCalc.Enqueue(annoData);
+                            boundingBoxBufferToCalc_.Enqueue(annoData);
+
+                            Debug.Log((ILogComponent)this, "enqueued annotations data for processing");
                         }
                         else
                         {
                             //frame object was not in the pool, lifetime expired
-                            Debug.Log("Received annotations but frame expired");
+                            Debug.Log((ILogComponent)this, "received annotations but frame expired");
                         }
                     }
                     catch (System.Exception e)
                     {
-                        Debug.Log("exception caught annotations: " + e);
-                        string debug = jsonArrayString.Replace(System.Environment.NewLine, " ");
-                        Debug.Log("exception caught string: " + debug);
-                        string str = "{ \"annotationData\": " + debug + "}";
-                        Debug.Log("exception caught string with format: " + str);
+                        Debug.ErrorFormat((this as ILogComponent), "exception while parsing annotation {0}", debugString);
+                        Debug.LogException(this, e);
                     }
                 });
 
@@ -446,7 +435,7 @@ public class OnCameraFrame : MonoBehaviour
                     string formatDebug = testDebug[0] + "]";
                     try
                     {
-                        Dictionary<int, FrameObjectData> frameObjects = frameBuffer.Dequeue();
+                        Dictionary<int, FrameObjectData> frameObjects = frameBuffer_.Dequeue();
                         FrameObjectData temp;
                         if (frameObjects.TryGetValue(frameNumber, out temp))
                         {
@@ -498,7 +487,7 @@ public class OnCameraFrame : MonoBehaviour
 
                             Debug.Log("Received openface annotations box enqueue");
                             //boxBufferToCalc.Enqueue(annoData);
-                            boundingBoxBufferToCalc.Enqueue(annoData);
+                            boundingBoxBufferToCalc_.Enqueue(annoData);
                         }
                         else
                         {
@@ -508,6 +497,7 @@ public class OnCameraFrame : MonoBehaviour
                     }
                     catch (System.Exception e)
                     {
+                        Debug.LogException(e);
                         Debug.Log("exception caught openface annotations: " + e);
                         string debug = jsonArrayString.Replace(System.Environment.NewLine, " ");
                         Debug.Log("exception caught openface string: " + debug);
@@ -525,14 +515,16 @@ public class OnCameraFrame : MonoBehaviour
         }
         catch (System.Exception e)
         {
-            Debug.Log("exception caught video" + e.ToString());
+            Debug.LogException(this, e);
         }
 
     }
 
     static void calculationsForBoundingBox()
     {
-        while (true)
+        //Debug.Log("started bounding boxes processing thread");
+             
+        //while (true)
         {
 
             try
@@ -543,9 +535,11 @@ public class OnCameraFrame : MonoBehaviour
                 //            bool success = boxBufferToCalc.TryDequeue (out temp);
                 //            Debug.Log ("box dequeue: " + success);
                 //            if (success) {
-                if (boundingBoxBufferToCalc.Count > 0)
+                Debug.LogFormat("checking bounding boxes for calculations... {0}", boundingBoxBufferToCalc_.Count);
+
+                while (boundingBoxBufferToCalc_.Count > 0)
                 {
-                    BoxData temp = boundingBoxBufferToCalc.Dequeue();
+                    BoxData temp = boundingBoxBufferToCalc_.Dequeue();
                     int boxCount = temp.count;
 
                     //Vector3[] min = new Vector3[boxCount];
@@ -565,16 +559,14 @@ public class OnCameraFrame : MonoBehaviour
                     //int count = temp.numPoints;
                     int count = points.Count;
 
-                    Debug.Log("Pointcloud count points: " + points.Count);
-                    Debug.Log("Pointcloud count count: " + count);
+                    Debug.LogFormat("pointcloud points count {0}. applying transform", points.Count);
 
                     temp.cam.transform.position = temp.camPos;
                     temp.cam.transform.rotation = temp.camRot;
 
-                    Debug.Log("Camera log: cam position" + temp.cam.transform.position.ToString());
-                    Debug.Log("Camera log: frame cam position" + temp.camPos.ToString());
-                    Debug.Log("Camera log: cam rotation" + temp.cam.transform.rotation.ToString());
-                    Debug.Log("Camera log: frame cam rotation" + temp.camRot.ToString());
+                    Debug.LogFormat("bbox camera: pos {0} rot {1}, frame camera: pos {2}, rot {3}",
+                                    temp.cam.transform.position.ToString(), temp.cam.transform.rotation.ToString(),
+                                    temp.camPos.ToString(), temp.camRot.ToString());
 
                     Vector2[] centerPosXY = new Vector2[boxCount];
                     Vector2[] worldCenter = new Vector2[boxCount];
@@ -597,8 +589,6 @@ public class OnCameraFrame : MonoBehaviour
 
                     for (int i = 0; i < boxCount; i++)
                     {
-
-
                         //calucate 4 viewport corners
                         viewportTopLeft[i] = new Vector2(temp.xleft[i], temp.ytop[i]);
                         viewportTopRight[i] = new Vector2(temp.xright[i], temp.ytop[i]);
@@ -609,6 +599,10 @@ public class OnCameraFrame : MonoBehaviour
                         //calculate center of box in viewport coords
                         centerPosXY[i] = new Vector2(temp.xleft[i] + Mathf.Abs(viewportTopLeft[i].x - viewportTopRight[i].x) / 2,
                             temp.ybottom[i] + Mathf.Abs(viewportTopLeft[i].y - viewportBottomLeft[i].y) / 2);
+
+                        Debug.LogFormat("bbox {0} topleft: {1} topright {2} botleft {3} botright {4} center {5}",
+                                        i, viewportTopLeft, viewportTopRight, viewportBottomLeft, viewportBottomRight,
+                                        centerPosXY);
 
                     }
 
@@ -643,7 +637,7 @@ public class OnCameraFrame : MonoBehaviour
                     }
                     catch (System.Exception e)
                     {
-                        Debug.Log("exception caught here" + e.ToString());
+                        Debug.LogException(e);
                     }
 
                     for (int i = 0; i < boxCount; i++)
@@ -657,10 +651,12 @@ public class OnCameraFrame : MonoBehaviour
                         if (!(pointsInBounds[i].Count == 0))
                         {
                             //float depth = Mathf.Abs(min [i].z);
-                            Debug.Log("Median: Length of float array: " + pointsInBounds[i].Count);
-                            Debug.Log("Median: Index of median: " + pointsInBounds[i].Count / 2);
+                            Debug.LogFormat("median: float array len {0}, idx {1}", pointsInBounds[i].Count, pointsInBounds[i].Count / 2);
+
                             median = pointsInBounds[i][pointsInBounds[i].Count / 2];
-                            Debug.Log("Median: " + median);
+
+                            Debug.LogFormat("median {0}", median);
+
                             depth = Mathf.Abs(median);
                             //float depth = Mathf.Abs (averageZ [i]);
                             if (depth < 0.5f)
@@ -669,7 +665,7 @@ public class OnCameraFrame : MonoBehaviour
                             //calculate center of box in world coords
                             position[i] = temp.cam.ViewportToWorldPoint(new Vector3(centerPosXY[i].x, centerPosXY[i].y, depth));
 
-                            Debug.Log("box position: " + position.ToString());
+                            Debug.LogFormat("box position {0}", position);
                             //Debug.Log ("box: found min " + min.ToString ());
 
                             //calculate Z value for world corners
@@ -696,7 +692,7 @@ public class OnCameraFrame : MonoBehaviour
                                 boxData.frameNum = temp.frameNumber;
                                 boxData.timestamp = temp.timestamp;
                                 //boxBufferToUpdate.Enqueue (boxData);
-                                boundingBoxBufferToUpdate.Enqueue(boxData);
+                                boundingBoxBufferToUpdate_.Enqueue(boxData);
                             }
 
                         }
@@ -705,9 +701,23 @@ public class OnCameraFrame : MonoBehaviour
             }
             catch (System.Exception e)
             {
-                Debug.Log("exception caught" + e.ToString());
+                Debug.LogException(e);
             }
         }
+    }
+
+    public string getLogComponentName()
+    {
+        return "on-camera-frame";
+    }
+
+    public bool isLoggingEnabled()
+    {
+#if ENABLE_LOG
+        return true;
+#else
+        return false;
+#endif
     }
 }
 

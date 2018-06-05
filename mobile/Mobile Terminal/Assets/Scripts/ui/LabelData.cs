@@ -150,7 +150,7 @@ public class LabelData : PooledObject {
 				{
 					Debug.Log("remove box");
 					list.RemoveAt(i);
-					camFrame.kalman.Remove(guid);
+					camFrame.kalman_.Remove(guid);
 				}
 			}
 		}
