@@ -16,7 +16,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  * A copy of the GNU Lesser General Public License is in the file COPYING.
  */
-
+#define ENABLE_LOG
 using System;
 using System.Threading;
 using System.Collections.Generic;
@@ -29,7 +29,7 @@ using net.named_data.cnl_dot_net.usersync;
 
 public delegate void AssetFetcherHandler ( AssetBundle assetBundle );
 
-public class AssetBundleFetcher  {
+public class AssetBundleFetcher : ILogComponent  {
 
 	private FaceProcessor faceProcessor_;
 
@@ -38,17 +38,31 @@ public class AssetBundleFetcher  {
 	}
 
 	public void fetch (string assetNdnUri, AssetFetcherHandler onAssetFetched) {
-		Debug.Log("Will fetch asset "+assetNdnUri);
+        Debug.LogFormat(this, "Will fetch asset {0}", assetNdnUri);
 		
 		var prefix =  new Namespace(assetNdnUri);
 		prefix.setFace(faceProcessor_.getFace());
 		
 		var ndnfsFile = new NdnfsFile(prefix, delegate(NdnfsFile nf, Namespace contentNamespace, Blob content) {
-			Debug.Log("Got asset contents; size " + content.size());
+            Debug.LogFormat(this, "got asset contents; size {0}", content.size());
 
 			onAssetFetched(AssetBundle.LoadFromMemory(content.getImmutableArray()));
 		});
 
 		ndnfsFile.start();
 	}
+
+    public string getLogComponentName()
+    {
+        return "asset-fetcher";
+    }
+
+    public bool isLoggingEnabled()
+    {
+#if ENABLE_LOG
+        return true;
+#else
+        return false;
+#endif
+    }
 }

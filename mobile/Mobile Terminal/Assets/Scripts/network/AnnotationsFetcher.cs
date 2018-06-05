@@ -16,6 +16,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  * A copy of the GNU Lesser General Public License is in the file COPYING.
  */
+//#define ENABLE_LOG
 
 using System;
 using System.Threading;
@@ -29,7 +30,7 @@ using net.named_data.cnl_dot_net.usersync;
 
 public delegate void FrameAnnotationsHandler(string jsonArrayString);
 
-public class AnnotationsFetcher
+public class AnnotationsFetcher : ILogComponent
 {
 	private string serviceInstance_;
 	private string servicePrefix_;
@@ -53,21 +54,21 @@ public class AnnotationsFetcher
 			getChild(Name.Component.fromSequenceNumber(frameNo)).
 			getChild(serviceInstance_);
 
-		Debug.Log ("Spawned fetching for " + frameAnnotations.getName ().toUri ());
+        Debug.LogFormat (this, "spawned fetching for {0}", frameAnnotations.getName ().toUri ());
 
 		frameAnnotations.addOnContentSet(delegate(Namespace nameSpace, Namespace contentNamespace, long callbackId) {
 
 			if (contentNamespace.getName()[-1].toEscapedString() == "_meta") {
 				var contentMetaInfo = (ContentMetaInfo)contentNamespace.getContent();
 
-				Debug.Log("Got meta info " + contentMetaInfo.getContentType() + " " +
-					contentMetaInfo.getOther().toString());
+                Debug.LogFormat(this, "got meta info {0} {1}", contentMetaInfo.getContentType(),
+                          contentMetaInfo.getOther().toString());
 
 				if (!contentMetaInfo.getHasSegments())
 					onAnnotationsFetched(contentMetaInfo.getOther().toString());
 			}
 			else if (contentNamespace == nameSpace) {
-				Debug.Log("Got segmented content size " + 
+                Debug.LogFormat(this, "got segmented content size {0}", 
 					((Blob)contentNamespace.getContent()).size());
 				onAnnotationsFetched(contentNamespace.getContent().ToString());
 			}
@@ -76,5 +77,19 @@ public class AnnotationsFetcher
 		GeneralizedContent generalizedContent = new GeneralizedContent(frameAnnotations);
 		generalizedContent.start();
 	}
+
+    public string getLogComponentName()
+    {
+        return "annotation-fetcher";
+    }
+
+    public bool isLoggingEnabled()
+    {
+#if ENABLE_LOG
+        return true;
+#else
+        return false;
+#endif
+    }
 }
 

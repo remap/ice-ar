@@ -16,6 +16,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  * A copy of the GNU Lesser General Public License is in the file COPYING.
  */
+#define ENABLE_LOG
 
 using System;
 using System.Collections;
@@ -36,7 +37,7 @@ public class DbReply {
     public DbReplyEntry[] entries;
 }
 
-public class SemanticDbController  {
+public class SemanticDbController : ILogComponent  {
     private string semanticDbRequestUrl_;
     private Dictionary<string, OnDbResult> callbacks_;
 
@@ -80,26 +81,39 @@ public class SemanticDbController  {
             try {
                 if (www.isNetworkError || www.isHttpError)
                 {
-                    Debug.Log("[semantic-db]: query error " + www.error);
+                    Debug.ErrorFormat(this, "query error {0}", www.error);
                     callbacks_[queryString](null, www.error);
                 }
                 else
                 {
-                    Debug.Log("[semantic-db]: query result: "+www.downloadHandler.text);
+                    Debug.LogFormat("query result {0}"+www.downloadHandler.text);
                     var reply = JsonUtility.FromJson<DbReply>(www.downloadHandler.text);
 
-                    Debug.Log("[semantic-db] invoking callback for "+queryString);
                     callbacks_[queryString](reply, "");
                 }
             }
             catch (System.Exception e)
             {
-                Debug.Log("[semantic-db]: caught error processing DB result: "+e);
+                Debug.LogException(this, e);
                 callbacks_[queryString](null, e.Message);
             }
 
             if (queryString != null)
                 callbacks_.Remove(queryString);
         }
+    }
+
+    public string getLogComponentName()
+    {
+        return "semantic-db";
+    }
+
+    public bool isLoggingEnabled()
+    {
+#if ENABLE_LOG
+        return true;
+#else
+        return false;
+#endif
     }
 }
