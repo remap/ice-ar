@@ -223,8 +223,6 @@ public class OnCameraFrame : MonoBehaviour, ILogComponent
 
     public void CreateBoxes(List<CreateBoxData> boxes)
     {
-        Debug.LogFormat("hey! is the box mgr null? {0}", boxMgr_);
-
         //create bounding boxes
         Color c = colors_[UnityEngine.Random.Range(0, colors_.Count)];
         if (!renderBoundingBoxes)
