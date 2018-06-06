@@ -23,7 +23,7 @@ using System.Collections.Generic;
 using UnityEngine;
 using System.Runtime.InteropServices;
 using System;
-using GoogleARCore.TextureReader;
+using TextureReaderAdapted;
 using System.Threading;
 
 [UnmanagedFunctionPointerAttribute(CallingConvention.Cdecl)]

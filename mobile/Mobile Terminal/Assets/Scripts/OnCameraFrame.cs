@@ -6,7 +6,7 @@ using UnityEngine;
 using Vectrosity;
 using GoogleARCore;
 using GoogleARCoreInternal;
-using GoogleARCore.TextureReader;
+using TextureReaderAdapted;
 using System.Threading;
 using DisruptorUnity3d;
 using PlaynomicsPlugin;
@@ -89,7 +89,6 @@ public class OnCameraFrame : MonoBehaviour, ILogComponent
             boundingBoxBufferToUpdate_ = new ConcurrentQueue<CreateBoxData>();
             boxData_ = new List<CreateBoxData>();
 
-            Debug.Log("spawning box processing thread");
             camForCalcThread_ = GameObject.Find("Camera").GetComponent("Camera") as Camera;
             //calc_ = new Thread(calculationsForBoundingBox);
             //calc_.Start();
