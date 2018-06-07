@@ -43,7 +43,7 @@ public class ImageController : MonoBehaviour
     private Queue<FetchedUIFrame> fetchedFrames;
     private int nFramesToRetain_;
     private const float frameHeight = 324;
-
+    private string debugText_ = "";
     private bool allowNewMemories;
 
     public void enqueueFrame(FetchedUIFrame frameData)
@@ -67,16 +67,15 @@ public class ImageController : MonoBehaviour
     public void updateDebugText(AnnotationData data)
     {
         Debug.Log("[img-controller] inside updateDebugText()");
-        string debugText = "";
+        debugText_ = "";
         for (int i = 0; i < data.annotationData.Length; i++)
         {
             if (data.annotationData[i].prob >= 0.5f)
             {
                 Debug.Log("[img-controller] inside updateDebugText() and inside if");
-                debugText += data.annotationData[i].label + ": " + data.annotationData[i].prob + "\n";
+                debugText_ += data.annotationData[i].label + ": " + data.annotationData[i].prob + "\n";
             }
         }
-        debugPanelText.text = debugText;
     }
 
     //Code from: https://stackoverflow.com/questions/11/calculate-relative-time-in-c-sharp
@@ -188,6 +187,9 @@ public class ImageController : MonoBehaviour
 
         if (allowNewMemories)
             UpdateMemories();
+
+        // update whatever debug text was there
+        debugPanelText.text = debugText_;
     }
 
 

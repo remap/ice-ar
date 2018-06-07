@@ -24,6 +24,16 @@ public class Debug
         //UnityEngine.Debug.LogException(exception);
     }
 
+    public static void LogExceptionFormat(System.Exception exception, string template, params object[] args)
+    {
+        string message = String.Format(template, args);
+        ErrorFormat("exception occurred, {0}: {1}, stacktrace: {2}",
+                    message,
+                    replaceNewLines(exception.Message),
+                    replaceNewLines(exception.StackTrace));
+        //UnityEngine.Debug.LogException(exception);
+    }
+
     public static void LogException(object context, System.Exception exception)
     {
         ErrorFormat("exception occurred in {0}: {1}, stacktrace: {2}",
@@ -190,6 +200,7 @@ public class Debug
             UnityEngine.Debug.LogFormat(context, "[TRACE][{0}] {1}", applicationTag_, message);
     }
 
+    [System.Diagnostics.Conditional("DEVELOPMENT_BUILD")]
     public static void Log(ILogComponent component, object message)
     {
         if (component.isLoggingEnabled())

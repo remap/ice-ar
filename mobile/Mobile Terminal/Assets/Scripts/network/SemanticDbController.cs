@@ -86,7 +86,7 @@ public class SemanticDbController : ILogComponent  {
                 }
                 else
                 {
-                    Debug.LogFormat("query result {0}"+www.downloadHandler.text);
+                    Debug.LogFormat("query result {0}", www.downloadHandler.text);
                     var reply = JsonUtility.FromJson<DbReply>(www.downloadHandler.text);
 
                     callbacks_[queryString](reply, "");

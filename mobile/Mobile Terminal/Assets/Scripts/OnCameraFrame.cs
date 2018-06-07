@@ -137,7 +137,7 @@ public class OnCameraFrame : MonoBehaviour, ILogComponent
         }
         catch (System.Exception e)
         {
-            Debug.LogException(e);
+            Debug.LogExceptionFormat(e, "while initializing");
         }
     }
 
@@ -151,23 +151,23 @@ public class OnCameraFrame : MonoBehaviour, ILogComponent
     {
         calculationsForBoundingBox();
 
-        int max = boundingBoxBufferToUpdate_.Count;
-        for (int i = 0; i < max; i++)
+        Debug.LogFormat("running update for {0} bounding boxes", boundingBoxBufferToUpdate_.Count);
+        try
         {
-            CreateBoxData temp = boundingBoxBufferToUpdate_.Dequeue();
-            Debug.Log("frame number for box: " + temp.frameNum);
-            textbox.text = "Yolo " + temp.frameNum;
-            Debug.Log("queue size: " + i);
-            Color c = colors_[UnityEngine.Random.Range(0, colors_.Count)];
-            List<BoundingBox> boundingBoxes;
-            CreateBoxData box = new CreateBoxData();
-            bool updatedBox = false;
-            //found color for this label
-            //boxMgr.CreateBoundingBoxObject (temp.position, temp.x, temp.y, temp.z, temp.label, c);
-
-            if (boxMgr_.boundingBoxObjects.TryGetValue(temp.label, out boundingBoxes))
+            for (int i = 0; i < boundingBoxBufferToUpdate_.Count; i++)
             {
-                try
+                CreateBoxData temp = boundingBoxBufferToUpdate_.Dequeue();
+                Debug.Log("frame number for box: " + temp.frameNum);
+                textbox.text = "Yolo " + temp.frameNum;
+                Debug.Log("queue size: " + i);
+                Color c = colors_[UnityEngine.Random.Range(0, colors_.Count)];
+                List<BoundingBox> boundingBoxes;
+                CreateBoxData box = new CreateBoxData();
+                bool updatedBox = false;
+                //found color for this label
+                //boxMgr.CreateBoundingBoxObject (temp.position, temp.x, temp.y, temp.z, temp.label, c);
+
+                if (boxMgr_.boundingBoxObjects.TryGetValue(temp.label, out boundingBoxes))
                 {
                     //Debug.Log ("Update found label");
                     for (int j = 0; j < boundingBoxes.Count; j++)
@@ -200,25 +200,35 @@ public class OnCameraFrame : MonoBehaviour, ILogComponent
                         boxData_.Add(box);
                     }
                 }
-                catch (System.Exception e)
+                else
                 {
-                    Debug.Log("exception caught box update: " + e);
+                    //boxMgr.CreateBoundingBoxObject (temp.position, temp.x, temp.y, temp.z, temp.label, c);
+                    box.position = temp.position;
+                    box.x = temp.x;
+                    box.y = temp.y;
+                    box.z = temp.z;
+                    box.label = temp.label;
+                    boxData_.Add(box);
                 }
             }
-            else
-            {
-                //boxMgr.CreateBoundingBoxObject (temp.position, temp.x, temp.y, temp.z, temp.label, c);
-                box.position = temp.position;
-                box.x = temp.x;
-                box.y = temp.y;
-                box.z = temp.z;
-                box.label = temp.label;
-                boxData_.Add(box);
-            }
+        }
+        catch (System.Exception e)
+        {
+            Debug.LogExceptionFormat(e, "while updating bounding boxes");
         }
 
-        if (boxData_.Count > 0)
-            CreateBoxes(boxData_);
+
+        try
+        {
+            Debug.LogFormat("will create {0} new boxes", boxData_.Count);
+
+            if (boxData_.Count > 0)
+                CreateBoxes(boxData_);
+        }
+        catch (System.Exception e)
+        {
+            Debug.LogExceptionFormat(e, "while creating new bounding boxes");
+        }
     }
 
     public void CreateBoxes(List<CreateBoxData> boxes)
@@ -379,6 +389,7 @@ public class OnCameraFrame : MonoBehaviour, ILogComponent
                             
                             int boxCount = data.annotationData.Length;
 
+                            // I believe the filtering based on annotations' probability must be done here, not in calcualtions function
                             BoxData annoData = new BoxData();
 
                             annoData.frameNumber = frameNumber;
@@ -419,8 +430,7 @@ public class OnCameraFrame : MonoBehaviour, ILogComponent
                     }
                     catch (System.Exception e)
                     {
-                        Debug.ErrorFormat((this as ILogComponent), "exception while parsing annotation {0}", debugString);
-                        Debug.LogException(this, e);
+                        Debug.LogExceptionFormat(e, "while parsing annotation {0}...", debugString.Substring(0,100));
                     }
                 });
 
@@ -452,7 +462,7 @@ public class OnCameraFrame : MonoBehaviour, ILogComponent
                             int boxCount = data.annotationData.Length;
 
                             BoxData annoData = new BoxData();
-                            Debug.Log("box created boxdata");
+
                             annoData.frameNumber = frameNumber;
                             annoData.count = boxCount;
                             annoData.points = temp.points;
@@ -512,7 +522,7 @@ public class OnCameraFrame : MonoBehaviour, ILogComponent
         }
         catch (System.Exception e)
         {
-            Debug.LogException(this, e);
+            Debug.LogExceptionFormat(e, "in OnImageAvailable call");
         }
 
     }
@@ -536,8 +546,8 @@ public class OnCameraFrame : MonoBehaviour, ILogComponent
 
                 while (boundingBoxBufferToCalc_.Count > 0)
                 {
-                    BoxData temp = boundingBoxBufferToCalc_.Dequeue();
-                    int boxCount = temp.count;
+                    BoxData frameBoxData = boundingBoxBufferToCalc_.Dequeue();
+                    int boxCount = frameBoxData.count;
 
                     //Vector3[] min = new Vector3[boxCount];
                     float[] averageZ = new float[boxCount];
@@ -552,18 +562,16 @@ public class OnCameraFrame : MonoBehaviour, ILogComponent
                         numWithinBox[i] = 0;
                     }
 
-                    List<Vector4> points = temp.points;
-                    //int count = temp.numPoints;
-                    int count = points.Count;
+                    List<Vector4> frameCloudPoints = frameBoxData.points;
 
-                    Debug.LogFormat("pointcloud points count {0}. applying transform", points.Count);
+                    Debug.LogFormat("pointcloud points count {0}. applying transform", frameCloudPoints.Count);
 
-                    temp.cam.transform.position = temp.camPos;
-                    temp.cam.transform.rotation = temp.camRot;
+                    frameBoxData.cam.transform.position = frameBoxData.camPos;
+                    frameBoxData.cam.transform.rotation = frameBoxData.camRot;
 
                     Debug.LogFormat("bbox camera: pos {0} rot {1}, frame camera: pos {2}, rot {3}",
-                                    temp.cam.transform.position.ToString(), temp.cam.transform.rotation.ToString(),
-                                    temp.camPos.ToString(), temp.camRot.ToString());
+                                    frameBoxData.cam.transform.position.ToString(), frameBoxData.cam.transform.rotation.ToString(),
+                                    frameBoxData.camPos.ToString(), frameBoxData.camRot.ToString());
 
                     Vector2[] centerPosXY = new Vector2[boxCount];
                     Vector2[] worldCenter = new Vector2[boxCount];
@@ -587,26 +595,28 @@ public class OnCameraFrame : MonoBehaviour, ILogComponent
                     for (int i = 0; i < boxCount; i++)
                     {
                         //calucate 4 viewport corners
-                        viewportTopLeft[i] = new Vector2(temp.xleft[i], temp.ytop[i]);
-                        viewportTopRight[i] = new Vector2(temp.xright[i], temp.ytop[i]);
-                        viewportBottomLeft[i] = new Vector2(temp.xleft[i], temp.ybottom[i]);
-                        viewportBottomRight[i] = new Vector2(temp.xright[i], temp.ybottom[i]);
+                        viewportTopLeft[i] = new Vector2(frameBoxData.xleft[i], frameBoxData.ytop[i]);
+                        viewportTopRight[i] = new Vector2(frameBoxData.xright[i], frameBoxData.ytop[i]);
+                        viewportBottomLeft[i] = new Vector2(frameBoxData.xleft[i], frameBoxData.ybottom[i]);
+                        viewportBottomRight[i] = new Vector2(frameBoxData.xright[i], frameBoxData.ybottom[i]);
 
 
                         //calculate center of box in viewport coords
-                        centerPosXY[i] = new Vector2(temp.xleft[i] + Mathf.Abs(viewportTopLeft[i].x - viewportTopRight[i].x) / 2,
-                            temp.ybottom[i] + Mathf.Abs(viewportTopLeft[i].y - viewportBottomLeft[i].y) / 2);
+                        centerPosXY[i] = new Vector2(frameBoxData.xleft[i] + Mathf.Abs(viewportTopLeft[i].x - viewportTopRight[i].x) / 2,
+                            frameBoxData.ybottom[i] + Mathf.Abs(viewportTopLeft[i].y - viewportBottomLeft[i].y) / 2);
 
                         Debug.LogFormat("bbox {0} topleft: {1} topright {2} botleft {3} botright {4} center {5}",
-                                        i, viewportTopLeft, viewportTopRight, viewportBottomLeft, viewportBottomRight,
-                                        centerPosXY);
+                                        i, 
+                                        viewportTopLeft[i].ToString(), viewportTopRight[i].ToString(), 
+                                        viewportBottomLeft[i].ToString(), viewportBottomRight[i].ToString(),
+                                        centerPosXY[i].ToString());
 
                     }
 
                     try
                     {
-                        //search points[]
-                        for (int i = 0; i < count; i++)
+                        // iterating all cloud points to place them within each bounding box
+                        for (int i = 0; i < frameCloudPoints.Count; i++)
                         {
                             for (int j = 0; j < boxCount; j++)
                             {
@@ -617,16 +627,19 @@ public class OnCameraFrame : MonoBehaviour, ILogComponent
                                 //                            min [j] = points [i];
                                 //                        }
                                 //find if points[i] is outside of the bounding box
-                                Vector3 viewportPoint = temp.cam.WorldToViewportPoint(points[i]);
-                                if (viewportPoint.x < temp.xleft[j] || viewportPoint.x > temp.xright[j] || viewportPoint.y < temp.ybottom[j] || viewportPoint.y > temp.ytop[j])
+                                Vector3 viewportPoint = frameBoxData.cam.WorldToViewportPoint(frameCloudPoints[i]);
+                                if (viewportPoint.x < frameBoxData.xleft[j] || 
+                                    viewportPoint.x > frameBoxData.xright[j] || 
+                                    viewportPoint.y < frameBoxData.ybottom[j] ||
+                                    viewportPoint.y > frameBoxData.ytop[j])
                                 {
                                     //points[i] is out of the limits of the bounding box
                                 }
                                 else
                                 {
                                     //points[i] is in the bounding box
-                                    pointsInBounds[j].Add(points[i].z);
-                                    averageZ[j] += points[i].z;
+                                    pointsInBounds[j].Add(frameCloudPoints[i].z);
+                                    averageZ[j] += frameCloudPoints[i].z;
                                     numWithinBox[j]++;
                                 }
                             }
@@ -634,17 +647,21 @@ public class OnCameraFrame : MonoBehaviour, ILogComponent
                     }
                     catch (System.Exception e)
                     {
-                        Debug.LogException(e);
+                        Debug.LogExceptionFormat(e, "while counting sorting points");
                     }
 
                     for (int i = 0; i < boxCount; i++)
                     {
                         float median;
                         float depth;
+
+                        //  every list has just Z coordinate of a point, sort them
                         pointsInBounds[i].Sort();
                         //median = pointsInBounds [i][pointsInBounds[i].Count / 2];
                         //Debug.Log("median = " + median);
                         //averageZ [i] /= numWithinBox [i];
+
+                        // if there are no points for particular box - it won't be rendered, apparently
                         if (!(pointsInBounds[i].Count == 0))
                         {
                             //float depth = Mathf.Abs(min [i].z);
@@ -660,34 +677,40 @@ public class OnCameraFrame : MonoBehaviour, ILogComponent
                                 depth = 0.5f;
 
                             //calculate center of box in world coords
-                            position[i] = temp.cam.ViewportToWorldPoint(new Vector3(centerPosXY[i].x, centerPosXY[i].y, depth));
+                            // i believe this is not correct -- depth is a cloud point's Z location, i.e. in world coordiantes
+                            // here, it's assigned as a Z component of a vector, which X and Y are in Viewport coordinate system
+                            // it then gets transformed to the world coordinates again
+                            // Z value shall be assigned after this transformation is done
+                            position[i] = frameBoxData.cam.ViewportToWorldPoint(new Vector3(centerPosXY[i].x, centerPosXY[i].y, depth));
 
-                            Debug.LogFormat("box position {0}", position);
+                            Debug.LogFormat("box {0}: position {1}", i, position[i].ToString());
                             //Debug.Log ("box: found min " + min.ToString ());
 
                             //calculate Z value for world corners
-                            worldTopLeft[i] = temp.cam.ViewportToWorldPoint(new Vector3(viewportTopLeft[i].x, viewportTopLeft[i].y, depth));
-                            worldTopRight[i] = temp.cam.ViewportToWorldPoint(new Vector3(viewportTopRight[i].x, viewportTopRight[i].y, depth));
-                            worldBottomLeft[i] = temp.cam.ViewportToWorldPoint(new Vector3(viewportBottomLeft[i].x, viewportBottomLeft[i].y, depth));
-                            worldBottomRight[i] = temp.cam.ViewportToWorldPoint(new Vector3(viewportBottomRight[i].x, viewportBottomRight[i].y, depth));
+                            worldTopLeft[i] = frameBoxData.cam.ViewportToWorldPoint(new Vector3(viewportTopLeft[i].x, viewportTopLeft[i].y, depth));
+                            worldTopRight[i] = frameBoxData.cam.ViewportToWorldPoint(new Vector3(viewportTopRight[i].x, viewportTopRight[i].y, depth));
+                            worldBottomLeft[i] = frameBoxData.cam.ViewportToWorldPoint(new Vector3(viewportBottomLeft[i].x, viewportBottomLeft[i].y, depth));
+                            worldBottomRight[i] = frameBoxData.cam.ViewportToWorldPoint(new Vector3(viewportBottomRight[i].x, viewportBottomRight[i].y, depth));
 
 
                             //calculate x, y, z size values
                             x[i] = Mathf.Abs(Vector3.Distance(worldTopLeft[i], worldTopRight[i]));
                             y[i] = Mathf.Abs(Vector3.Distance(worldTopLeft[i], worldBottomLeft[i]));
-                            z[i] = 0;
+                            z[i] = 0; // why Z is zero here?
 
-                            if (temp.prob[i] >= 0.6f)
+                            // why filtering is done so late here after all calculations are done?
+                            // should filter out low prob annotations at the moment of parsing
+                            if (frameBoxData.prob[i] >= 0.6f)
                             {
                                 CreateBoxData boxData = new CreateBoxData();
-                                boxData.label = temp.label[i];
+                                boxData.label = frameBoxData.label[i];
                                 boxData.position = position[i];
                                 boxData.x = x[i];
                                 boxData.y = y[i];
                                 boxData.z = z[i];
-                                boxData.cam = temp.cam;
-                                boxData.frameNum = temp.frameNumber;
-                                boxData.timestamp = temp.timestamp;
+                                boxData.cam = frameBoxData.cam;
+                                boxData.frameNum = frameBoxData.frameNumber;
+                                boxData.timestamp = frameBoxData.timestamp;
                                 //boxBufferToUpdate.Enqueue (boxData);
                                 boundingBoxBufferToUpdate_.Enqueue(boxData);
                             }
@@ -698,7 +721,7 @@ public class OnCameraFrame : MonoBehaviour, ILogComponent
             }
             catch (System.Exception e)
             {
-                Debug.LogException(e);
+                Debug.LogExceptionFormat(e, "while making bb calculations");
             }
         }
     }

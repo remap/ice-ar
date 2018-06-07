@@ -650,6 +650,10 @@ Prefab:
       propertyPath: m_RootOrder
       value: 4
       objectReference: {fileID: 0}
+    - target: {fileID: 1428410512043410, guid: e2074e471a1566b4f9191e657e517bb0, type: 2}
+      propertyPath: m_IsActive
+      value: 0
+      objectReference: {fileID: 0}
     m_RemovedComponents: []
   m_ParentPrefab: {fileID: 100100000, guid: e2074e471a1566b4f9191e657e517bb0, type: 2}
   m_IsPrefabParent: 0
@@ -677,7 +681,7 @@ MonoBehaviour:
   m_GameObject: {fileID: 928788737}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 8a4066b4409ce4fa9a2768a26d7463cc, type: 3}
+  m_Script: {fileID: 11500000, guid: 45a9e1283ea56438eaac2e5c3c26fa88, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
 --- !u!4 &928788739
@@ -2275,9 +2279,15 @@ MonoBehaviour:
   m_GameObject: {fileID: 1811452576}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 5df1eabd4b5648a4aa8e2a97ce9af927, type: 3}
+  m_Script: {fileID: 11500000, guid: d37ffdc42713f49da814c8cdc4c75d84, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  debugPanelText: {fileID: 1162633604}
+  r0: {fileID: 1223885613}
+  r1: {fileID: 1776463792}
+  r2: {fileID: 1379275456}
+  r3: {fileID: 1802045495}
+  refreshRate: 1
 --- !u!114 &1811452580 stripped
 MonoBehaviour:
   m_PrefabParentObject: {fileID: 114820327408920744, guid: da162e6b403bf5c4797b973bb75aba78,
@@ -2552,6 +2562,11 @@ Prefab:
       propertyPath: ImageFormat
       value: 0
       objectReference: {fileID: 0}
+    - target: {fileID: 114110544802791900, guid: 0ce92fe7c6cece24b8aa6ae4b91905ef,
+        type: 2}
+      propertyPath: TextureReaderComponent
+      value: 
+      objectReference: {fileID: 635449375}
     m_RemovedComponents:
     - {fileID: 114437689015310820, guid: 0ce92fe7c6cece24b8aa6ae4b91905ef, type: 2}
   m_ParentPrefab: {fileID: 100100000, guid: 0ce92fe7c6cece24b8aa6ae4b91905ef, type: 2}
@@ -2621,7 +2636,7 @@ Prefab:
         type: 2}
       propertyPath: prefabText
       value: 
-      objectReference: {fileID: 114546552158927934, guid: 3a9e7ba6e04453b45a7cce3b4b1383c6,
+      objectReference: {fileID: 114074947054447592, guid: 3a9e7ba6e04453b45a7cce3b4b1383c6,
         type: 2}
     - target: {fileID: 1315707469764102, guid: da162e6b403bf5c4797b973bb75aba78, type: 2}
       propertyPath: m_TagString
