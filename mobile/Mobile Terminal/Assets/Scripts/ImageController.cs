@@ -24,6 +24,7 @@ public class ImageController : MonoBehaviour
 {
 
     public Text debugPanelText;
+    public Text fpsLabel;
     public RawImage r0;
     public RawImage r1;
     public RawImage r2;
@@ -45,6 +46,8 @@ public class ImageController : MonoBehaviour
     private const float frameHeight = 324;
     private string debugText_ = "";
     private bool allowNewMemories;
+    private float fpsMeasureFrequency_ = 0.5f;
+    private string currentFpsString_;
 
     public void enqueueFrame(FetchedUIFrame frameData)
     {
@@ -151,7 +154,7 @@ public class ImageController : MonoBehaviour
         memorySimLevel[2] = findSimilarityUIComponent(r2.gameObject.GetComponentsInChildren<Image>());
         memorySimLevel[3] = findSimilarityUIComponent(r3.gameObject.GetComponentsInChildren<Image>());
 
-
+        StartCoroutine(measureFps());
     }
 
     // Update is called once per frame
@@ -190,6 +193,7 @@ public class ImageController : MonoBehaviour
 
         // update whatever debug text was there
         debugPanelText.text = debugText_;
+        fpsLabel.text = currentFpsString_;
     }
 
 
@@ -229,5 +233,22 @@ public class ImageController : MonoBehaviour
         }
 
         allowNewMemories = false;
+    }
+
+    private IEnumerator measureFps()
+    {
+        for (; ; )
+        {
+            // Capture frame-per-second
+            int lastFrameCount = Time.frameCount;
+            float lastTime = Time.realtimeSinceStartup;
+            yield return new WaitForSeconds(fpsMeasureFrequency_);
+            float timeSpan = Time.realtimeSinceStartup - lastTime;
+            int frameCount = Time.frameCount - lastFrameCount;
+
+            // Display it
+
+            currentFpsString_ = string.Format("FPS: {0}", Mathf.RoundToInt(frameCount / timeSpan));
+        }
     }
 }
