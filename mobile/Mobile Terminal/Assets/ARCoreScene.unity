@@ -497,8 +497,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: b8ba03f2a23f74384ac6625e269b5f50, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  ImageWidth: 1280
-  ImageHeight: 720
+  ImageWidth: 320
+  ImageHeight: 180
   ImageSampleMode: 1
   ImageFormat: 0
 --- !u!1 &787406174
