@@ -152,33 +152,48 @@ public class LocalVideoStream : ILogComponent
         return ndnrtcHandle_;
     }
 
+    private void flipFrame(int width, int height, IntPtr pixelBuffer,
+                       bool flipV, bool flipH, bool convertToArgb)
+    {
+        unsafe
+        {
+            int format = 4; // 4 bytes per pixel - ARGB32
+            byte* buf = (byte*)pixelBuffer.ToPointer();
+            int stride = width * format;
+            int yStop = (flipV) ? height / 2 : height;
+            int xStop = (flipH && !(flipH && flipV)) ? width / 2 : width;
+
+            for (int y = 0; y < yStop; ++y)
+                for (int x = 0; x < xStop; ++x)
+                {
+                    int xSwap = (flipH ? width - 1 - x : x);
+                    int ySwap = (flipV ? height - 1 - y : y);
+
+                    // swap ARGB pixels
+                    int p1Idx = y * stride + x * format;
+                    int p2Idx = ySwap * stride + xSwap * format;
+
+                    if (convertToArgb)
+                    {
+                        UInt32 temp = *(UInt32*)(buf + p1Idx);
+                        *(UInt32*)(buf + p1Idx) = (*(UInt32*)(buf + p2Idx)) >> 24 | (*(UInt32*)(buf + p2Idx)) << 8;
+                        *(UInt32*)(buf + p2Idx) = temp >> 24 | temp << 8;
+                    }
+                    else
+                    {
+                        UInt32 temp = *(UInt32*)(buf + p1Idx);
+                        *(UInt32*)(buf + p1Idx) = *(UInt32*)(buf + p2Idx);
+                        *(UInt32*)(buf + p2Idx) = temp;
+                    }
+                }
+        }
+    }
+
     public FrameInfo processIncomingFrame(TextureReaderApi.ImageFormatType format, int width, int height, IntPtr pixelBuffer, int bufferSize)
     {
         // Debug.Log ("[ndnrtc::videostream] incoming image format " + format + " size " + width + "x" + height);
 
-        unsafe
-        {
-            byte* ptr = (byte*)pixelBuffer.ToPointer();
-            int offset = 0;
-
-            for (int i = 0; i < height; i++)
-            {
-                for (int j = 0; j < width; j++)
-                {
-
-                    float r = (float)ptr[offset + 0];
-                    float g = (float)ptr[offset + 1];
-                    float b = (float)ptr[offset + 2];
-                    float a = (float)ptr[offset + 3];
-                    ptr[offset + 0] = (byte)a;
-                    ptr[offset + 1] = (byte)r;
-                    ptr[offset + 2] = (byte)g;
-                    ptr[offset + 3] = (byte)b;
-                    offset += 4;
-
-                }
-            }
-        }
+        flipFrame(width, height, pixelBuffer, true, true, true);
 
         // publish frame using NDN-RTC
         // return: res < 0 -- frame was skipped due to encoder decision (or library was busy publishing frame)
