@@ -386,41 +386,57 @@ public class OnCameraFrame : MonoBehaviour, ILogComponent
                                             "processing annotation for frame #{0}, cam pos {1}, cam rot {2}, points {3}, lifetime {4} sec",
                                             frameNumber, frameObjectData.camPos, frameObjectData.camRot, frameObjectData.points,
                                             Mathf.Abs((float)(frameObjectData.timestamp - timestamp_)));
-                            
-                            int boxCount = data.annotationData.Length;
 
-                            // I believe the filtering based on annotations' probability must be done here, not in calcualtions function
-                            BoxData annoData = new BoxData();
+                            // filter out annotations with probability below threashold
+                            float threshold = 0.6f;
+                            List<AnnotationData.ArrayEntry> filteredAnnotations = new List<AnnotationData.ArrayEntry>();
 
-                            annoData.frameNumber = frameNumber;
-                            annoData.count = boxCount;
-                            annoData.points = frameObjectData.points;
-                            annoData.numPoints = frameObjectData.numPoints;
-                            annoData.cam = frameObjectData.cam;
-                            annoData.camPos = frameObjectData.camPos;
-                            annoData.camRot = frameObjectData.camRot;
-                            annoData.timestamp = frameObjectData.timestamp;
-                            annoData.label = new string[boxCount];
-                            annoData.xleft = new float[boxCount];
-                            annoData.xright = new float[boxCount];
-                            annoData.ytop = new float[boxCount];
-                            annoData.ybottom = new float[boxCount];
-                            annoData.prob = new float[boxCount];
+                            for (int i = 0; i < data.annotationData.Length; ++i)
+                                if (data.annotationData[i].prob >= threshold)
+                                    filteredAnnotations.Add(data.annotationData[i]);
 
-                            for (int i = 0; i < boxCount; i++)
+                            Debug.LogFormat("{0} annotations above threshold (filtered out {0} annotations)", 
+                                            filteredAnnotations.Count, data.annotationData.Length - filteredAnnotations.Count);
+
+                            if (filteredAnnotations.Count > 0)
                             {
-                                annoData.label[i] = data.annotationData[i].label;
-                                annoData.xleft[i] = 1 - data.annotationData[i].xright;
-                                annoData.xright[i] = 1 - data.annotationData[i].xleft;
-                                annoData.ytop[i] = data.annotationData[i].ybottom;
-                                annoData.ybottom[i] = data.annotationData[i].ytop;
-                                annoData.prob[i] = data.annotationData[i].prob;
+                                int boxCount = filteredAnnotations.Count;
+                                BoxData boxData = new BoxData();
+
+                                boxData.frameNumber = frameNumber;
+                                boxData.count = boxCount;
+                                boxData.points = frameObjectData.points;
+                                boxData.numPoints = frameObjectData.numPoints;
+                                boxData.cam = frameObjectData.cam;
+                                boxData.camPos = frameObjectData.camPos;
+                                boxData.camRot = frameObjectData.camRot;
+                                boxData.timestamp = frameObjectData.timestamp;
+                                boxData.label = new string[boxCount];
+                                boxData.xleft = new float[boxCount];
+                                boxData.xright = new float[boxCount];
+                                boxData.ytop = new float[boxCount];
+                                boxData.ybottom = new float[boxCount];
+                                boxData.prob = new float[boxCount];
+
+                                for (int i = 0; i < boxCount; i++)
+                                {
+                                    boxData.label[i] = filteredAnnotations[i].label;
+                                    // since we flipped the image, flip bbox coordinates again
+                                    boxData.xleft[i] = filteredAnnotations[i].xleft;
+                                    boxData.xright[i] = filteredAnnotations[i].xright;
+                                    boxData.ytop[i] = 1 - filteredAnnotations[i].ytop;
+                                    boxData.ybottom[i] = 1 - filteredAnnotations[i].ybottom;
+                                    boxData.prob[i] = filteredAnnotations[i].prob;
+
+                                    Debug.LogFormat((ILogComponent)this, "will render {0} xleft {1} xright {2} ytop {3} ybottom {4} prob {5}",
+                                                    boxData.label[i], boxData.xleft[i], boxData.xright[i], 
+                                                    boxData.ytop[i], boxData.ybottom[i], boxData.prob[i]);
+                                }
+
+                                //boxBufferToCalc.Enqueue(annoData);
+                                boundingBoxBufferToCalc_.Enqueue(boxData);
                             }
 
-                            //boxBufferToCalc.Enqueue(annoData);
-                            boundingBoxBufferToCalc_.Enqueue(annoData);
-
-                            Debug.Log((ILogComponent)this, "enqueued annotations data for processing");
                         }
                         else
                         {
@@ -569,10 +585,6 @@ public class OnCameraFrame : MonoBehaviour, ILogComponent
                     frameBoxData.cam.transform.position = frameBoxData.camPos;
                     frameBoxData.cam.transform.rotation = frameBoxData.camRot;
 
-                    Debug.LogFormat("bbox camera: pos {0} rot {1}, frame camera: pos {2}, rot {3}",
-                                    frameBoxData.cam.transform.position.ToString(), frameBoxData.cam.transform.rotation.ToString(),
-                                    frameBoxData.camPos.ToString(), frameBoxData.camRot.ToString());
-
                     Vector2[] centerPosXY = new Vector2[boxCount];
                     Vector2[] worldCenter = new Vector2[boxCount];
                     Vector3[] position = new Vector3[boxCount];
@@ -605,8 +617,8 @@ public class OnCameraFrame : MonoBehaviour, ILogComponent
                         centerPosXY[i] = new Vector2(frameBoxData.xleft[i] + Mathf.Abs(viewportTopLeft[i].x - viewportTopRight[i].x) / 2,
                             frameBoxData.ybottom[i] + Mathf.Abs(viewportTopLeft[i].y - viewportBottomLeft[i].y) / 2);
 
-                        Debug.LogFormat("bbox {0} topleft: {1} topright {2} botleft {3} botright {4} center {5}",
-                                        i, 
+                        Debug.LogFormat("bbox {0}: topleft: {1} topright {2} botleft {3} botright {4} center {5}",
+                                        frameBoxData.label[i], 
                                         viewportTopLeft[i].ToString(), viewportTopRight[i].ToString(), 
                                         viewportBottomLeft[i].ToString(), viewportBottomRight[i].ToString(),
                                         centerPosXY[i].ToString());
@@ -698,9 +710,6 @@ public class OnCameraFrame : MonoBehaviour, ILogComponent
                             y[i] = Mathf.Abs(Vector3.Distance(worldTopLeft[i], worldBottomLeft[i]));
                             z[i] = 0; // why Z is zero here?
 
-                            // why filtering is done so late here after all calculations are done?
-                            // should filter out low prob annotations at the moment of parsing
-                            if (frameBoxData.prob[i] >= 0.6f)
                             {
                                 CreateBoxData boxData = new CreateBoxData();
                                 boxData.label = frameBoxData.label[i];
@@ -714,7 +723,6 @@ public class OnCameraFrame : MonoBehaviour, ILogComponent
                                 //boxBufferToUpdate.Enqueue (boxData);
                                 boundingBoxBufferToUpdate_.Enqueue(boxData);
                             }
-
                         }
                     }
                 }
