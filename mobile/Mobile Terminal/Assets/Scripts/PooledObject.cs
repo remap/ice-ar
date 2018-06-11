@@ -19,7 +19,6 @@ public class PooledObject : MonoBehaviour {
 			Pool.AddObject(this);
 		}
 		else {
-			Debug.Log("I die!");
 			Destroy(gameObject);
 		}
 	}

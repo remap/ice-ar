@@ -53,15 +53,14 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   textbox: {fileID: 0}
-  frameNumber: 0
-  timestamp: 0
-  poseData:
-    position: {x: 0, y: 0, z: 0}
-    rotation: {x: 0, y: 0, z: 0, w: 0}
-  frameMgr: {fileID: 0}
-  boxMgr: {fileID: 0}
-  colors: []
+  timestamp_: 0
+  frameMgr_: {fileID: 0}
+  boxMgr_: {fileID: 0}
+  imageController_: {fileID: 0}
+  renderBoundingBoxes: 0
+  colors_: []
   TextureReaderComponent: {fileID: 114437689015310820}
+  BackgroundRenderer: {fileID: 0}
 --- !u!114 &114437689015310820
 MonoBehaviour:
   m_ObjectHideFlags: 1
@@ -73,7 +72,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: b8ba03f2a23f74384ac6625e269b5f50, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  ImageWidth: 1920
-  ImageHeight: 1080
+  ImageWidth: 1280
+  ImageHeight: 720
   ImageSampleMode: 1
   ImageFormat: 0

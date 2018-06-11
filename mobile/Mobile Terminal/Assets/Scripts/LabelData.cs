@@ -138,7 +138,6 @@ public class LabelData : PooledObject {
 
 	public void Release()
 	{
-		Debug.Log ("remove box label = " + labelText);
 		textBox.active = false;
 		//remove label from the dictionary
 		try
@@ -148,14 +147,13 @@ public class LabelData : PooledObject {
 			{
 				if(list[i].guid == guid)
 				{
-					Debug.Log("remove box");
 					list.RemoveAt(i);
-					camFrame.kalman.Remove(guid);
+					camFrame.kalman_.Remove(guid);
 				}
 			}
 		}
-		catch(KeyNotFoundException) {
-			Debug.Log ("exception caught box removal: KeyNotFoundException");
+		catch(KeyNotFoundException e) {
+			Debug.LogExceptionFormat(e, "exception caught box removal: KeyNotFoundException");
 		}
 		ReturnToPool();
 	}

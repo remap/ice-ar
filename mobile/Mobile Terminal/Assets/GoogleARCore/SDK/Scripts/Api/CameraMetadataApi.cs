@@ -22,20 +22,26 @@ namespace GoogleARCoreInternal
 {
     using System;
     using System.Collections.Generic;
-    using System.Diagnostics.CodeAnalysis;
-    using System.Runtime.InteropServices;
     using GoogleARCore;
     using UnityEngine;
 
-    [SuppressMessage("StyleCop.CSharp.DocumentationRules", "SA1600:ElementsMustBeDocumented",
-    Justification = "Internal")]
-    public class CameraMetadataApi
-    {
-        private NativeApi m_NativeApi;
+#if UNITY_IOS
+    using AndroidImport = GoogleARCoreInternal.DllImportNoop;
+    using IOSImport = System.Runtime.InteropServices.DllImportAttribute;
+#else
+    using AndroidImport = System.Runtime.InteropServices.DllImportAttribute;
+    using IOSImport = GoogleARCoreInternal.DllImportNoop;
+#endif
 
-        public CameraMetadataApi(NativeApi nativeApi)
+    using Marshal = System.Runtime.InteropServices.Marshal;
+
+    internal class CameraMetadataApi
+    {
+        private NativeSession m_NativeSession;
+
+        public CameraMetadataApi(NativeSession nativeSession)
         {
-            m_NativeApi = nativeApi;
+            m_NativeSession = nativeSession;
         }
 
         public void Release(IntPtr arCameraMetadataHandle)
@@ -47,7 +53,7 @@ namespace GoogleARCoreInternal
             CameraMetadataTag tag, List<CameraMetadataValue> resultList)
         {
             IntPtr ndkMetadataHandle = IntPtr.Zero;
-            ExternApi.ArImageMetadata_getNdkCameraMetadata(m_NativeApi.SessionHandle,
+            ExternApi.ArImageMetadata_getNdkCameraMetadata(m_NativeSession.SessionHandle,
                 cameraMetadataHandle, ref ndkMetadataHandle);
 
             resultList.Clear();
@@ -111,7 +117,7 @@ namespace GoogleARCoreInternal
         public bool GetAllCameraMetadataTags(IntPtr cameraMetadataHandle, List<CameraMetadataTag> resultList)
         {
             IntPtr ndkMetadataHandle = IntPtr.Zero;
-            ExternApi.ArImageMetadata_getNdkCameraMetadata(m_NativeApi.SessionHandle,
+            ExternApi.ArImageMetadata_getNdkCameraMetadata(m_NativeSession.SessionHandle,
                 cameraMetadataHandle, ref ndkMetadataHandle);
 
             IntPtr tagsHandle = IntPtr.Zero;
@@ -136,20 +142,22 @@ namespace GoogleARCoreInternal
 
         private struct ExternApi
         {
-            [DllImport(ApiConstants.ARCoreNativeApi)]
+#pragma warning disable 626
+            [AndroidImport(ApiConstants.ARCoreNativeApi)]
             public static extern void ArImageMetadata_getNdkCameraMetadata(IntPtr session, IntPtr image_metadata,
                 ref IntPtr out_ndk_metadata);
 
-            [DllImport(ApiConstants.ARCoreNativeApi)]
+            [AndroidImport(ApiConstants.ARCoreNativeApi)]
             public static extern void ArImageMetadata_release(IntPtr metadata);
 
-            [DllImport(ApiConstants.NdkCameraApi)]
+            [AndroidImport(ApiConstants.NdkCameraApi)]
             public static extern NdkCameraStatus ACameraMetadata_getConstEntry(IntPtr ndkCameraMetadata,
                 CameraMetadataTag tag, ref NdkCameraMetadata entry);
 
-            [DllImport(ApiConstants.NdkCameraApi)]
+            [AndroidImport(ApiConstants.NdkCameraApi)]
             public static extern NdkCameraStatus ACameraMetadata_getAllTags(IntPtr ndkCameraMetadata,
                 ref int numEntries, ref IntPtr tags);
+#pragma warning restore 626
         }
     }
 }
