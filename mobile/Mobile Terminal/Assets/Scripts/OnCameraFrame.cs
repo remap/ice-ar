@@ -28,8 +28,7 @@ public class OnCameraFrame : MonoBehaviour, ILogComponent
     public ImageController imageController_;
 
     private FaceProcessor faceProcessor_;
-    private AnnotationsFetcher yoloFetcher_;
-    private AnnotationsFetcher openFaceFetcher_;
+    private List<AnnotationsFetcher> annotationFetchers_;
     private AssetBundleFetcher assetFetcher_;
     private SemanticDbController dbController_;
     private float dbQueryRate_;
@@ -43,9 +42,6 @@ public class OnCameraFrame : MonoBehaviour, ILogComponent
     private static ConcurrentQueue<BoxData> boundingBoxBufferToCalc_;
     private static ConcurrentQueue<CreateBoxData> boundingBoxBufferToUpdate_;
     public List<CreateBoxData> boxData_;
-    //public RingBuffer<FrameObjectData> frameObjectBuffer;
-    //public static RingBuffer<BoxData> boxBufferToCalc;
-    //public static RingBuffer<CreateBoxData> boxBufferToUpdate;
     public List<Color> colors_;
     Camera camForCalcThread_;
     Thread calc_;
@@ -119,8 +115,8 @@ public class OnCameraFrame : MonoBehaviour, ILogComponent
             string rootPrefix = "/icear/user";
             string userId = "peter"; // "mobile-terminal0";
             string serviceType = "object_recognizer";
-            string serviceInstance = "yolo"; // "yolo";
-            string serviceInstance2 = "openface"; // "yolo";
+
+            string [] edgeServices = { "yolo", "openface" }; // these must be unique! 
 
             NdnRtc.Initialize(rootPrefix, userId);
             faceProcessor_ = new FaceProcessor();
@@ -129,10 +125,13 @@ public class OnCameraFrame : MonoBehaviour, ILogComponent
             assetFetcher_ = new AssetBundleFetcher(faceProcessor_);
 
             string servicePrefix = rootPrefix + "/" + userId + "/" + serviceType;
-            // AnnotationsFetcher instance might also be a singleton class
-            // and initialized/created somewhere else. here just as an example
-            yoloFetcher_ = new AnnotationsFetcher(faceProcessor_, servicePrefix, serviceInstance);
-            openFaceFetcher_ = new AnnotationsFetcher(faceProcessor_, servicePrefix, serviceInstance2);
+            annotationFetchers_ = new List<AnnotationsFetcher>();
+
+            foreach (var service in edgeServices)
+            {
+                Debug.LogFormat("initializing annotations fetcher for {0}...", service);
+                annotationFetchers_.Add(new AnnotationsFetcher(faceProcessor_, servicePrefix, service));
+            }
 
             // setup CNL logging 
             //ILOG.J2CsMapping.Util.Logging.Logger.getLogger("").setLevel(ILOG.J2CsMapping.Util.Logging.Level.FINE);
@@ -312,8 +311,8 @@ public class OnCameraFrame : MonoBehaviour, ILogComponent
                 frameBuffer_.Enqueue(frameMgr_.frameObjects);
 
                 // spawn fetching task for annotations of this frame
-                spawnAnnotationFetchingTask(publishedFrameNo, yoloFetcher_, 0.6f, performSemanticDbQuery);
-                spawnAnnotationFetchingTask(publishedFrameNo, openFaceFetcher_, 0.6f, performSemanticDbQuery);
+                foreach (var fetcher in annotationFetchers_)
+                    spawnAnnotationFetchingTask(publishedFrameNo, fetcher, 0.6f, performSemanticDbQuery);
             }
         }
         catch (System.Exception e)
@@ -322,6 +321,7 @@ public class OnCameraFrame : MonoBehaviour, ILogComponent
         }
     }
 
+    // TBD: this shouldn't be static, I believe
     static void calculationsForBoundingBox()
     {
         //Debug.Log("started bounding boxes processing thread");
@@ -543,9 +543,6 @@ public class OnCameraFrame : MonoBehaviour, ILogComponent
             Debug.LogFormat((ILogComponent)this, "fetched {3} annotations JSON for {0}, length {1}: {2}",
                             frameNumber, jsonArrayString.Length, debugString, fetcherName);
 
-            string[] testDebug = jsonArrayString.Split(']');
-            string formatDebug = testDebug[0] + "]";
-
             try {
                 if (onAnnotationFetched != null)
                     onAnnotationFetched(now, jsonArrayString);
@@ -563,6 +560,9 @@ public class OnCameraFrame : MonoBehaviour, ILogComponent
                 if (frameObjects.TryGetValue(frameNumber, out frameObjectData))
                 {
                     // some pre-processing for the received string
+                    // TBD: this needs to be replaced with JSON deserialization, need to update edge too
+                    string[] testDebug = jsonArrayString.Split(']');
+                    string formatDebug = testDebug[0] + "]";
                     string str = "{ \"annotationData\": " + formatDebug + "}";
                     AnnotationData data = JsonUtility.FromJson<AnnotationData>(str);
 
@@ -575,12 +575,6 @@ public class OnCameraFrame : MonoBehaviour, ILogComponent
                                                 data.annotationData[i].ytop, data.annotationData[i].ybottom,
                                                 fetcherName);
 #endif
-
-                    //if (runQuery) //We only want to update our debug UI at (roughly) the query rate
-                    //{
-                    //    lastKeyFrame_ = now;
-                    //    imageController_.updateDebugText(data);
-                    //}
 
                     Debug.LogFormat((ILogComponent)this,
                                     "processing {5} annotation for frame #{0}, cam pos {1}, cam rot {2}, points {3}, lifetime {4} sec",
@@ -601,8 +595,10 @@ public class OnCameraFrame : MonoBehaviour, ILogComponent
                     if (filteredAnnotations.Count > 0)
                     {
                         int boxCount = filteredAnnotations.Count;
-                        BoxData boxData = new BoxData(); // this needs to be pooled
+                        // TBD: this needs to be pooled
+                        BoxData boxData = new BoxData(); 
 
+                        // TBD: this needs to be hidden in a method/constructor
                         boxData.frameNumber = frameNumber;
                         boxData.count = boxCount;
                         boxData.points = frameObjectData.points;
@@ -620,12 +616,17 @@ public class OnCameraFrame : MonoBehaviour, ILogComponent
 
                         for (int i = 0; i < boxCount; i++)
                         {
-                            // if (data.annotationData[i].ytop > 1)
-                            //     data.annotationData[i].ytop = 1;
-                            // if (data.annotationData[i].ybottom < 0)
-                            //     data.annotationData[i].ybottom = 0;
+                            // safety checks
+                            if (data.annotationData[i].ytop > 1)
+                                data.annotationData[i].ytop = 1;
+                            if (data.annotationData[i].ybottom < 0)
+                                data.annotationData[i].ybottom = 0;
                             boxData.label[i] = filteredAnnotations[i].label;
+
                             // since we flipped the image, flip bbox coordinates again
+                            // only y coordinates get flipped though, and it works.
+                            // I think this has something to do with how Viewport coordinates
+                            // are represented...
                             boxData.xleft[i] = filteredAnnotations[i].xleft;
                             boxData.xright[i] = filteredAnnotations[i].xright;
                             boxData.ytop[i] = 1 - filteredAnnotations[i].ytop;
@@ -645,7 +646,7 @@ public class OnCameraFrame : MonoBehaviour, ILogComponent
                 }
                 else
                 {
-                    //frame object was not in the pool, lifetime expired
+                    // frame object was not in the pool, lifetime expired
                     Debug.LogFormat((ILogComponent)this, "received {0} annotations but frame expired",
                                     fetcherName);
                 }
@@ -658,6 +659,10 @@ public class OnCameraFrame : MonoBehaviour, ILogComponent
         });
     }
 
+    // TBD: before perofrming a query, we shall wait a little to accumulate 
+    // annotations from different engines for the same frame (i.e. YOLO and OpenFace, etc.).
+    // This, however, will require aggregating annotaitons based on frame number and
+    // creating a combined json string
     private void performSemanticDbQuery(System.DateTime fetchTimestamp, string jsonArrayString)
     {
         // check if it's time to query Semantic DB...
