@@ -1,0 +1,7 @@
+{
+    "files.associations": {
+        "*.ipp": "cpp",
+        "__config": "cpp",
+        "__nullptr": "cpp"
+    }
+}

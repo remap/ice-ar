@@ -1,9 +1,9 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio for Mac
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Mobile Terminal", "Mobile Terminal.csproj", "{F4B2AE29-2E2D-7FF1-B0CA-E2B72D7B801B}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Mobile Terminal", "Assembly-CSharp.csproj", "{4513B61F-6546-5DD6-946B-1E85A9A36BD6}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Mobile Terminal.Editor", "Mobile Terminal.Editor.csproj", "{82697C98-9C5E-0FAF-32BD-08B83E25B7DD}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Mobile Terminal", "Assembly-CSharp-Editor.csproj", "{3470EBD3-BA75-E656-C172-959FC37A2BF6}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -11,14 +11,14 @@ Global
 		Release|Any CPU = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
-		{F4B2AE29-2E2D-7FF1-B0CA-E2B72D7B801B}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{F4B2AE29-2E2D-7FF1-B0CA-E2B72D7B801B}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{F4B2AE29-2E2D-7FF1-B0CA-E2B72D7B801B}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{F4B2AE29-2E2D-7FF1-B0CA-E2B72D7B801B}.Release|Any CPU.Build.0 = Release|Any CPU
-		{82697C98-9C5E-0FAF-32BD-08B83E25B7DD}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{82697C98-9C5E-0FAF-32BD-08B83E25B7DD}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{82697C98-9C5E-0FAF-32BD-08B83E25B7DD}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{82697C98-9C5E-0FAF-32BD-08B83E25B7DD}.Release|Any CPU.Build.0 = Release|Any CPU
+		{4513B61F-6546-5DD6-946B-1E85A9A36BD6}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{4513B61F-6546-5DD6-946B-1E85A9A36BD6}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{4513B61F-6546-5DD6-946B-1E85A9A36BD6}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{4513B61F-6546-5DD6-946B-1E85A9A36BD6}.Release|Any CPU.Build.0 = Release|Any CPU
+		{3470EBD3-BA75-E656-C172-959FC37A2BF6}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{3470EBD3-BA75-E656-C172-959FC37A2BF6}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{3470EBD3-BA75-E656-C172-959FC37A2BF6}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{3470EBD3-BA75-E656-C172-959FC37A2BF6}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
