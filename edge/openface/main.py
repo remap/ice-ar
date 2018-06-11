@@ -76,8 +76,8 @@ def getAnnotationFromRect(r, w, h):
     annotation = {}
     annotation['xleft'] = float(r.left())/float(w)
     annotation['xright'] = float(r.right())/float(w)
-    annotation['ytop'] = float(h-r.top())/float(h)        # since we flipped the image
-    annotation['ybottom'] = float(h-r.bottom())/float(h)    # since we flipped the image
+    annotation['ytop'] = float(r.top())/float(h)
+    annotation['ybottom'] = float(r.bottom())/float(h)
     annotation['prob'] = 1.
     annotation['label'] = 'a face'
 
@@ -123,9 +123,7 @@ def processFrames(socket, frameWidth, frameHeight):
             # continue
             # sys.exit(0)
             p1 = datetime.datetime.now()
-            # we need to flip (vertically&horizontally) the image so that OpenFace can work properly
-            flippedImg = cv2.flip(imgBGR,-1)
-            rects = dlibObject.getAllFaceBoundingBoxes(flippedImg)
+            rects = dlibObject.getAllFaceBoundingBoxes(imgBGR)
 
             if len(rects) > 0:
                 print(" > DETECTED "+str(len(rects))+" faces")
@@ -133,17 +131,17 @@ def processFrames(socket, frameWidth, frameHeight):
                 for r in rects:
                     faceAnnotation = getAnnotationFromRect(r, frameWidth, frameHeight)
                     # run classifier, if probabilirt less than 50%, ignore classifier's data
-                    faceAnnotation = runClassifier(flippedImg, faceAnnotation, r)
+                    faceAnnotation = runClassifier(imgBGR, faceAnnotation, r)
                     p2 = datetime.datetime.now()
                     delta = p2-p1
                     processingMs = int(delta.total_seconds() * 1000)
                     print(" > open face processing took " + str(processingMs)+" ms")
                     facesArray.append(faceAnnotation)
-                    drawBox(flippedImg, r, str(faceAnnotation['label']))
+                    drawBox(imgBGR, r, str(faceAnnotation['label']))
                 dumpAnnotations(timestamp, frameNumber, frameName, facesArray)
             else:
                 print(" > no faces detected")
-            dumpImage(flippedImg)
+            dumpImage(imgBGR)
 
             # handy code to slice image into separate channels
             # imgR = np.zeros((frameHeight, frameWidth, 1), 'uint8')

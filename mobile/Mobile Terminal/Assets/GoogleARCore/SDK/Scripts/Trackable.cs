@@ -30,42 +30,32 @@ namespace GoogleARCore
     /// </summary>
     public abstract class Trackable
     {
-        //// @cond EXCLUDE_FROM_DOXYGEN
-
         /// <summary>
         /// A native handle for the ARCore trackable.
         /// </summary>
-        protected IntPtr m_TrackableNativeHandle = IntPtr.Zero;
+        internal IntPtr m_TrackableNativeHandle = IntPtr.Zero;
 
         /// <summary>
         /// The native api for ARCore.
         /// </summary>
-        protected NativeApi m_NativeApi;
+        internal NativeSession m_NativeSession;
 
-        /// <summary>
-        /// Constructs a new ARCore Trackable.
-        /// </summary>
-        protected Trackable()
+        private bool m_IsSessionDestroyed = false;
+
+        internal Trackable()
         {
         }
 
-        /// <summary>
-        /// Constructs a new ARCore Trackable.
-        /// </summary>
-        /// <param name="trackableNativeHandle">The native handle.</param>
-        /// <param name="nativeApi">The native api.</param>
-        protected Trackable(IntPtr trackableNativeHandle, NativeApi nativeApi)
+        internal Trackable(IntPtr trackableNativeHandle, NativeSession nativeSession)
         {
             m_TrackableNativeHandle = trackableNativeHandle;
-            m_NativeApi = nativeApi;
+            m_NativeSession = nativeSession;
         }
 
         ~Trackable()
         {
-            m_NativeApi.Trackable.Release(m_TrackableNativeHandle);
+            m_NativeSession.TrackableApi.Release(m_TrackableNativeHandle);
         }
-
-        //// @endcond
 
         /// <summary>
         /// Gets the tracking state of for the Trackable in the current frame.
@@ -75,13 +65,26 @@ namespace GoogleARCore
         {
             get
             {
-                return m_NativeApi.Trackable.GetTrackingState(m_TrackableNativeHandle);
+                // TODO (b/73256094): Remove isTracking when fixed.
+                var isTracking = LifecycleManager.Instance.IsTracking;
+                if (_IsSessionDestroyed())
+                {
+                    // Trackables from another session are considered stopped.
+                    return TrackingState.Stopped;
+                }
+                else if (!isTracking)
+                {
+                    // If there are no new frames coming in we must manually return paused.
+                    return TrackingState.Paused;
+                }
+
+                return m_NativeSession.TrackableApi.GetTrackingState(m_TrackableNativeHandle);
             }
         }
 
         /// <summary>
         /// Creates an Anchor at the given <c>Pose</c> that is attached to the Trackable where semantics of the
-        /// attachment relationship are defined by the subcass of Trackable (e.g. TrackedPlane).   Note that the
+        /// attachment relationship are defined by the subcass of Trackable (e.g. DetectedPlane).   Note that the
         /// relative offset between the Pose of multiple Anchors attached to the same Trackable may change
         /// over time as ARCore refines its understanding of the world.
         /// </summary>
@@ -89,14 +92,20 @@ namespace GoogleARCore
         /// <returns>An Anchor attached to the Trackable at <c>Pose</c>.</returns>
         public virtual Anchor CreateAnchor(Pose pose)
         {
+            if (_IsSessionDestroyed())
+            {
+                Debug.LogError("CreateAnchor:: Trying to access a session that has already been destroyed.");
+                return null;
+            }
+
             IntPtr anchorHandle;
-            if (!m_NativeApi.Trackable.AcquireNewAnchor(m_TrackableNativeHandle, pose, out anchorHandle))
+            if (!m_NativeSession.TrackableApi.AcquireNewAnchor(m_TrackableNativeHandle, pose, out anchorHandle))
             {
                 Debug.Log("Failed to create anchor on trackable.");
                 return null;
             }
 
-            return Anchor.AnchorFactory(anchorHandle, m_NativeApi);
+            return Anchor.Factory(m_NativeSession, anchorHandle);
         }
 
         /// <summary>
@@ -105,7 +114,33 @@ namespace GoogleARCore
         /// <param name="anchors">A list of anchors to be filled by the method.</param>
         public virtual void GetAllAnchors(List<Anchor> anchors)
         {
-            m_NativeApi.Trackable.GetAnchors(m_TrackableNativeHandle, anchors);
+            if (_IsSessionDestroyed())
+            {
+                Debug.LogError("GetAllAnchors:: Trying to access a session that has already been destroyed.");
+                anchors.Clear();
+                return;
+            }
+
+            m_NativeSession.TrackableApi.GetAnchors(m_TrackableNativeHandle, anchors);
+        }
+
+        /// <summary>
+        /// Tells if the session was destroyed.
+        /// </summary>
+        /// <returns><c>true</c> if the session this Trackable belong to was destroyed,
+        /// <c>false</c> otherwise.</returns>
+        protected bool _IsSessionDestroyed()
+        {
+            if (!m_IsSessionDestroyed)
+            {
+                var nativeSession = LifecycleManager.Instance.NativeSession;
+                if (nativeSession != m_NativeSession)
+                {
+                    m_IsSessionDestroyed = true;
+                }
+            }
+
+            return m_IsSessionDestroyed;
         }
     }
 }
