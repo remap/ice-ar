@@ -29,15 +29,17 @@ case "$1" in
     "openface")
         docker rm openface1 2>/dev/null
         HAS_OPENFACE_TRAINED=`docker images | grep openface-trained`
+        TRAINED_IMAGE="ice-ar:openface-trained"
         if [ -z "${HAS_OPENFACE_TRAINED}" ]; then
-            docker run --runtime=nvidia --rm --name=openface-trained -v `pwd`/edge-env/faces:/faces $OPENFACE_IMAGE /train.sh /faces
-            docker commit openface-trained ice-ar:openface-trained
+            echo "training openface from faces in $(pwd)/edge-env/faces..."
+            docker run --runtime=nvidia --name=openface-trained -v `pwd`/edge-env/faces:/faces $OPENFACE_IMAGE /train.sh /faces
+            docker commit openface-trained $TRAINED_IMAGE
             docker rm openface-trained
-            docker rmi peetonn/ice-ar:openface
+            docker rmi $OPENFACE_IMAGE
         fi
         docker run --runtime=nvidia --rm --name=openface1 -v $RAWVIDEO_VOL:/in -v $JSON_VOL:/out \
             -v $EDGE_ENV_FOLDER/preview:/preview -it \
-            ice-ar:openface-trained /run.sh
+            $TRAINED_IMAGE /run.sh
         ;;
     "openpose")
         docker rm openpose1 2>/dev/null

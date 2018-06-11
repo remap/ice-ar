@@ -46,4 +46,4 @@ openTerm $colX $row1y $termW $termH "./run.sh openface" "while true; do ./previe
 
 # open consumer and preview
 colX=0
-openTerm $colX $row1y $termW $termH "while true; ./run.sh consumer; sleep 1; done;" "while true; do ./preview.sh consumer; sleep 1; done;"
+openTerm $colX $row1y $termW $termH "while true; do ./run.sh consumer; sleep 1; done;" "while true; do ./preview.sh consumer; sleep 1; done;"
