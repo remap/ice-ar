@@ -14,6 +14,9 @@ using Kalman;
 using System;
 using UnityEngine.Rendering;
 
+public delegate void OnAnnotationFetched(System.DateTime fetchTimestamp, 
+                                             string jsonArrayString);
+
 public class OnCameraFrame : MonoBehaviour, ILogComponent
 {
 
@@ -300,7 +303,7 @@ public class OnCameraFrame : MonoBehaviour, ILogComponent
             FrameInfo finfo = NdnRtc.videoStream.processIncomingFrame(format, width, height, pixelBuffer, bufferSize);
             int publishedFrameNo = finfo.playbackNo_;
 
-            if (publishedFrameNo >= 0)
+            if (publishedFrameNo >= 0) // frame was not dropped by the encoder and was published
             {
                 Debug.LogFormat("create frame object #{0}, ts {1}, pos {2}, rot {3}, cam {4}",
                                 publishedFrameNo, timestamp_, Frame.Pose.position, Frame.Pose.rotation, camForCalcThread_.ToString());
@@ -309,238 +312,14 @@ public class OnCameraFrame : MonoBehaviour, ILogComponent
                 frameBuffer_.Enqueue(frameMgr_.frameObjects);
 
                 // spawn fetching task for annotations of this frame
-                // once successfully received, delegate callback will be called
-                yoloFetcher_.fetchAnnotation(publishedFrameNo, delegate (string jsonArrayString)
-                {
-                    int frameNumber = publishedFrameNo; // storing frame number locally
-                    string debugString = jsonArrayString.Replace(System.Environment.NewLine, "");
-                    var now = System.DateTime.Now;
-                    bool runQuery = false;
-
-                    Debug.LogFormat((ILogComponent)this, "fetched annotations JSON for {0}, length {1}: {2}", 
-                                    frameNumber, jsonArrayString.Length, debugString);
-
-                    string[] testDebug = jsonArrayString.Split(']');
-                    string formatDebug = testDebug[0] + "]";
-                
-                    try
-                    {
-                        // check if it's time to query Semantic DB...
-                        if ((float)(now - lastDbQuery_).TotalSeconds >= (1f / dbQueryRate_))
-                        {
-                            runQuery = true;
-                            lastDbQuery_ = now;
-                            dbController_.runQuery(jsonArrayString,
-                                                   delegate (DbReply reply, string errorMessage)
-                            {
-                                if (reply != null)
-                                {
-                                    Debug.LogFormat(dbController_, "got reply from DB. entries {0} ", reply.entries.Length);
-                                    foreach (var entry in reply.entries)
-                                    {
-                                        NdnRtc.fetch(entry.frameName, NdnRtc.videoStream,
-                                        delegate (FrameInfo fi, int w, int h, byte[] argbBuffer)
-                                        {
-                                            Debug.LogFormat("[ff-task]: succesfully fetched frame {0}", fi.ndnName_);
-                                            imageController_.enqueueFrame(new FetchedUIFrame(argbBuffer, fi.timestamp_, entry.simLevel));
-                                        },
-                                        delegate (string frameName)
-                                        {
-                                            Debug.LogFormat("[ff-task]: failed to fetch {0}", frameName);
-                                        });
-                                    }
-                                }
-                                else
-                                {
-                                    Debug.ErrorFormat(dbController_, "db request error {0} ", errorMessage);
-                                }
-                            });
-                        } // if time for DB query
-
-                        Dictionary<int, FrameObjectData> frameObjects = frameBuffer_.Dequeue();
-                        FrameObjectData frameObjectData;
-
-                        if (frameObjects.TryGetValue(frameNumber, out frameObjectData))
-                        {
-                            //AnnotationData[] data = JsonHelper.FromJson<AnnotationData>(jsonArrayString);
-                            //try to print out how many characters the jsonArrayString has
-                            string str = "{ \"annotationData\": " + formatDebug + "}";
-                            AnnotationData data = JsonUtility.FromJson<AnnotationData>(str);
-
-#if DEVELOPMENT_BUILD
-                            for (int i = 0; i < data.annotationData.Length; i++)
-                                Debug.LogFormat((ILogComponent)this,
-                                                "annotation {0}: label {1} prob {2} xleft {3} xright {4} ytop {5} ybottom {6}",
-                                                i, data.annotationData[i].label, data.annotationData[i].prob,
-                                                data.annotationData[i].xleft, data.annotationData[i].xright,
-                                                data.annotationData[i].ytop, data.annotationData[i].ybottom);
-#endif
-
-                            if (runQuery) //We only want to update our debug UI at (roughly) the query rate
-                            {
-                                lastKeyFrame_ = now;
-                                imageController_.updateDebugText(data);
-                            }
-
-                            Debug.LogFormat((ILogComponent)this,
-                                            "processing annotation for frame #{0}, cam pos {1}, cam rot {2}, points {3}, lifetime {4} sec",
-                                            frameNumber, frameObjectData.camPos, frameObjectData.camRot, frameObjectData.points,
-                                            Mathf.Abs((float)(frameObjectData.timestamp - timestamp_)));
-
-                            // filter out annotations with probability below threashold
-                            float threshold = 0.6f;
-                            List<AnnotationData.ArrayEntry> filteredAnnotations = new List<AnnotationData.ArrayEntry>();
-
-                            for (int i = 0; i < data.annotationData.Length; ++i)
-                                if (data.annotationData[i].prob >= threshold)
-                                    filteredAnnotations.Add(data.annotationData[i]);
-
-                            Debug.LogFormat("{0} annotations above threshold (filtered out {0} annotations)", 
-                                            filteredAnnotations.Count, data.annotationData.Length - filteredAnnotations.Count);
-
-                            if (filteredAnnotations.Count > 0)
-                            {
-                                int boxCount = filteredAnnotations.Count;
-                                BoxData boxData = new BoxData();
-
-                                boxData.frameNumber = frameNumber;
-                                boxData.count = boxCount;
-                                boxData.points = frameObjectData.points;
-                                boxData.numPoints = frameObjectData.numPoints;
-                                boxData.cam = frameObjectData.cam;
-                                boxData.camPos = frameObjectData.camPos;
-                                boxData.camRot = frameObjectData.camRot;
-                                boxData.timestamp = frameObjectData.timestamp;
-                                boxData.label = new string[boxCount];
-                                boxData.xleft = new float[boxCount];
-                                boxData.xright = new float[boxCount];
-                                boxData.ytop = new float[boxCount];
-                                boxData.ybottom = new float[boxCount];
-                                boxData.prob = new float[boxCount];
-
-                                for (int i = 0; i < boxCount; i++)
-                                {
-                                    boxData.label[i] = filteredAnnotations[i].label;
-                                    // since we flipped the image, flip bbox coordinates again
-                                    boxData.xleft[i] = filteredAnnotations[i].xleft;
-                                    boxData.xright[i] = filteredAnnotations[i].xright;
-                                    boxData.ytop[i] = 1 - filteredAnnotations[i].ytop;
-                                    boxData.ybottom[i] = 1 - filteredAnnotations[i].ybottom;
-                                    boxData.prob[i] = filteredAnnotations[i].prob;
-
-                                    Debug.LogFormat((ILogComponent)this, "will render {0} xleft {1} xright {2} ytop {3} ybottom {4} prob {5}",
-                                                    boxData.label[i], boxData.xleft[i], boxData.xright[i], 
-                                                    boxData.ytop[i], boxData.ybottom[i], boxData.prob[i]);
-                                }
-
-                                //boxBufferToCalc.Enqueue(annoData);
-                                boundingBoxBufferToCalc_.Enqueue(boxData);
-                            }
-
-                        }
-                        else
-                        {
-                            //frame object was not in the pool, lifetime expired
-                            Debug.Log((ILogComponent)this, "received annotations but frame expired");
-                        }
-                    }
-                    catch (System.Exception e)
-                    {
-                        Debug.LogExceptionFormat(e, "while parsing annotation {0}...", debugString.Substring(0,100));
-                    }
-                });
-
-                openFaceFetcher_.fetchAnnotation(publishedFrameNo, delegate (string jsonArrayString) {
-                    int frameNumber = publishedFrameNo; // storing frame number locally
-                    string debuglog = jsonArrayString.Replace(System.Environment.NewLine, " ");
-                    Debug.Log("Received OpenFace annotations JSON (frame " + frameNumber + "): " + debuglog);
-                    string[] testDebug = jsonArrayString.Split(']');
-                    string formatDebug = testDebug[0] + "]";
-                    try
-                    {
-                        Dictionary<int, FrameObjectData> frameObjects = frameBuffer_.Dequeue();
-                        FrameObjectData temp;
-                        if (frameObjects.TryGetValue(frameNumber, out temp))
-                        {
-                            string str = "{ \"annotationData\": " + formatDebug + "}";
-                            AnnotationData data = JsonUtility.FromJson<AnnotationData>(str);
-                            for (int i = 0; i < data.annotationData.Length; i++)
-                            {
-                                //if(data.annotationData[i].prob >= 0.7f)
-                                {
-                                    Debug.Log("openface test: " + data.annotationData.Length);
-                                    Debug.Log("openface test label: " + data.annotationData[i].label + " test xleft: " + data.annotationData[i].xleft
-                                        + " test xright: " + data.annotationData[i].xright + " test ytop: " + (data.annotationData[i].ytop) + " test ybottom: " + (data.annotationData[i].ybottom));
-
-                                }
-                            }
-                            //int boxCount = Mathf.Min(data.annotationData.Length, 2);
-                            int boxCount = data.annotationData.Length;
-
-                            BoxData annoData = new BoxData();
-
-                            annoData.frameNumber = frameNumber;
-                            annoData.count = boxCount;
-                            annoData.points = temp.points;
-                            annoData.numPoints = temp.numPoints;
-                            annoData.cam = temp.cam;
-                            annoData.camPos = temp.camPos;
-                            annoData.camRot = temp.camRot;
-                            annoData.timestamp = temp.timestamp;
-                            annoData.label = new string[boxCount];
-                            annoData.xleft = new float[boxCount];
-                            annoData.xright = new float[boxCount];
-                            annoData.ytop = new float[boxCount];
-                            annoData.ybottom = new float[boxCount];
-                            annoData.prob = new float[boxCount];
-
-                            for (int i = 0; i < boxCount; i++)
-                            {
-                                if (data.annotationData[i].ytop > 1)
-                                    data.annotationData[i].ytop = 1;
-                                if (data.annotationData[i].ybottom < 0)
-                                    data.annotationData[i].ybottom = 0;
-                                annoData.label[i] = data.annotationData[i].label;
-                                annoData.xleft[i] = data.annotationData[i].xleft;
-                                annoData.xright[i] = data.annotationData[i].xright;
-                                annoData.ytop[i] = data.annotationData[i].ytop;
-                                annoData.ybottom[i] = data.annotationData[i].ybottom;
-                                annoData.prob[i] = 1;
-                            }
-
-                            Debug.Log("Received openface annotations box enqueue");
-                            //boxBufferToCalc.Enqueue(annoData);
-                            boundingBoxBufferToCalc_.Enqueue(annoData);
-                        }
-                        else
-                        {
-                            //frame object was not in the pool, lifetime expired
-                            Debug.Log("Received openface annotations but frame expired");
-                        }
-                    }
-                    catch (System.Exception e)
-                    {
-                        Debug.LogException(e);
-                        Debug.Log("exception caught openface annotations: " + e);
-                        string debug = jsonArrayString.Replace(System.Environment.NewLine, " ");
-                        Debug.Log("exception caught openface string: " + debug);
-                        string str = "{ \"annotationData\": " + debug + "}";
-                        Debug.Log("exception caught openface string with format: " + str);
-                    }
-                });
-
+                spawnAnnotationFetchingTask(publishedFrameNo, yoloFetcher_, 0.6f, performSemanticDbQuery);
+                spawnAnnotationFetchingTask(publishedFrameNo, openFaceFetcher_, 0.6f, performSemanticDbQuery);
             }
-            else
-            {
-                // frame was dropped by the encoder and was not published
-            }
-
         }
         catch (System.Exception e)
         {
             Debug.LogExceptionFormat(e, "in OnImageAvailable call");
         }
-
     }
 
     static void calculationsForBoundingBox()
@@ -746,6 +525,171 @@ public class OnCameraFrame : MonoBehaviour, ILogComponent
 #else
         return false;
 #endif
+    }
+
+    private void spawnAnnotationFetchingTask(int frameNo, AnnotationsFetcher fetcher,
+                                             float th,
+                                             OnAnnotationFetched onAnnotationFetched = null)
+    {
+        fetcher.fetchAnnotation(frameNo, delegate (string jsonArrayString)
+        {
+            var now = System.DateTime.Now;
+            string fetcherName = fetcher.getServiceName();
+            float threshold = th;
+
+            int frameNumber = frameNo;
+            string debugString = jsonArrayString.Replace(System.Environment.NewLine, "");
+
+            Debug.LogFormat((ILogComponent)this, "fetched {3} annotations JSON for {0}, length {1}: {2}",
+                            frameNumber, jsonArrayString.Length, debugString, fetcherName);
+
+            string[] testDebug = jsonArrayString.Split(']');
+            string formatDebug = testDebug[0] + "]";
+
+            try {
+                if (onAnnotationFetched != null)
+                    onAnnotationFetched(now, jsonArrayString);
+            }
+            catch (System.Exception e){
+                Debug.LogExceptionFormat(e, "caught exception while callback, annotation: {0}",
+                                         debugString.Substring(0, 100));
+            }
+
+            try
+            {
+                Dictionary<int, FrameObjectData> frameObjects = frameBuffer_.Dequeue();
+                FrameObjectData frameObjectData;
+
+                if (frameObjects.TryGetValue(frameNumber, out frameObjectData))
+                {
+                    // some pre-processing for the received string
+                    string str = "{ \"annotationData\": " + formatDebug + "}";
+                    AnnotationData data = JsonUtility.FromJson<AnnotationData>(str);
+
+#if DEVELOPMENT_BUILD
+                            for (int i = 0; i < data.annotationData.Length; i++)
+                                Debug.LogFormat((ILogComponent)this,
+                                                "{7} annotation {0}: label {1} prob {2} xleft {3} xright {4} ytop {5} ybottom {6}",
+                                                i, data.annotationData[i].label, data.annotationData[i].prob,
+                                                data.annotationData[i].xleft, data.annotationData[i].xright,
+                                                data.annotationData[i].ytop, data.annotationData[i].ybottom,
+                                                fetcherName);
+#endif
+
+                    //if (runQuery) //We only want to update our debug UI at (roughly) the query rate
+                    //{
+                    //    lastKeyFrame_ = now;
+                    //    imageController_.updateDebugText(data);
+                    //}
+
+                    Debug.LogFormat((ILogComponent)this,
+                                    "processing {5} annotation for frame #{0}, cam pos {1}, cam rot {2}, points {3}, lifetime {4} sec",
+                                    frameNumber, frameObjectData.camPos, frameObjectData.camRot, frameObjectData.points,
+                                    Mathf.Abs((float)(frameObjectData.timestamp - timestamp_)), fetcherName);
+
+                    // filter out annotations with probability below threshold
+
+                    List<AnnotationData.ArrayEntry> filteredAnnotations = new List<AnnotationData.ArrayEntry>();
+
+                    for (int i = 0; i < data.annotationData.Length; ++i)
+                        if (data.annotationData[i].prob >= threshold)
+                            filteredAnnotations.Add(data.annotationData[i]);
+
+                    Debug.LogFormat("{0} annotations above threshold (filtered out {0} annotations)",
+                                    filteredAnnotations.Count, data.annotationData.Length - filteredAnnotations.Count);
+
+                    if (filteredAnnotations.Count > 0)
+                    {
+                        int boxCount = filteredAnnotations.Count;
+                        BoxData boxData = new BoxData(); // this needs to be pooled
+
+                        boxData.frameNumber = frameNumber;
+                        boxData.count = boxCount;
+                        boxData.points = frameObjectData.points;
+                        boxData.numPoints = frameObjectData.numPoints;
+                        boxData.cam = frameObjectData.cam;
+                        boxData.camPos = frameObjectData.camPos;
+                        boxData.camRot = frameObjectData.camRot;
+                        boxData.timestamp = frameObjectData.timestamp;
+                        boxData.label = new string[boxCount];
+                        boxData.xleft = new float[boxCount];
+                        boxData.xright = new float[boxCount];
+                        boxData.ytop = new float[boxCount];
+                        boxData.ybottom = new float[boxCount];
+                        boxData.prob = new float[boxCount];
+
+                        for (int i = 0; i < boxCount; i++)
+                        {
+                            // if (data.annotationData[i].ytop > 1)
+                            //     data.annotationData[i].ytop = 1;
+                            // if (data.annotationData[i].ybottom < 0)
+                            //     data.annotationData[i].ybottom = 0;
+                            boxData.label[i] = filteredAnnotations[i].label;
+                            // since we flipped the image, flip bbox coordinates again
+                            boxData.xleft[i] = filteredAnnotations[i].xleft;
+                            boxData.xright[i] = filteredAnnotations[i].xright;
+                            boxData.ytop[i] = 1 - filteredAnnotations[i].ytop;
+                            boxData.ybottom[i] = 1 - filteredAnnotations[i].ybottom;
+                            boxData.prob[i] = filteredAnnotations[i].prob;
+
+                            Debug.LogFormat((ILogComponent)this, "will render {6}: {0} xleft {1} xright {2} ytop {3} ybottom {4} prob {5}",
+                                            boxData.label[i], boxData.xleft[i], boxData.xright[i],
+                                            boxData.ytop[i], boxData.ybottom[i], boxData.prob[i],
+                                            fetcherName);
+                        }
+
+                        //boxBufferToCalc.Enqueue(annoData);
+                        boundingBoxBufferToCalc_.Enqueue(boxData);
+                    }
+
+                }
+                else
+                {
+                    //frame object was not in the pool, lifetime expired
+                    Debug.LogFormat((ILogComponent)this, "received {0} annotations but frame expired",
+                                    fetcherName);
+                }
+            }
+            catch (System.Exception e)
+            {
+                Debug.LogExceptionFormat(e, "while parsing {0} annotation {1}...", 
+                                         fetcherName, debugString.Substring(0, 100));
+            }
+        });
+    }
+
+    private void performSemanticDbQuery(System.DateTime fetchTimestamp, string jsonArrayString)
+    {
+        // check if it's time to query Semantic DB...
+        if ((float)(fetchTimestamp - lastDbQuery_).TotalSeconds >= (1f / dbQueryRate_))
+        {
+            lastDbQuery_ = fetchTimestamp;
+            dbController_.runQuery(jsonArrayString,
+                                   delegate (DbReply reply, string errorMessage)
+            {
+                if (reply != null)
+                {
+                    Debug.LogFormat(dbController_, "got reply from DB. entries {0} ", reply.entries.Length);
+                    foreach (var entry in reply.entries)
+                    {
+                        NdnRtc.fetch(entry.frameName, NdnRtc.videoStream,
+                        delegate (FrameInfo fi, int w, int h, byte[] argbBuffer)
+                        {
+                            Debug.LogFormat("[ff-task]: succesfully fetched frame {0}", fi.ndnName_);
+                            imageController_.enqueueFrame(new FetchedUIFrame(argbBuffer, fi.timestamp_, entry.simLevel));
+                        },
+                        delegate (string frameName)
+                        {
+                            Debug.LogFormat("[ff-task]: failed to fetch {0}", frameName);
+                        });
+                    }
+                }
+                else
+                {
+                    Debug.ErrorFormat(dbController_, "db request error {0} ", errorMessage);
+                }
+            });
+        } // if time for DB query
     }
 }
 

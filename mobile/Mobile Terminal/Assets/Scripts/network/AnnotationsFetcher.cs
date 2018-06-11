@@ -48,6 +48,10 @@ public class AnnotationsFetcher : ILogComponent
 	~AnnotationsFetcher(){
 	}
 
+    public string getServiceName() {
+        return serviceInstance_;
+    }
+
 	public void fetchAnnotation(int frameNo, FrameAnnotationsHandler onAnnotationsFetched)
 	{
 		Namespace frameAnnotations = serviceNamespace.
