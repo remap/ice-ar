@@ -1,6 +1,6 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio for Mac
+# Visual Studio 15
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Mobile Terminal", "Assembly-CSharp.csproj", "{4513B61F-6546-5DD6-946B-1E85A9A36BD6}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Mobile Terminal", "Assembly-CSharp-Editor.csproj", "{3470EBD3-BA75-E656-C172-959FC37A2BF6}"
