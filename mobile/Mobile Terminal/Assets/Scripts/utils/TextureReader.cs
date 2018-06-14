@@ -132,52 +132,52 @@ namespace TextureReaderAdapted
             // Process command.
             switch (m_Command)
             {
-                case CommandType.Create:
+            case CommandType.Create:
+            {
+                m_TextureReaderApi.Create(ImageFormat, ImageWidth, ImageHeight, ImageSampleMode == SampleMode.KeepAspectRatio);
+                break;
+            }
+
+            case CommandType.Reset:
+            {
+                m_TextureReaderApi.ReleaseFrame(m_ImageBufferIndex);
+                m_TextureReaderApi.Destroy();
+                m_TextureReaderApi.Create(ImageFormat, ImageWidth, ImageHeight, ImageSampleMode == SampleMode.KeepAspectRatio);
+                m_ImageBufferIndex = -1;
+                break;
+            }
+
+            case CommandType.ReleasePreviousBuffer:
+            {
+                // Clear previously used buffer, and submits a new request.
+                m_TextureReaderApi.ReleaseFrame(m_ImageBufferIndex);
+                m_ImageBufferIndex = -1;
+                break;
+            }
+
+            case CommandType.ProcessNextFrame:
+            {
+                if (m_ImageBufferIndex >= 0)
+                {
+                    // Get image pixels from previously submitted request.
+                    int bufferSize = 0;
+                    IntPtr pixelBuffer = m_TextureReaderApi.AcquireFrame(m_ImageBufferIndex, ref bufferSize);
+
+                    if (pixelBuffer != IntPtr.Zero && OnImageAvailableCallback != null)
                     {
-                        m_TextureReaderApi.Create(ImageFormat, ImageWidth, ImageHeight, ImageSampleMode == SampleMode.KeepAspectRatio);
-                        break;
+                        OnImageAvailableCallback(ImageFormat, ImageWidth, ImageHeight, pixelBuffer, bufferSize);
                     }
 
-                case CommandType.Reset:
-                    {
-                        m_TextureReaderApi.ReleaseFrame(m_ImageBufferIndex);
-                        m_TextureReaderApi.Destroy();
-                        m_TextureReaderApi.Create(ImageFormat, ImageWidth, ImageHeight, ImageSampleMode == SampleMode.KeepAspectRatio);
-                        m_ImageBufferIndex = -1;
-                        break;
-                    }
+                    // Release the texture reader internal buffer.
+                    m_TextureReaderApi.ReleaseFrame(m_ImageBufferIndex);
+                }
 
-                case CommandType.ReleasePreviousBuffer:
-                    {
-                        // Clear previously used buffer, and submits a new request.
-                        m_TextureReaderApi.ReleaseFrame(m_ImageBufferIndex);
-                        m_ImageBufferIndex = -1;
-                        break;
-                    }
+                break;
+            }
 
-                case CommandType.ProcessNextFrame:
-                    {
-                        if (m_ImageBufferIndex >= 0)
-                        {
-                            // Get image pixels from previously submitted request.
-                            int bufferSize = 0;
-                            IntPtr pixelBuffer = m_TextureReaderApi.AcquireFrame(m_ImageBufferIndex, ref bufferSize);
-
-                            if (pixelBuffer != IntPtr.Zero && OnImageAvailableCallback != null)
-                            {
-                                OnImageAvailableCallback(ImageFormat, ImageWidth, ImageHeight, pixelBuffer, bufferSize);
-                            }
-
-                            // Release the texture reader internal buffer.
-                            m_TextureReaderApi.ReleaseFrame(m_ImageBufferIndex);
-                        }
-
-                        break;
-                    }
-
-                case CommandType.None:
-                default:
-                    break;
+            case CommandType.None:
+            default:
+                break;
             }
 
             // Submit reading request for the next frame.
