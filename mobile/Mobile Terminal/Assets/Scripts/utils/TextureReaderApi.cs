@@ -17,7 +17,7 @@
 //
 // </copyright>
 //-----------------------------------------------------------------------
-namespace TextureReaderAdapted
+namespace GoogleARCore.Examples.ComputerVision
 {
     using System;
     using UnityEngine;
