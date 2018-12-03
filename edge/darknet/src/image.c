@@ -941,12 +941,13 @@ image load_raw_image_cv(char *filename, int w, int h, int channels, NanoPipeFram
         
     } // read frame block
 
-    reverse_argb(buffer, bufferSize);
+//    reverse_argb(buffer, bufferSize);
     
     CvSize size; size.width = w; size.height = h;
     IplImage* src= cvCreateImageHeader(size,IPL_DEPTH_8U,4);
     
     src->imageData = buffer;
+    cvFlip(src, src, 0);
 
     image out = ipl_to_image(src);
 
@@ -954,7 +955,7 @@ image load_raw_image_cv(char *filename, int w, int h, int channels, NanoPipeFram
     // save_image_png(out, "test-frame");
 
     cvReleaseImage(&src);
-    rgbgr_image(out);
+  //  rgbgr_image(out);
     free(buffer);
 
     // save_image_jpg(out, "test-frame-rgbgr");
