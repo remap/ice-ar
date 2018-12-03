@@ -211,6 +211,7 @@ def main():
     s = Socket(SUB)
     s.connect("ipc://"+pipeName)
     s.set_string_option(SUB, SUB_SUBSCRIBE, '')
+    s.set_string_option(SUB, SUB_SUBSCRIBE, '')
 
     dumpSocket = Socket(PUB)
     dumpSocket.connect("ipc://"+outputName)
