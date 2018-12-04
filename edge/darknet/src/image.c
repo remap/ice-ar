@@ -931,7 +931,7 @@ image load_raw_image_cv(char *filename, int w, int h, int channels, NanoPipeFram
         {
             finfo->timestamp_ = ((NanoPipeFrameInfo*)frameHeader)->timestamp_;
             finfo->playbackNo_ = ((NanoPipeFrameInfo*)frameHeader)->playbackNo_;
-            size_t stringOffset = sizeof(NanoPipeFrameInfo) - sizeof(char*);
+	    size_t stringOffset = sizeof(finfo->timestamp_)+sizeof(finfo->playbackNo_);
             strcpy(finfo->ndnName_, (char*)(frameHeader+stringOffset));
 
             printf("> read frame #%u %s (%d bytes total)\n",
