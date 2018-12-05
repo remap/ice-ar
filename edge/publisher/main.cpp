@@ -196,6 +196,21 @@ public:
 
   void publish(unsigned int frameNo, const AnnotationArray& a, const string& engine){
     string content = a.get();
+    shared_ptr<GeneralizedObjectStreamHandler> handler;
+
+    if (handlers_.find(engine) != handlers_.end())
+    {
+        handler = getHandlerForEngine(engine);
+        // check current frame number and the last published frame number
+        // if there's a gap -- publish empty annotations for this gap
+        int gap = frameNo - handler->getProducedSequenceNumber() - 1;
+        while (gap > 0)
+        {
+            handler->addObject(Blob::fromRawStr("{ 'error': 'dropped frame'; }"), "application/json");
+            gap--;
+            std::cout << "*   published dropped frame " << handler->getProducedSequenceNumber() << std::endl;
+        }
+    }
 
     getHandlerForEngine(engine)->setObject(frameNo, Blob::fromRawStr(content), "application/json");
 
@@ -205,7 +220,7 @@ public:
 
 private:
   map<string, std::shared_ptr<Namespace>> namespaces_;
-  map<string, std::shared_ptr<GeneralizedObjectStreamHandler> > handlers_;
+  map<string, std::shared_ptr<GeneralizedObjectStreamHandler> > handlers_; 
   Face *face_;
   KeyChain *keyChain_;
   Name baseName_;
