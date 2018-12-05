@@ -10,6 +10,12 @@ RUN git clone https://github.com/named-data/ndn-cpp.git \
 	&& make && make install \
 	&& rm -Rf /ndn-cpp
 
+RUN git clone https://github.com/named-data/cnl-cpp.git \
+	&& cd cnl-cpp \
+	&& ./configure \
+	&& make && make install \
+	&& rm -Rf /cnl-cpp
+
 RUN git clone https://github.com/nanomsg/nanomsg.git \
 	&& cd /nanomsg && ./configure && make && make install \
 	&& rm -Rf /nanomsg

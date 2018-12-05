@@ -5,14 +5,12 @@
 //
 
 // build
-// g++ main.cpp ipc-shim.c cJSON.c -o ice-publisher -std=c++11 -lboost_thread -lboost_system -lnanomsg -lndn-cpp -lndn-cpp-tools
+// g++ main.cpp ipc-shim.c cJSON.c -o ice-publisher -std=c++11 -lboost_thread -lboost_system -lnanomsg -lndn-cpp -lndn-cpp-tools -lcnl-cpp
 
 #include <cstdlib>
 #include <unistd.h>
 #include <time.h>
 #include <stdlib.h>
-#include <ndn-cpp-tools/usersync/generalized-content.hpp>
-#include <ndn-cpp/threadsafe-face.hpp>
 #include <execinfo.h>
 #include <set>
 #include <ctime>
@@ -21,6 +19,14 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <fcntl.h>
+
+#include <ndn-cpp-tools/usersync/generalized-content.hpp>
+#include <ndn-cpp/threadsafe-face.hpp>
+#include <ndn-cpp/security/key-chain.hpp>
+#include <ndn-cpp/delegation-set.hpp>
+#include <cnl-cpp/generalized-object/generalized-object-stream-handler.hpp>
+
+#define BOOST_BIND_NO_PLACEHOLDERS
 #include <boost/asio.hpp>
 #include <boost/thread/mutex.hpp>
 #include <boost/thread.hpp>
@@ -33,6 +39,9 @@ using namespace std;
 using namespace ndn;
 using namespace ndn::func_lib;
 using namespace ndntools;
+using namespace cnl_cpp;
+using std::shared_ptr;
+using std::make_shared;
 
 static void
 onRegisterFailed(const ptr_lib::shared_ptr<const Name>& prefix, bool* enabled);
@@ -178,40 +187,47 @@ public:
    * @param keyChain Key chain for signing published packets
    * @param certificateName Certificate name to use for signing
    */
-  AnnotationPublisher(const Name& servicePrefix, MemoryContentCache& cache, 
-    KeyChain *keyChain, const Name& certificateName):
-    baseName_(servicePrefix), cache_(cache), keyChain_(keyChain), certName_(certificateName){}
-  ~AnnotationPublisher() {  }
+  AnnotationPublisher(const Name& servicePrefix, Face* face, KeyChain *keyChain)
+    : baseName_(servicePrefix)
+    , face_(face)
+    , keyChain_(keyChain) {}
 
-  void publish(unsigned int frameNo, const AnnotationArray& a, const string& instance){
-    size_t contentSegmentSize = 1000;
+  ~AnnotationPublisher() {}
+
+  void publish(unsigned int frameNo, const AnnotationArray& a, const string& engine){
     string content = a.get();
-    ContentMetaInfo metaInfo;
-    bool hasSegments = content.size() > contentSegmentSize;
 
-    metaInfo.setContentType("application/json")
-      .setTimestamp(1477681379)
-      .setHasSegments(hasSegments);
+    getHandlerForEngine(engine)->setObject(frameNo, Blob::fromRawStr(content), "application/json");
 
-    if (!hasSegments)
-      metaInfo.setOther(Blob((const uint8_t*)&content[0], content.size()));
-    
-    // <user-prefix>/<service-name>/<frame-no>/<service-instance>
-    Name annotationName(baseName_);
-    annotationName.appendSequenceNumber(frameNo).append(instance);
-
-    GeneralizedContent::publish
-      (cache_, annotationName, 10000, keyChain_, certName_, metaInfo,
-       Blob((const uint8_t*)&content[0], content.size()), contentSegmentSize);
-
-    std::cout << "*   published " << annotationName << std::endl;
-}
+    std::cout << "*   published annotation for " << frameNo << " under " 
+              << getHandlerForEngine(engine)->getNamespace().getName() << std::endl;
+  }
 
 private:
-  MemoryContentCache cache_;
+  map<string, std::shared_ptr<Namespace>> namespaces_;
+  map<string, std::shared_ptr<GeneralizedObjectStreamHandler> > handlers_;
+  Face *face_;
   KeyChain *keyChain_;
-  Name certName_;
   Name baseName_;
+
+  std::shared_ptr<GeneralizedObjectStreamHandler> getHandlerForEngine(const string& engine)
+  {
+      if (handlers_.find(engine) == handlers_.end())
+      {
+          Name streamPrefix(baseName_);
+          streamPrefix.append(engine);
+          namespaces_[engine] = std::make_shared<Namespace>(streamPrefix, keyChain_);
+          handlers_[engine] = std::make_shared<GeneralizedObjectStreamHandler>();
+
+          namespaces_[engine]->setHandler(handlers_[engine]);
+          namespaces_[engine]->setFace(face_, [](const shared_ptr<const Name>& prefix){
+              cerr << "Register failed for prefix " << prefix->toUri() << endl; 
+          });
+      }
+
+      return handlers_[engine];
+  }
+
 };
 
 //******************************************************************************
@@ -335,7 +351,7 @@ std::string readAnnotations(int pipe, unsigned int &frameNo, std::string &engine
         string s(annStr);
         free(annStr);
 
-        cout << "> read annotations (frame " << frameNo << ", engine " << engine << "): " << s << std::endl;
+        cout << "> read annotations (frame " << frameNo << ", engine " << engine << ")" << std::endl;
 
         return s;
       }
@@ -371,7 +387,7 @@ int main(int argc, char** argv)
 
   try {
     boost::asio::io_service io;
-    boost::shared_ptr<boost::asio::io_service::work> work(boost::make_shared<boost::asio::io_service::work>(io));
+    shared_ptr<boost::asio::io_service::work> work(make_shared<boost::asio::io_service::work>(io));
     boost::thread t = boost::thread([&io](){ 
       try {
         io.run();
@@ -387,8 +403,7 @@ int main(int argc, char** argv)
     // The default Face will connect using a Unix socket, or to "localhost".
     ThreadsafeFace producerFace(io);
     producerFace.setCommandSigningInfo(keyChain, certificateName);
-    MemoryContentCache contentCache(&producerFace);
-    std::string serviceInstance = "yolo-mock";
+    // MemoryContentCache contentCache(&producerFace);
     Name servicePrefix(basePrefix);
 
     servicePrefix.append(userId).append(service);
@@ -403,22 +418,7 @@ int main(int argc, char** argv)
 
     std::map<unsigned int, AnnotationArray> acquiredAnnotations;
 
-    AnnotationPublisher apub(servicePrefix, contentCache, &keyChain, certificateName);
-    contentCache.registerPrefix(servicePrefix, 
-      bind(&onRegisterFailed, _1, &enabled), 
-      (OnRegisterSuccess)bind(&onRegisterSuccess, _1, _2, &registrationResultSuccess),
-      [&contentCache, &frameNo, &io, &acquiredAnnotations, serviceInstance, &apub]
-      (const ptr_lib::shared_ptr<const Name>& prefix,
-            const ptr_lib::shared_ptr<const Interest>& interest, Face& face, 
-            uint64_t interestFilterId,
-            const ptr_lib::shared_ptr<const InterestFilter>& filter){
-        int receivedFrameNo = interest->getName()[-3].toSequenceNumber();
-
-        cout << "---> incoming interest: " 
-          << " frame no " << receivedFrameNo << "(latest read " << frameNo 
-          << " diff " << (int)frameNo-(int)receivedFrameNo << ") annotations queue:\t" << acquiredAnnotations.size() << endl;
-        contentCache.storePendingInterest(interest, face);
-      });
+    AnnotationPublisher apub(servicePrefix, &producerFace, &keyChain);
 
     unsigned int n = 10, npublished = 0;
     std::set<int> publishedFrames;
@@ -450,9 +450,6 @@ int main(int argc, char** argv)
           apub.publish(frameNo, AnnotationArray(annotations), engine);
         });
       }
-
-      if (!registrationResultSuccess)
-        cout << "> prefix registration failed. data won't be served" << std::endl;
     } // while true
   } catch (std::exception& e) {
     cout << "exception: " << e.what() << endl;
