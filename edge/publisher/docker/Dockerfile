@@ -6,7 +6,7 @@ RUN  apt-get update \
 
 RUN git clone https://github.com/named-data/ndn-cpp.git \
 	&& cd ndn-cpp \
-	&& ./configure --with-std-shared-ptr=no --with-std-function=no \
+	&& ./configure \
 	&& make && make install \
 	&& rm -Rf /ndn-cpp
 
