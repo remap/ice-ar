@@ -22,7 +22,7 @@ RUN git clone https://github.com/nanomsg/nanomsg.git \
 
 ARG DEBUG_VER=unknown
 RUN DEBUG_VER=${DEBUG_VER} git clone --recursive https://github.com/remap/ice-ar
-RUN cd /ice-ar/edge/publisher \
+RUN ldconfig && cd /ice-ar/edge/publisher \
 	&& g++ main.cpp ipc-shim.c cJSON.c -o ice-publisher -std=c++11 -lboost_thread -lboost_system -lnanomsg -lndn-cpp -lndn-cpp-tools
 
 RUN apt-get remove -y git cmake protobuf-compiler build-essential
