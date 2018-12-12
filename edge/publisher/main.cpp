@@ -194,8 +194,17 @@ public:
 
   ~AnnotationPublisher() {}
 
-  void publish(unsigned int frameNo, const AnnotationArray& a, const string& engine){
-    string content = a.get();
+  void publish(unsigned int frameNo, const AnnotationArray& a, const string& engine, uint64_t ts, const string& frameName){
+    cJSON *item = cJSON_CreateObject();
+    cJSON_AddItemToObject(item, "annotations", cJSON_Parse(a.get().c_str()));
+    cJSON_AddItemToObject(item, "playbackNo", cJSON_CreateNumber(frameNo));
+    cJSON_AddItemToObject(item, "timestamp", cJSON_CreateNumber(ts));
+    cJSON_AddItemToObject(item, "frameName", cJSON_CreateString(frameName.c_str()));
+    char *d = cJSON_Print(item);
+    string content(d);
+    free(d);
+    cJSON_Delete(item);
+
     shared_ptr<GeneralizedObjectStreamHandler> handler;
 
     if (handlers_.find(engine) != handlers_.end())
@@ -340,7 +349,7 @@ void dumpAnnotations(const char* annotations, size_t len)
     }
 }
 
-std::string readAnnotations(int pipe, unsigned int &frameNo, std::string &engine)
+std::string readAnnotations(int pipe, unsigned int &frameNo, std::string &engine, uint64_t &ts, std::string &frameName)
 {
   char *annotations;
   int len = ipc_readData(feature_pipe, (void**)&annotations);
@@ -357,12 +366,16 @@ std::string readAnnotations(int pipe, unsigned int &frameNo, std::string &engine
       cJSON *fNo = cJSON_GetObjectItem(item, "playbackNo");
       cJSON *eng = cJSON_GetObjectItem(item, "engine");
       cJSON *array = cJSON_GetObjectItem(item, "annotations");
+      cJSON *timestamp = cJSON_GetObjectItem(item, "timestamp");
+      cJSON *fName = cJSON_GetObjectItem(item, "frameName");
 
       if (cJSON_IsArray(array) && cJSON_IsNumber(fNo))
       {
         char *annStr = cJSON_Print(array);
         engine = std::string(eng->valuestring);
+        frameName = std::string(fName->valuestring);
         frameNo = fNo->valueint;
+        ts = timestamp->valuedouble;
         string s(annStr);
         free(annStr);
 
@@ -456,13 +469,14 @@ int main(int argc, char** argv)
 
     while(enabled){
       
-      std::string engine;
-      std::string annotations = readAnnotations(feature_pipe, frameNo, engine);
+      std::string engine,frameName;
+      uint64_t ts;
+      std::string annotations = readAnnotations(feature_pipe, frameNo, engine, ts, frameName);
 
       if (annotations !="")
       {
-        io.dispatch([&apub, frameNo, annotations, engine](){
-          apub.publish(frameNo, AnnotationArray(annotations), engine);
+        io.dispatch([&apub, frameNo, annotations, engine, ts, frameName](){
+          apub.publish(frameNo, AnnotationArray(annotations), engine, ts, frameName);
         });
       }
     } // while true
