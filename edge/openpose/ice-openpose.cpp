@@ -46,8 +46,12 @@ DEFINE_bool(disable_multi_thread,       false,          "It would slightly reduc
                                                         " for 1) Cases where it is needed a low latency (e.g. webcam in real-time scenarios with"
                                                         " low-range GPU devices); and 2) Debugging OpenPose when it is crashing to locate the"
                                                         " error.");
+DEFINE_int32(profile_speed,             1000,           "If PROFILER_ENABLED was set in CMake or Makefile.config files, OpenPose will show some"
+                                                        " runtime statistics at this frame number.");
 // Producer
 DEFINE_string(image_dir,                "examples/media/",      "Process a directory of images. Read all standard formats (jpg, png, bmp, etc.).");
+DEFINE_double(camera_fps,               30.0,           "Frame rate for the webcam (also used when saving video). Set this value to the minimum"
+                                                        " value between the OpenPose displayed speed and the webcam real frame rate.");
 // OpenPose
 DEFINE_string(model_folder,             "models/",      "Folder path (absolute or relative) where the models (pose, face, ...) are located.");
 DEFINE_string(output_resolution,        "-1x-1",        "The image resolution (display and output). Use \"-1x-1\" to force the program to use the"
@@ -56,15 +60,23 @@ DEFINE_int32(num_gpu,                   -1,             "The number of GPU devic
                                                         " machine.");
 DEFINE_int32(num_gpu_start,             0,              "GPU device start number.");
 DEFINE_int32(keypoint_scale,            0,              "Scaling of the (x,y) coordinates of the final pose data array, i.e. the scale of the (x,y)"
-                                                        " coordinates that will be saved with the `write_keypoint` & `write_keypoint_json` flags."
-                                                        " Select `0` to scale it to the original source resolution, `1`to scale it to the net output"
-                                                        " size (set with `net_resolution`), `2` to scale it to the final output size (set with"
-                                                        " `resolution`), `3` to scale it in the range [0,1], and 4 for range [-1,1]. Non related"
-                                                        " with `scale_number` and `scale_gap`.");
+                                                        " coordinates that will be saved with the `write_json` & `write_keypoint` flags."
+                                                        " Select `0` to scale it to the original source resolution; `1`to scale it to the net output"
+                                                        " size (set with `net_resolution`); `2` to scale it to the final output size (set with"
+                                                        " `resolution`); `3` to scale it in the range [0,1], where (0,0) would be the top-left"
+                                                        " corner of the image, and (1,1) the bottom-right one; and 4 for range [-1,1], where"
+                                                        " (-1,-1) would be the top-left corner of the image, and (1,1) the bottom-right one. Non"
+                                                        " related with `scale_number` and `scale_gap`.");
+DEFINE_int32(number_people_max,         -1,             "This parameter will limit the maximum number of people detected, by keeping the people with"
+                                                        " top scores. The score is based in person area over the image, body part score, as well as"
+                                                        " joint score (between each pair of connected body parts). Useful if you know the exact"
+                                                        " number of people in the scene, so it can remove false positives (if all the people have"
+                                                        " been detected. However, it might also include false negatives by removing very small or"
+                                                        " highly occluded people. -1 will keep them all.");
 // OpenPose Body Pose
 DEFINE_bool(body_disable,               false,          "Disable body keypoint detection. Option only possible for faster (but less accurate) face"
                                                         " keypoint detection.");
-DEFINE_string(model_pose,               "COCO",         "Model to be used. E.g. `COCO` (18 keypoints), `MPI` (15 keypoints, ~10% faster), "
+DEFINE_string(model_pose,               "BODY_25",      "Model to be used. E.g. `COCO` (18 keypoints), `MPI` (15 keypoints, ~10% faster), "
                                                         "`MPI_4_layers` (15 keypoints, even faster but less accurate).");
 DEFINE_string(net_resolution,           "-1x368",       "Multiples of 16. If it is increased, the accuracy potentially increases. If it is"
                                                         " decreased, the speed increases. For maximum speed-accuracy balance, it should keep the"
@@ -76,17 +88,26 @@ DEFINE_int32(scale_number,              1,              "Number of scales to ave
 DEFINE_double(scale_gap,                0.3,            "Scale gap between scales. No effect unless scale_number > 1. Initial scale is always 1."
                                                         " If you want to change the initial scale, you actually want to multiply the"
                                                         " `net_resolution` by your desired initial scale.");
-DEFINE_bool(heatmaps_add_parts,         false,          "If true, it will add the body part heatmaps to the final op::Datum::poseHeatMaps array,"
-                                                        " and analogously face & hand heatmaps to op::Datum::faceHeatMaps & op::Datum::handHeatMaps"
-                                                        " (program speed will decrease). Not required for our library, enable it only if you intend"
-                                                        " to process this information later. If more than one `add_heatmaps_X` flag is enabled, it"
-                                                        " will place then in sequential memory order: body parts + bkg + PAFs. It will follow the"
-                                                        " order on POSE_BODY_PART_MAPPING in `include/openpose/pose/poseParameters.hpp`.");
+// OpenPose Body Pose Heatmaps and Part Candidates
+DEFINE_bool(heatmaps_add_parts,         false,          "If true, it will fill op::Datum::poseHeatMaps array with the body part heatmaps, and"
+                                                        " analogously face & hand heatmaps to op::Datum::faceHeatMaps & op::Datum::handHeatMaps."
+                                                        " If more than one `add_heatmaps_X` flag is enabled, it will place then in sequential"
+                                                        " memory order: body parts + bkg + PAFs. It will follow the order on"
+                                                        " POSE_BODY_PART_MAPPING in `src/openpose/pose/poseParameters.cpp`. Program speed will"
+                                                        " considerably decrease. Not required for OpenPose, enable it only if you intend to"
+                                                        " explicitly use this information later.");
 DEFINE_bool(heatmaps_add_bkg,           false,          "Same functionality as `add_heatmaps_parts`, but adding the heatmap corresponding to"
                                                         " background.");
 DEFINE_bool(heatmaps_add_PAFs,          false,          "Same functionality as `add_heatmaps_parts`, but adding the PAFs.");
-DEFINE_int32(heatmaps_scale,            2,              "Set 0 to scale op::Datum::poseHeatMaps in the range [0,1], 1 for [-1,1]; and 2 for integer"
-                                                        " rounded [0,255].");
+DEFINE_int32(heatmaps_scale,            2,              "Set 0 to scale op::Datum::poseHeatMaps in the range [-1,1], 1 for [0,1]; 2 for integer"
+                                                        " rounded [0,255]; and 3 for no scaling.");
+DEFINE_bool(part_candidates,            false,          "Also enable `write_json` in order to save this information. If true, it will fill the"
+                                                        " op::Datum::poseCandidates array with the body part candidates. Candidates refer to all"
+                                                        " the detected body parts, before being assembled into people. Note that the number of"
+                                                        " candidates is equal or higher than the number of final body parts (i.e. after being"
+                                                        " assembled into people). The empty body parts are filled with 0s. Program speed will"
+                                                        " slightly decrease. Not required for OpenPose, enable it only if you intend to explicitly"
+                                                        " use this information.");
 // OpenPose Face
 DEFINE_bool(face,                       false,          "Enables face keypoint detection. It will share some parameters from the body pose, e.g."
                                                         " `model_folder`. Note that this will considerable slow down the performance and increse"
@@ -102,18 +123,38 @@ DEFINE_bool(hand,                       false,          "Enables hand keypoint d
 DEFINE_string(hand_net_resolution,      "368x368",      "Multiples of 16 and squared. Analogous to `net_resolution` but applied to the hand keypoint"
                                                         " detector.");
 DEFINE_int32(hand_scale_number,         1,              "Analogous to `scale_number` but applied to the hand keypoint detector. Our best results"
-                                                        " were found with `hand_scale_number` = 6 and `hand_scale_range` = 0.4");
+                                                        " were found with `hand_scale_number` = 6 and `hand_scale_range` = 0.4.");
 DEFINE_double(hand_scale_range,         0.4,            "Analogous purpose than `scale_gap` but applied to the hand keypoint detector. Total range"
                                                         " between smallest and biggest scale. The scales will be centered in ratio 1. E.g. if"
                                                         " scaleRange = 0.4 and scalesNumber = 2, then there will be 2 scales, 0.8 and 1.2.");
 DEFINE_bool(hand_tracking,              false,          "Adding hand tracking might improve hand keypoints detection for webcam (if the frame rate"
                                                         " is high enough, i.e. >7 FPS per GPU) and video. This is not person ID tracking, it"
                                                         " simply looks for hands in positions at which hands were located in previous frames, but"
-                                                        " it does not guarantee the same person ID among frames");
+                                                        " it does not guarantee the same person ID among frames.");
+// OpenPose 3-D Reconstruction
+DEFINE_bool(3d,                         false,          "Running OpenPose 3-D reconstruction demo: 1) Reading from a stereo camera system."
+                                                        " 2) Performing 3-D reconstruction from the multiple views. 3) Displaying 3-D reconstruction"
+                                                        " results. Note that it will only display 1 person. If multiple people is present, it will"
+                                                        " fail.");
+DEFINE_int32(3d_min_views,              -1,             "Minimum number of views required to reconstruct each keypoint. By default (-1), it will"
+                                                        " require all the cameras to see the keypoint in order to reconstruct it.");
+DEFINE_int32(3d_views,                  1,              "Complementary option to `--image_dir` or `--video`. OpenPose will read as many images per"
+                                                        " iteration, allowing tasks such as stereo camera processing (`--3d`). Note that"
+                                                        " `--camera_parameters_folder` must be set. OpenPose must find as many `xml` files in the"
+                                                        " parameter folder as this number indicates.");
+// Extra algorithms
+DEFINE_bool(identification,             false,          "Experimental, not available yet. Whether to enable people identification across frames.");
+DEFINE_int32(tracking,                  -1,             "Experimental, not available yet. Whether to enable people tracking across frames. The"
+                                                        " value indicates the number of frames where tracking is run between each OpenPose keypoint"
+                                                        " detection. Select -1 (default) to disable it or 0 to run simultaneously OpenPose keypoint"
+                                                        " detector and tracking for potentially higher accurary than only OpenPose.");
+DEFINE_int32(ik_threads,                0,              "Experimental, not available yet. Whether to enable inverse kinematics (IK) from 3-D"
+                                                        " keypoints to obtain 3-D joint angles. By default (0 threads), it is disabled. Increasing"
+                                                        " the number of threads will increase the speed but also the global system latency.");
 // OpenPose Rendering
 DEFINE_int32(part_to_show,              0,              "Prediction channel to visualize (default: 0). 0 for all the body parts, 1-18 for each body"
                                                         " part heat map, 19 for the background heat map, 20 for all the body part heat maps"
-                                                        " together, 21 for all the PAFs, 22-40 for each body part pair PAF");
+                                                        " together, 21 for all the PAFs, 22-40 for each body part pair PAF.");
 DEFINE_bool(disable_blending,           false,          "If enabled, it will render the results (keypoint skeletons or heatmaps) on a black"
                                                         " background, instead of being rendered into the original image. Related: `part_to_show`,"
                                                         " `alpha_pose`, and `alpha_pose`.");
@@ -122,10 +163,11 @@ DEFINE_double(render_threshold,         0.05,           "Only estimated keypoint
                                                         " rendered. Generally, a high threshold (> 0.5) will only render very clear body parts;"
                                                         " while small thresholds (~0.1) will also output guessed and occluded keypoints, but also"
                                                         " more false positives (i.e. wrong detections).");
-DEFINE_int32(render_pose,               2,              "Set to 0 for no rendering, 1 for CPU rendering (slightly faster), and 2 for GPU rendering"
-                                                        " (slower but greater functionality, e.g. `alpha_X` flags). If rendering is enabled, it will"
-                                                        " render both `outputData` and `cvOutputData` with the original image and desired body part"
-                                                        " to be shown (i.e. keypoints, heat maps or PAFs).");
+DEFINE_int32(render_pose,               -1,             "Set to 0 for no rendering, 1 for CPU rendering (slightly faster), and 2 for GPU rendering"
+                                                        " (slower but greater functionality, e.g. `alpha_X` flags). If -1, it will pick CPU if"
+                                                        " CPU_ONLY is enabled, or GPU if CUDA is enabled. If rendering is enabled, it will render"
+                                                        " both `outputData` and `cvOutputData` with the original image and desired body part to be"
+                                                        " shown (i.e. keypoints, heat maps or PAFs).");
 DEFINE_double(alpha_pose,               0.6,            "Blending factor (range 0-1) for the body part rendering. 1 will show it completely, 0 will"
                                                         " hide it. Only valid for GPU rendering.");
 DEFINE_double(alpha_heatmap,            0.7,            "Blending factor (range 0-1) between heatmap and original frame. 1 will only show the"
@@ -147,17 +189,28 @@ DEFINE_string(write_images,             "",             "Directory to write rend
 DEFINE_string(write_images_format,      "png",          "File extension and format for `write_images`, e.g. png, jpg or bmp. Check the OpenCV"
                                                         " function cv::imwrite for all compatible extensions.");
 DEFINE_string(write_video,              "",             "Full file path to write rendered frames in motion JPEG video format. It might fail if the"
-                                                        " final path does not finish in `.avi`. It internally uses cv::VideoWriter.");
-DEFINE_string(write_keypoint,           "",             "Directory to write the people body pose keypoint data. Set format with `write_keypoint_format`.");
-DEFINE_string(write_keypoint_format,    "yml",          "File extension and format for `write_keypoint`: json, xml, yaml & yml. Json not available"
-                                                        " for OpenCV < 3.0, use `write_keypoint_json` instead.");
-DEFINE_string(write_keypoint_json,      "",             "Directory to write people pose data in *.json format, compatible with any OpenCV version.");
-DEFINE_string(write_coco_json,          "",             "Full file path to write people pose data with *.json COCO validation format.");
-DEFINE_string(write_heatmaps,           "",             "Directory to write body pose heatmaps in *.png format. At least 1 `add_heatmaps_X` flag"
+                                                        " final path does not finish in `.avi`. It internally uses cv::VideoWriter. Flag"
+                                                        " `camera_fps` controls FPS.");
+DEFINE_string(write_json,               "",             "Directory to write OpenPose output in JSON format. It includes body, hand, and face pose"
+                                                        " keypoints (2-D and 3-D), as well as pose candidates (if `--part_candidates` enabled).");
+DEFINE_string(write_coco_json,          "",             "Full file path to write people pose data with JSON COCO validation format.");
+DEFINE_string(write_coco_foot_json,     "",             "Full file path to write people foot pose data with JSON COCO validation format.");
+DEFINE_string(write_heatmaps,           "",             "Directory to write body pose heatmaps in PNG format. At least 1 `add_heatmaps_X` flag"
                                                         " must be enabled.");
 DEFINE_string(write_heatmaps_format,    "png",          "File extension and format for `write_heatmaps`, analogous to `write_images_format`."
-                                                        " Recommended `png` or any compressed and lossless format.");
-
+                                                        " For lossless compression, recommended `png` for integer `heatmaps_scale` and `float` for"
+                                                        " floating values.");
+DEFINE_string(write_keypoint,           "",             "(Deprecated, use `write_json`) Directory to write the people pose keypoint data. Set format"
+                                                        " with `write_keypoint_format`.");
+DEFINE_string(write_keypoint_format,    "yml",          "(Deprecated, use `write_json`) File extension and format for `write_keypoint`: json, xml,"
+                                                        " yaml & yml. Json not available for OpenCV < 3.0, use `write_json` instead.");
+// Result Saving - Extra Algorithms
+DEFINE_string(write_video_adam,         "",             "Experimental, not available yet. E.g.: `~/Desktop/adamResult.avi`. Flag `camera_fps`"
+                                                        " controls FPS.");
+DEFINE_string(write_bvh,                "",             "Experimental, not available yet. E.g.: `~/Desktop/mocapResult.bvh`.");
+// UDP communication
+DEFINE_string(udp_host,                 "",             "Experimental, not available yet. IP for UDP communication. E.g., `192.168.0.1`.");
+DEFINE_string(udp_port,                 "8051",         "Experimental, not available yet. Port number for UDP communication.");
 
 DEFINE_int32(frame_width,               320,            "Frame width");
 DEFINE_int32(frame_height,              240,            "Frame height");
@@ -181,16 +234,19 @@ struct IceDatum : public op::Datum
 // that the user usually knows which kind of data he will move between the queues,
 // in this case we assume a std::shared_ptr of a std::vector of IceDatum
 
-// This worker will constantly read from nanomsg socket 
+// This worker will constantly read from nanomsg socket
 class WNanoInput : public op::WorkerProducer<std::shared_ptr<std::vector<IceDatum>>>
 {
 public:
     WNanoInput(const std::string& nanoPipe,
         const int frameWidth, const int frameHeight) :
-        mNanoSocket(ipc_setupSubSinkSocket(nanoPipe.c_str())),
+        // this is replaced with reading from file for sample video test
+        // mNanoSocket(ipc_setupSubSinkSocket(nanoPipe.c_str())),
+        mNanoSocket(open(nanoPipe.c_str(), O_RDONLY)),
         mFrameWidth(frameWidth), mFrameHeight(frameHeight),
         mBufferSize(4*frameWidth*frameHeight),
-        mFrameBuffer((unsigned char*)malloc(mBufferSize))
+        mFrameBuffer((unsigned char*)malloc(mBufferSize)),
+        mFrameNumber(0)
     {
         if (mNanoSocket < 0)
             op::error("Failed to setup nanomsg socket: " + nanoPipe, __LINE__, __FUNCTION__, __FILE__);
@@ -203,12 +259,18 @@ public:
         try
         {
             unsigned int frameNumber;
-            int ret = ipc_readFrame(mNanoSocket, &frameNumber, mFrameBuffer, mBufferSize);
+            // reading from file instead of nano pipe for sample video test
+            // int ret = ipc_readFrame(mNanoSocket, &frameNumber, mFrameBuffer, mBufferSize);
+            int ret = read(mNanoSocket, mFrameBuffer, mBufferSize);
 
             if (ret < 0)
                 op::error("Error reading from socket: "+std::string(ipc_lastError()), __LINE__, __FUNCTION__, __FILE__);
             else
             {
+                // this is added for sample video test
+                mFrameNumber++;
+                frameNumber = mFrameNumber;
+
                 std::stringstream ss;
                 ss << frameNumber;
                 op::log("Read frame "+ss.str(), op::Priority::High);
@@ -252,6 +314,8 @@ private:
     int mNanoSocket;
     int mFrameWidth, mFrameHeight, mBufferSize;
     unsigned char *mFrameBuffer;
+
+    int mFrameNumber;
 };
 
 // images are dumped in BGR format
@@ -401,7 +465,7 @@ private:
             jsonWriter.plainText("1.0");
             jsonWriter.comma();
 
-            // frame number 
+            // frame number
             jsonWriter.key("frameNo");
             jsonWriter.plainText(frameNo);
             jsonWriter.comma();
@@ -528,7 +592,7 @@ int openPoseTutorialWrapper2()
     // Add custom input
     const auto workerInputOnNewThread = false;
     opWrapper.setWorkerInput(wNanoInput, workerInputOnNewThread);
-    
+
     // Add processing (Json to nano socket writer)
     opWrapper.setWorkerPostProcessing(wJsonNanoWriter, false);
 
@@ -556,15 +620,18 @@ int openPoseTutorialWrapper2()
                                                   (float)FLAGS_hand_alpha_pose, (float)FLAGS_hand_alpha_heatmap,
                                                   (float)FLAGS_hand_render_threshold};
     // Consumer (comment or use default argument to disable any output)
-    const bool displayGui = false;
+    const auto displayMode = op::DisplayMode::NoDisplay;
     const bool guiVerbose = false;
     const bool fullScreen = false;
-    const op::WrapperStructOutput wrapperStructOutput{displayGui, guiVerbose, fullScreen, FLAGS_write_keypoint,
-                                                      op::stringToDataFormat(FLAGS_write_keypoint_format), FLAGS_write_keypoint_json,
-                                                      FLAGS_write_coco_json, FLAGS_write_images, FLAGS_write_images_format, FLAGS_write_video,
-                                                      FLAGS_write_heatmaps, FLAGS_write_heatmaps_format};
+    const op::WrapperStructOutput wrapperStructOutput{
+        displayMode, guiVerbose, fullScreen, FLAGS_write_keypoint,
+        op::stringToDataFormat(FLAGS_write_keypoint_format), FLAGS_write_json, FLAGS_write_coco_json,
+        FLAGS_write_coco_foot_json, FLAGS_write_images, FLAGS_write_images_format, FLAGS_write_video,
+        FLAGS_camera_fps, FLAGS_write_heatmaps, FLAGS_write_heatmaps_format, FLAGS_write_video_adam,
+        FLAGS_write_bvh, FLAGS_udp_host, FLAGS_udp_port};
     // Configure wrapper
-    opWrapper.configure(wrapperStructPose, wrapperStructFace, wrapperStructHand, op::WrapperStructInput{},
+    // @peetonn TODO: try with op::WrapperStructOutput{} to disable default output
+    opWrapper.configure(wrapperStructPose, wrapperStructFace, wrapperStructHand, op::WrapperStructExtra{}, op::WrapperStructInput{},
                         wrapperStructOutput);
     // Set to single-thread running (to debug and/or reduce latency)
     if (FLAGS_disable_multi_thread)

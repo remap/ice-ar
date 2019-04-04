@@ -1,0 +1,17 @@
+# compile as
+g++ -std=c++11 ice-openpose.cpp ipc-shim.c pipe-utils.c jsonOsstream.cpp -o ice-openpose -L/usr/local/lib -L/usr/local/lib/sacc  -lopenpose -lpthread -lopencv_highgui -lopencv_objdetect -lopencv_imgproc -lopencv_core -lgflags -lnanomsg -lsacc
+
+# before running
+export LD_LIBRARY_PATH=/usr/local/lib/sacc
+
+# run as
+export FRAME_WIDTH=384
+export FRAME_HEIGHT=384
+export INPUT=$HOME/test_video/eb_sample_video_384x384_4741.argb
+export OUTPUT=$HOME/out/ice-annotations
+export PREVIEW=$HOME/preview/openpose-out
+export OP_MODELS=$HOME/openposeDSA/models
+
+./ice-openpose -model_folder=$OP_MODELS -keypoint_scale=3 \
+  -frame_width=$FRAME_WIDTH -frame_height=$FRAME_HEIGHT \
+  -frame_source=$INPUT -preview=$PREVIEW -annotations_dest=$OUTPUT
