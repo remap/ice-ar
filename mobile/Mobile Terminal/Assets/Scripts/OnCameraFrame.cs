@@ -14,7 +14,7 @@ using Kalman;
 using System;
 using UnityEngine.Rendering;
 
-public delegate void OnAnnotationFetched(System.DateTime fetchTimestamp, 
+public delegate void OnAnnotationFetched(System.DateTime fetchTimestamp,
                                              string jsonArrayString);
 
 public class OnCameraFrame : MonoBehaviour, ILogComponent
@@ -107,7 +107,8 @@ public class OnCameraFrame : MonoBehaviour, ILogComponent
             lastDbQuery_ = System.DateTime.Now;
             lastKeyFrame_ = System.DateTime.Now;
             dbQueryRate_ = 0.5f; // once every 2 seconds
-            dbController_ = new SemanticDbController("http://131.179.142.7:8888/query");
+            dbController_ = new SemanticDbController("http://192.168.43.154:8888/query");
+            //dbController_ = new SemanticDbController("http://131.179.142.7:8888/query");
 
             Debug.Log("initializing NDN modules");
             // @Therese - these need to be moved somewhere to a higher-level entity as
@@ -116,7 +117,7 @@ public class OnCameraFrame : MonoBehaviour, ILogComponent
             string userId = "peter"; // "mobile-terminal0";
             string serviceType = "object_recognizer";
 
-            string [] edgeServices = { "yolo", "openface" }; // these must be unique! 
+            string[] edgeServices = { "yolo", "openface" }; // these must be unique! 
 
             NdnRtc.Initialize(rootPrefix, userId);
             faceProcessor_ = new FaceProcessor();
@@ -325,7 +326,7 @@ public class OnCameraFrame : MonoBehaviour, ILogComponent
     static void calculationsForBoundingBox()
     {
         //Debug.Log("started bounding boxes processing thread");
-             
+
         //while (true)
         {
 
@@ -397,8 +398,8 @@ public class OnCameraFrame : MonoBehaviour, ILogComponent
                             frameBoxData.ybottom[i] + Mathf.Abs(viewportTopLeft[i].y - viewportBottomLeft[i].y) / 2);
 
                         Debug.LogFormat("bbox {0}: topleft: {1} topright {2} botleft {3} botright {4} center {5}",
-                                        frameBoxData.label[i], 
-                                        viewportTopLeft[i].ToString(), viewportTopRight[i].ToString(), 
+                                        frameBoxData.label[i],
+                                        viewportTopLeft[i].ToString(), viewportTopRight[i].ToString(),
                                         viewportBottomLeft[i].ToString(), viewportBottomRight[i].ToString(),
                                         centerPosXY[i].ToString());
 
@@ -419,8 +420,8 @@ public class OnCameraFrame : MonoBehaviour, ILogComponent
                                 //                        }
                                 //find if points[i] is outside of the bounding box
                                 Vector3 viewportPoint = frameBoxData.cam.WorldToViewportPoint(frameCloudPoints[i]);
-                                if (viewportPoint.x < frameBoxData.xleft[j] || 
-                                    viewportPoint.x > frameBoxData.xright[j] || 
+                                if (viewportPoint.x < frameBoxData.xleft[j] ||
+                                    viewportPoint.x > frameBoxData.xright[j] ||
                                     viewportPoint.y < frameBoxData.ybottom[j] ||
                                     viewportPoint.y > frameBoxData.ytop[j])
                                 {
@@ -543,11 +544,13 @@ public class OnCameraFrame : MonoBehaviour, ILogComponent
             Debug.LogFormat((ILogComponent)this, "fetched {3} annotations JSON for {0}, length {1}: {2}",
                             frameNumber, jsonArrayString.Length, debugString, fetcherName);
 
-            try {
+            try
+            {
                 if (onAnnotationFetched != null)
                     onAnnotationFetched(now, jsonArrayString);
             }
-            catch (System.Exception e){
+            catch (System.Exception e)
+            {
                 Debug.LogExceptionFormat(e, "caught exception while callback, annotation: {0}",
                                          debugString.Substring(0, 100));
             }
@@ -567,13 +570,13 @@ public class OnCameraFrame : MonoBehaviour, ILogComponent
                     AnnotationData data = JsonUtility.FromJson<AnnotationData>(str);
 
 #if DEVELOPMENT_BUILD
-                            for (int i = 0; i < data.annotationData.Length; i++)
-                                Debug.LogFormat((ILogComponent)this,
-                                                "{7} annotation {0}: label {1} prob {2} xleft {3} xright {4} ytop {5} ybottom {6}",
-                                                i, data.annotationData[i].label, data.annotationData[i].prob,
-                                                data.annotationData[i].xleft, data.annotationData[i].xright,
-                                                data.annotationData[i].ytop, data.annotationData[i].ybottom,
-                                                fetcherName);
+                    for (int i = 0; i < data.annotationData.Length; i++)
+                        Debug.LogFormat((ILogComponent)this,
+                                        "{7} annotation {0}: label {1} prob {2} xleft {3} xright {4} ytop {5} ybottom {6}",
+                                        i, data.annotationData[i].label, data.annotationData[i].prob,
+                                        data.annotationData[i].xleft, data.annotationData[i].xright,
+                                        data.annotationData[i].ytop, data.annotationData[i].ybottom,
+                                        fetcherName);
 #endif
 
                     Debug.LogFormat((ILogComponent)this,
@@ -596,7 +599,7 @@ public class OnCameraFrame : MonoBehaviour, ILogComponent
                     {
                         int boxCount = filteredAnnotations.Count;
                         // TBD: this needs to be pooled
-                        BoxData boxData = new BoxData(); 
+                        BoxData boxData = new BoxData();
 
                         // TBD: this needs to be hidden in a method/constructor
                         boxData.frameNumber = frameNumber;
@@ -653,7 +656,7 @@ public class OnCameraFrame : MonoBehaviour, ILogComponent
             }
             catch (System.Exception e)
             {
-                Debug.LogExceptionFormat(e, "while parsing {0} annotation {1}...", 
+                Debug.LogExceptionFormat(e, "while parsing {0} annotation {1}...",
                                          fetcherName, debugString.Substring(0, 100));
             }
         });
@@ -665,6 +668,7 @@ public class OnCameraFrame : MonoBehaviour, ILogComponent
     // creating a combined json string
     private void performSemanticDbQuery(System.DateTime fetchTimestamp, string jsonArrayString)
     {
+#if false
         // check if it's time to query Semantic DB...
         if ((float)(fetchTimestamp - lastDbQuery_).TotalSeconds >= (1f / dbQueryRate_))
         {
@@ -695,6 +699,7 @@ public class OnCameraFrame : MonoBehaviour, ILogComponent
                 }
             });
         } // if time for DB query
+#endif
     }
 }
 

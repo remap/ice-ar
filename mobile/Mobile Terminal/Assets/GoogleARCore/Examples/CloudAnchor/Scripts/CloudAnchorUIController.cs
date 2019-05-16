@@ -82,7 +82,7 @@ namespace GoogleARCore.Examples.CloudAnchor
         /// </summary>
         public void Start()
         {
-            IPAddressText.text = "My IP Address: " + Network.player.ipAddress;
+            //IPAddressText.text = "My IP Address: " + Network.player.ipAddress;
         }
 
         /// <summary>

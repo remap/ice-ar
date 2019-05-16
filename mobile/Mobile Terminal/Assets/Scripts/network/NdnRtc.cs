@@ -16,7 +16,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  * A copy of the GNU Lesser General Public License is in the file COPYING.
  */
-//#define ENABLE_LOG
+#define ENABLE_LOG
 
 using System.Collections;
 using System.Collections.Generic;
@@ -118,6 +118,16 @@ public class NdnRtcWrapper
                                                         string frameName,
                                                         FrameFetcherBufferAlloc bufferAllocFunc,
                                                         FrameFetcherFrameFetched frameFetched);
+
+    [DllImport("ndnrtc")]
+    public static extern IntPtr ndnrtc_createRemoteStream(string basePrefix, string streamName, 
+                                                          NdnRtcLibLogHandler logHandler);
+
+    [DllImport("ndnrtc")]
+    public static extern void ndnrtc_startRemoteStreamFetching(IntPtr stream, 
+                                                               FrameFetcherBufferAlloc bufferAllocFunc,
+                                                               FrameFetcherFrameFetched frameFetched);
+
 }
 
 public class LocalVideoStream : ILogComponent
@@ -408,6 +418,7 @@ public class NdnRtc : MonoBehaviour
 		bool res;
 
 		try {
+            Debug.Log("NDN-RTC initialize...");
             string version = Marshal.PtrToStringAnsi ( NdnRtcWrapper.ndnrtc_getVersion() );
             Debug.Log ( "NDN-RTC version " + version );
 
