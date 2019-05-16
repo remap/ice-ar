@@ -243,6 +243,71 @@ public class LocalVideoStream : ILogComponent
 public delegate void OnFrameFetched(FrameInfo finfo, int width, int height, byte [] argbBuffer);
 public delegate void OnFrameFetchFailure(string frameName);
 
+public class RemoteVideoStream : ILogComponent
+{
+    private IntPtr frameBufferPtr_;
+    private byte[] frameBuffer_;
+    private IntPtr ndnrtcHandle_;
+    private string streamName_, basePrefix_, fullPrefix_;
+    static private NdnRtcLibLogHandler sinkCallbackDelegate;
+
+    public RemoteVideoStream(string basePrefix, string streamName)
+    {
+
+        frameBufferPtr_ = IntPtr.Zero;
+
+        if (sinkCallbackDelegate == null)
+            sinkCallbackDelegate = new NdnRtcLibLogHandler(loggerSinkHandler);
+
+        Debug.Log(this, "Will create ndnrtc remote video stream....");
+        ndnrtcHandle_ = NdnRtcWrapper.ndnrtc_createRemoteStream(basePrefix, streamName, sinkCallbackDelegate);
+        Debug.Log(this, "Created ndnrtc remote video stream");
+
+        basePrefix_ = Marshal.PtrToStringAnsi(NdnRtcWrapper.ndnrtc_LocalStream_getBasePrefix(ndnrtcHandle_));
+        fullPrefix_ = Marshal.PtrToStringAnsi(NdnRtcWrapper.ndnrtc_LocalStream_getPrefix(ndnrtcHandle_));
+        streamName_ = Marshal.PtrToStringAnsi(NdnRtcWrapper.ndnrtc_LocalStream_getStreamName(ndnrtcHandle_));
+
+        Debug.Log(this, "Initialized ndnrtc stream " + streamName_ + " (full prefix " + fullPrefix_ + ")");
+    }
+
+    public void startFetching()
+    {
+
+    }
+
+    ~RemoteVideoStream()
+    {
+        NdnRtcWrapper.ndnrtc_destroyLocalStream(ndnrtcHandle_);
+        if (frameBufferPtr_ != IntPtr.Zero)
+            Marshal.FreeHGlobal(frameBufferPtr_);
+
+    }
+
+    public IntPtr getHandle()
+    {
+        return ndnrtcHandle_;
+    }
+
+    public string getLogComponentName()
+    {
+        return "ndnrtc-video-stream";
+    }
+
+    public bool isLoggingEnabled()
+    {
+#if ENABLE_LOG
+        return true;
+#else
+        return false;
+#endif
+    }
+
+    static private void loggerSinkHandler(string logMessage)
+    {
+        Debug.Log("[ndnrtc::videostream] " + logMessage);
+    }
+}
+
 public class FrameFetcher : ILogComponent
 {
     private IntPtr frameBuffer_;
