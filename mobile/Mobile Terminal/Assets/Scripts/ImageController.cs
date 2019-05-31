@@ -49,8 +49,6 @@ public class ImageController : MonoBehaviour
     private float fpsMeasureFrequency_ = 0.5f;
     private string currentFpsString_;
 
-    private RemoteVideoStream remoteVideoStream_;
-
     public void enqueueFrame(FetchedUIFrame frameData)
     {
         Debug.Log("[img-controller] enqueued frame");
@@ -157,12 +155,6 @@ public class ImageController : MonoBehaviour
         memorySimLevel[3] = findSimilarityUIComponent(r3.gameObject.GetComponentsInChildren<Image>());
 
         StartCoroutine(measureFps());
-        setupRemoteStream();
-    }
-
-    void setupRemoteStream()
-    {
-        remoteVideoStream_ = new RemoteVideoStream("/icear/user/peter/processed", "back_camera");
     }
 
     // Update is called once per frame

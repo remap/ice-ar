@@ -245,11 +245,16 @@ public delegate void OnFrameFetchFailure(string frameName);
 
 public class RemoteVideoStream : ILogComponent
 {
+    private int width_, height_; 
     private IntPtr frameBufferPtr_;
     private byte[] frameBuffer_;
     private IntPtr ndnrtcHandle_;
     private string streamName_, basePrefix_, fullPrefix_;
     static private NdnRtcLibLogHandler sinkCallbackDelegate;
+    private FrameFetcherBufferAlloc bufferAllocDelegate_;
+    private FrameFetcherFrameFetched frameFetchedDelegate_;
+    private OnFrameFetched onFrameFetched_;
+
 
     public RemoteVideoStream(string basePrefix, string streamName)
     {
@@ -270,9 +275,16 @@ public class RemoteVideoStream : ILogComponent
         Debug.Log(this, "Initialized ndnrtc stream " + streamName_ + " (full prefix " + fullPrefix_ + ")");
     }
 
-    public void startFetching()
+    public void startFetching(OnFrameFetched onFrameFetched)
     {
+        onFrameFetched_ = onFrameFetched;
 
+        bufferAllocDelegate_ = new FrameFetcherBufferAlloc(bufferAllocate);
+        frameFetchedDelegate_ = new FrameFetcherFrameFetched(frameFetched);
+
+        NdnRtcWrapper.ndnrtc_startRemoteStreamFetching(ndnrtcHandle_,
+                                                bufferAllocDelegate_,
+                                                frameFetchedDelegate_);
     }
 
     ~RemoteVideoStream()
@@ -300,6 +312,39 @@ public class RemoteVideoStream : ILogComponent
 #else
         return false;
 #endif
+    }
+
+    private IntPtr bufferAllocate(string frameName, int width, int height)
+    {
+        int bytesSize = width * height * 4;
+
+        Debug.Log(this, "Buffer allocate " + bytesSize + " bytes");
+
+        if (frameBufferPtr_ == IntPtr.Zero || width_ != width || height_ != height)
+        {
+            width_ = width;
+            height_ = height;
+
+            int len = width_ * height_ * 4;
+            //Marshal.FreeHGlobal(frameBufferPtr_);
+            frameBufferPtr_ = Marshal.AllocHGlobal(width * height * 4); // ARGB frame
+            frameBuffer_ = new byte[len];
+        }
+
+        return frameBufferPtr_;
+    }
+
+    private void frameFetched(FrameInfo frameInfo, int width, int height, IntPtr bufferArgb)
+    {
+        Debug.Log(this, "Frame fetched: " + frameInfo.ndnName_);
+
+        // copy to managed code and return
+        int len = width * height * 4;
+        Marshal.Copy(bufferArgb, frameBuffer_, 0, len);
+
+        FrameInfo finfoCopy = frameInfo;
+
+        onFrameFetched_(finfoCopy, width, height, frameBuffer_);
     }
 
     static private void loggerSinkHandler(string logMessage)
@@ -505,7 +550,8 @@ public class NdnRtc : MonoBehaviour
 				p.ndnSegmentSize = 8000;
 				p.typeIsVideo = 1;
 				p.streamName = "back_camera";
-				p.threadName = "vp9";
+                //p.threadName = "vp9";
+                p.threadName = "t";
                 p.storagePath = Application.persistentDataPath + "/ndnrtc_storage";
 
 				videoStream = new LocalVideoStream (p);

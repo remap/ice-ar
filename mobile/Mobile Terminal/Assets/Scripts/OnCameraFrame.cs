@@ -35,6 +35,8 @@ public class OnCameraFrame : MonoBehaviour, ILogComponent
     private DateTime lastDbQuery_;
     private DateTime lastKeyFrame_; //Used to keep the updating of UI elements roughly in sync with DB query rate
 
+    private RemoteVideoStream remoteVideoStream_;
+
     public bool renderBoundingBoxes;
 
 
@@ -114,7 +116,7 @@ public class OnCameraFrame : MonoBehaviour, ILogComponent
             // @Therese - these need to be moved somewhere to a higher-level entity as
             // configuration parameters (may be changed frequently during testing)
             string rootPrefix = "/icear/user";
-            string userId = "peter"; // "mobile-terminal0";
+            string userId = "mt1"; // "mobile-terminal0";
             string serviceType = "object_recognizer";
 
             string[] edgeServices = { "yolo", "openface" }; // these must be unique! 
@@ -133,6 +135,14 @@ public class OnCameraFrame : MonoBehaviour, ILogComponent
                 Debug.LogFormat("initializing annotations fetcher for {0}...", service);
                 annotationFetchers_.Add(new AnnotationsFetcher(faceProcessor_, servicePrefix, service));
             }
+
+            // init remote stream
+            //remoteVideoStream_ = new RemoteVideoStream("/touchdesigner/processed", "s");
+            //remoteVideoStream_.startFetching(delegate (FrameInfo fi, int w, int h, byte[] argbBuffer)
+            //{
+            //    Debug.LogFormat("[remote stream]: succesfully fetched frame {0}", fi.ndnName_);
+            //    imageController_.enqueueFrame(new FetchedUIFrame(argbBuffer, fi.timestamp_, 0));
+            //});
 
             // setup CNL logging 
             //ILOG.J2CsMapping.Util.Logging.Logger.getLogger("").setLevel(ILOG.J2CsMapping.Util.Logging.Level.FINE);
