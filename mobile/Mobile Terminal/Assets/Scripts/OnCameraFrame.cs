@@ -159,6 +159,8 @@ public class OnCameraFrame : MonoBehaviour, ILogComponent
 
     void setupRemoteStream(string prefix)
     {
+        stopFetch();
+
         // init remote stream
         remoteVideoStream_ = new RemoteVideoStream(prefix, "s");
         remoteVideoStream_.startFetching(delegate (FrameInfo fi, int w, int h, byte[] argbBuffer)
@@ -205,8 +207,13 @@ public class OnCameraFrame : MonoBehaviour, ILogComponent
     }
     public void stopFetch()
     {
-        Debug.Message("Stop active fetching");
-        remoteVideoStream_.stopFetching();
+        if (remoteVideoStream_ != null)
+        {
+            Debug.Message("Stop active fetching");
+            remoteVideoStream_.stopFetching();
+            remoteVideoStream_.destroy();
+            remoteVideoStream_ = null;
+        }
     }
     public void stopPublish()
     {

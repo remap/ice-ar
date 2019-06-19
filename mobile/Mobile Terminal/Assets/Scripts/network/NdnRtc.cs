@@ -86,6 +86,9 @@ public class NdnRtcWrapper
     public static extern IntPtr ndnrtc_destroyLocalStream(IntPtr stream);
 
     [DllImport("ndnrtc")]
+    public static extern IntPtr ndnrtc_destroyRemoteStream(IntPtr stream);
+
+    [DllImport("ndnrtc")]
     // we use IntPtr return type instead of string, because otherwise runtime will
     // try to free the pointer, which we don't want to happen (it is the property of 
     // unmanaged code in this case)
@@ -269,9 +272,7 @@ public class RemoteVideoStream : ILogComponent
         if (sinkCallbackDelegate == null)
             sinkCallbackDelegate = new NdnRtcLibLogHandler(loggerSinkHandler);
 
-        Debug.Log(this, "Will create ndnrtc remote video stream....");
         ndnrtcHandle_ = NdnRtcWrapper.ndnrtc_createRemoteStream(basePrefix, streamName, sinkCallbackDelegate);
-        Debug.Log(this, "Created ndnrtc remote video stream");
 
         basePrefix_ = Marshal.PtrToStringAnsi(NdnRtcWrapper.ndnrtc_LocalStream_getBasePrefix(ndnrtcHandle_));
         fullPrefix_ = Marshal.PtrToStringAnsi(NdnRtcWrapper.ndnrtc_LocalStream_getPrefix(ndnrtcHandle_));
@@ -280,38 +281,60 @@ public class RemoteVideoStream : ILogComponent
         Debug.Log(this, "Initialized ndnrtc stream " + streamName_ + " (full prefix " + fullPrefix_ + ")");
     }
 
+    ~RemoteVideoStream()
+    {
+        destroy();
+    }
+
+    public void destroy()
+    {
+        if (ndnrtcHandle_ != IntPtr.Zero)
+        {
+            Debug.LogFormat("Destroying remote stream {0}...", streamName_);
+
+            NdnRtcWrapper.ndnrtc_destroyRemoteStream(ndnrtcHandle_);
+            if (frameBufferPtr_ != IntPtr.Zero)
+                Marshal.FreeHGlobal(frameBufferPtr_);
+            ndnrtcHandle_ = IntPtr.Zero;
+
+            Debug.LogFormat("Remote stream {0} destroyed", streamName_);
+        }
+    }
+
     public void startFetching(OnFrameFetched onFrameFetched)
     {
-        onFrameFetched_ = onFrameFetched;
+        if (ndnrtcHandle_ != IntPtr.Zero)
+        {
+            onFrameFetched_ = onFrameFetched;
 
-        bufferAllocDelegate_ = new FrameFetcherBufferAlloc(bufferAllocate);
-        frameFetchedDelegate_ = new FrameFetcherFrameFetched(frameFetched);
-        string threadName = "t";
+            bufferAllocDelegate_ = new FrameFetcherBufferAlloc(bufferAllocate);
+            frameFetchedDelegate_ = new FrameFetcherFrameFetched(frameFetched);
+            string threadName = "t";
 
-        NdnRtcWrapper.ndnrtc_startRemoteStreamFetching(ndnrtcHandle_,
-                                                       threadName,
-                                                       bufferAllocDelegate_,
-                                                       frameFetchedDelegate_);
+            NdnRtcWrapper.ndnrtc_startRemoteStreamFetching(ndnrtcHandle_,
+                                                           threadName,
+                                                           bufferAllocDelegate_,
+                                                           frameFetchedDelegate_);
+        }
+        else
+            Debug.LogError("Illegal call for startFetching(): stream handle is null");
     }
 
     public void stopFetching()
     {
-        // TODO
-        //NdnRtcWrapper.ndnrtc_
+        if (ndnrtcHandle_ != IntPtr.Zero)
+        {
+            Debug.Log("Stop stream fetching");
+            NdnRtcWrapper.ndnrtc_stopRemoteStreamFetching(ndnrtcHandle_);
+        }
+        else
+            Debug.LogError("Illegal call for stopFetching(): stream handle is null");
     }
 
     public void setBuffersize(Int32 bufferSize)
     {
         Debug.LogFormat(this, "Set target buffer size to {0}", bufferSize);
         NdnRtcWrapper.ndnrtc_setRemoteStreamTargetBuffer(ndnrtcHandle_, bufferSize);
-    }
-
-    ~RemoteVideoStream()
-    {
-        NdnRtcWrapper.ndnrtc_destroyLocalStream(ndnrtcHandle_);
-        if (frameBufferPtr_ != IntPtr.Zero)
-            Marshal.FreeHGlobal(frameBufferPtr_);
-
     }
 
     public IntPtr getHandle()
