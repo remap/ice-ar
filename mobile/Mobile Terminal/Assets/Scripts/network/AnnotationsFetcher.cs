@@ -54,9 +54,9 @@ public class AnnotationsFetcher : ILogComponent
 
 	public void fetchAnnotation(int frameNo, FrameAnnotationsHandler onAnnotationsFetched)
 	{
-		Namespace frameAnnotations = serviceNamespace.
-			getChild(Name.Component.fromSequenceNumber(frameNo)).
-			getChild(serviceInstance_);
+        Namespace frameAnnotations = serviceNamespace
+            .getChild(serviceInstance_)
+            .getChild(Name.Component.fromSequenceNumber(frameNo));
 
         Debug.LogFormat (this, "spawned fetching for {0}", frameAnnotations.getName ().toUri ());
 

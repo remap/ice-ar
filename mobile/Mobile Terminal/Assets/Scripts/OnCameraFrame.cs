@@ -36,6 +36,7 @@ public class OnCameraFrame : MonoBehaviour, ILogComponent
     private DateTime lastKeyFrame_; //Used to keep the updating of UI elements roughly in sync with DB query rate
 
     private RemoteVideoStream remoteVideoStream_;
+    private LocalVideoStream localVideoStream_;
 
     public bool renderBoundingBoxes;
 
@@ -51,6 +52,10 @@ public class OnCameraFrame : MonoBehaviour, ILogComponent
     public Dictionary<string, IKalmanWrapper> kalman_;
     public TextureReader TextureReaderComponent;
     public ARCoreBackgroundRenderer BackgroundRenderer;
+
+    private string rootPrefix_, userId1_, userId2_;
+
+    //private bool publishing_;
 
     void Awake()
     {
@@ -115,19 +120,20 @@ public class OnCameraFrame : MonoBehaviour, ILogComponent
             Debug.Log("initializing NDN modules");
             // @Therese - these need to be moved somewhere to a higher-level entity as
             // configuration parameters (may be changed frequently during testing)
-            string rootPrefix = "/icear/user";
-            string userId = "mt1"; // "mobile-terminal0";
-            string serviceType = "object_recognizer";
+            rootPrefix_ = "/icear/user";
+            userId1_ = "mt1";
+            userId2_ = "mt2";
+            string serviceType = "ml_processing";
 
-            string[] edgeServices = { "yolo", "openface" }; // these must be unique! 
+            string[] edgeServices = { "yolo_default2" }; //, "openface" }; // these must be unique! 
 
-            NdnRtc.Initialize(rootPrefix, userId);
+            NdnRtc.Initialize(rootPrefix_, userId1_);
             faceProcessor_ = new FaceProcessor();
             faceProcessor_.start();
 
             assetFetcher_ = new AssetBundleFetcher(faceProcessor_);
 
-            string servicePrefix = rootPrefix + "/" + userId + "/" + serviceType;
+            string servicePrefix = rootPrefix_ + "/" + userId1_ + "/" + serviceType;
             annotationFetchers_ = new List<AnnotationsFetcher>();
 
             foreach (var service in edgeServices)
@@ -135,14 +141,6 @@ public class OnCameraFrame : MonoBehaviour, ILogComponent
                 Debug.LogFormat("initializing annotations fetcher for {0}...", service);
                 annotationFetchers_.Add(new AnnotationsFetcher(faceProcessor_, servicePrefix, service));
             }
-
-            // init remote stream
-            //remoteVideoStream_ = new RemoteVideoStream("/touchdesigner/processed", "s");
-            //remoteVideoStream_.startFetching(delegate (FrameInfo fi, int w, int h, byte[] argbBuffer)
-            //{
-            //    Debug.LogFormat("[remote stream]: succesfully fetched frame {0}", fi.ndnName_);
-            //    imageController_.enqueueFrame(new FetchedUIFrame(argbBuffer, fi.timestamp_, 0));
-            //});
 
             // setup CNL logging 
             //ILOG.J2CsMapping.Util.Logging.Logger.getLogger("").setLevel(ILOG.J2CsMapping.Util.Logging.Level.FINE);
@@ -159,12 +157,80 @@ public class OnCameraFrame : MonoBehaviour, ILogComponent
 
     }
 
+    void setupRemoteStream(string prefix)
+    {
+        // init remote stream
+        remoteVideoStream_ = new RemoteVideoStream(prefix, "s");
+        remoteVideoStream_.startFetching(delegate (FrameInfo fi, int w, int h, byte[] argbBuffer)
+        {
+            Debug.LogFormat("Enqueue fetched frame {0}", fi.ndnName_);
+            imageController_.enqueueFrame(new FetchedUIFrame(argbBuffer, fi.timestamp_, 0));
+        });
+    }
+
+    void setupLocalStream(string basePrefix)
+    {
+        LocalStreamParams p = new LocalStreamParams();
+
+        p.basePrefix = basePrefix;
+        p.signingOn = 1;
+        p.dropFrames = 1;
+        p.fecOn = 1;
+        p.frameHeight = 180;
+        p.frameWidth = 320;
+        p.gop = 30;
+        p.startBitrate = 300;
+        p.maxBitrate = 1000;
+        p.ndnSegmentSize = 1100;
+        p.typeIsVideo = 1;
+        p.streamName = "back_camera";
+        //p.threadName = "vp9";
+        p.threadName = "t";
+        p.storagePath = Application.persistentDataPath + "/ndnrtc_storage";
+
+        localVideoStream_ = new LocalVideoStream(p);
+    }
+
+    public void onFetch1() 
+    {
+        string processed1 = "/touchdesigner/processed1";
+        Debug.MessageFormat("Start fetching from {0}", processed1);
+        setupRemoteStream(processed1);
+    }
+    public void onFetch2()
+    {
+        string processed2 = "/touchdesigner/processed2";
+        Debug.MessageFormat("Start fetching from {0}", processed2);
+        setupRemoteStream(processed2);
+    }
+    public void stopFetch()
+    {
+        Debug.Message("Stop active fetching");
+        remoteVideoStream_.stopFetching();
+    }
+    public void stopPublish()
+    {
+        Debug.Message("Stop publishing");
+        localVideoStream_ = null;
+    }
+    public void startPublish1()
+    {
+        Debug.Message("Start publish 1");
+        setupLocalStream(rootPrefix_ + "/" + userId1_);
+    }
+
+    public void startPublish2()
+    {
+        Debug.Message("Start publish 2");
+        setupLocalStream(rootPrefix_ + "/" + userId2_);
+    }
+
 
     void Update()
     {
         calculationsForBoundingBox();
 
-        Debug.LogFormat("running update for {0} bounding boxes", boundingBoxBufferToUpdate_.Count);
+        //Debug.LogFormat("running update for {0} bounding boxes", boundingBoxBufferToUpdate_.Count);
         try
         {
             for (int i = 0; i < boundingBoxBufferToUpdate_.Count; i++)
@@ -233,7 +299,7 @@ public class OnCameraFrame : MonoBehaviour, ILogComponent
 
         try
         {
-            Debug.LogFormat("will create {0} new boxes", boxData_.Count);
+            //Debug.LogFormat("will create {0} new boxes", boxData_.Count);
 
             if (boxData_.Count > 0)
                 CreateBoxes(boxData_);
@@ -301,6 +367,13 @@ public class OnCameraFrame : MonoBehaviour, ILogComponent
 
     public void OnImageAvailable(TextureReaderApi.ImageFormatType format, int width, int height, IntPtr pixelBuffer, int bufferSize)
     {
+        if (localVideoStream_ == null)
+        {
+            // reset stream
+            //NdnRtc.SetupLocalStream(rootPrefix_ + "/" + userId_);
+            return;
+        }
+
         try
         {
             System.DateTime current = System.DateTime.Now;
@@ -310,7 +383,7 @@ public class OnCameraFrame : MonoBehaviour, ILogComponent
 
             Debug.LogFormat("pushing frame {0}x{1} to NDN-RTC...", width, height);
 
-            FrameInfo finfo = NdnRtc.videoStream.processIncomingFrame(format, width, height, pixelBuffer, bufferSize);
+            FrameInfo finfo = localVideoStream_.processIncomingFrame(format, width, height, pixelBuffer, bufferSize);
             int publishedFrameNo = finfo.playbackNo_;
 
             if (publishedFrameNo >= 0) // frame was not dropped by the encoder and was published
@@ -348,7 +421,7 @@ public class OnCameraFrame : MonoBehaviour, ILogComponent
                 //            bool success = boxBufferToCalc.TryDequeue (out temp);
                 //            Debug.Log ("box dequeue: " + success);
                 //            if (success) {
-                Debug.LogFormat("checking bounding boxes for calculations... {0}", boundingBoxBufferToCalc_.Count);
+                //Debug.LogFormat("checking bounding boxes for calculations... {0}", boundingBoxBufferToCalc_.Count);
 
                 while (boundingBoxBufferToCalc_.Count > 0)
                 {
@@ -574,18 +647,18 @@ public class OnCameraFrame : MonoBehaviour, ILogComponent
                 {
                     // some pre-processing for the received string
                     // TBD: this needs to be replaced with JSON deserialization, need to update edge too
-                    string[] testDebug = jsonArrayString.Split(']');
-                    string formatDebug = testDebug[0] + "]";
-                    string str = "{ \"annotationData\": " + formatDebug + "}";
-                    AnnotationData data = JsonUtility.FromJson<AnnotationData>(str);
+                    //string[] testDebug = jsonArrayString.Split(']');
+                    //string formatDebug = testDebug[0] + "]";
+                    //string str = "{ \"annotationData\": " + formatDebug + "}";
+                    AnnotationData data = JsonUtility.FromJson<AnnotationData>(jsonArrayString);
 
 #if DEVELOPMENT_BUILD
-                    for (int i = 0; i < data.annotationData.Length; i++)
+                    for (int i = 0; i < data.annotations.Length; i++)
                         Debug.LogFormat((ILogComponent)this,
                                         "{7} annotation {0}: label {1} prob {2} xleft {3} xright {4} ytop {5} ybottom {6}",
-                                        i, data.annotationData[i].label, data.annotationData[i].prob,
-                                        data.annotationData[i].xleft, data.annotationData[i].xright,
-                                        data.annotationData[i].ytop, data.annotationData[i].ybottom,
+                                        i, data.annotations[i].label, data.annotations[i].prob,
+                                        data.annotations[i].xleft, data.annotations[i].xright,
+                                        data.annotations[i].ytop, data.annotations[i].ybottom,
                                         fetcherName);
 #endif
 
@@ -598,12 +671,12 @@ public class OnCameraFrame : MonoBehaviour, ILogComponent
 
                     List<AnnotationData.ArrayEntry> filteredAnnotations = new List<AnnotationData.ArrayEntry>();
 
-                    for (int i = 0; i < data.annotationData.Length; ++i)
-                        if (data.annotationData[i].prob >= threshold)
-                            filteredAnnotations.Add(data.annotationData[i]);
+                    for (int i = 0; i < data.annotations.Length; ++i)
+                        if (data.annotations[i].prob >= threshold)
+                            filteredAnnotations.Add(data.annotations[i]);
 
                     Debug.LogFormat("{0} annotations above threshold (filtered out {0} annotations)",
-                                    filteredAnnotations.Count, data.annotationData.Length - filteredAnnotations.Count);
+                                    filteredAnnotations.Count, data.annotations.Length - filteredAnnotations.Count);
 
                     if (filteredAnnotations.Count > 0)
                     {
@@ -630,10 +703,10 @@ public class OnCameraFrame : MonoBehaviour, ILogComponent
                         for (int i = 0; i < boxCount; i++)
                         {
                             // safety checks
-                            if (data.annotationData[i].ytop > 1)
-                                data.annotationData[i].ytop = 1;
-                            if (data.annotationData[i].ybottom < 0)
-                                data.annotationData[i].ybottom = 0;
+                            if (data.annotations[i].ytop > 1)
+                                data.annotations[i].ytop = 1;
+                            if (data.annotations[i].ybottom < 0)
+                                data.annotations[i].ybottom = 0;
                             boxData.label[i] = filteredAnnotations[i].label;
 
                             // since we flipped the image, flip bbox coordinates again
@@ -727,7 +800,7 @@ public struct AnnotationData
         public float prob;
     }
 
-    public ArrayEntry[] annotationData;
+    public ArrayEntry[] annotations;
 }
 
 public struct CreateBoxData

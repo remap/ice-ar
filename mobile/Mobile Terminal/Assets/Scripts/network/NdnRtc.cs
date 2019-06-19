@@ -124,9 +124,14 @@ public class NdnRtcWrapper
                                                           NdnRtcLibLogHandler logHandler);
 
     [DllImport("ndnrtc")]
-    public static extern void ndnrtc_startRemoteStreamFetching(IntPtr stream, 
+    public static extern void ndnrtc_startRemoteStreamFetching(IntPtr stream, string threadName,
                                                                FrameFetcherBufferAlloc bufferAllocFunc,
                                                                FrameFetcherFrameFetched frameFetched);
+    [DllImport("ndnrtc")]
+    public static extern void ndnrtc_stopRemoteStreamFetching(IntPtr stream);
+
+    [DllImport("ndnrtc")]
+    public static extern void ndnrtc_setRemoteStreamTargetBuffer(IntPtr stream, Int32 bufferSize);
 
 }
 
@@ -281,10 +286,24 @@ public class RemoteVideoStream : ILogComponent
 
         bufferAllocDelegate_ = new FrameFetcherBufferAlloc(bufferAllocate);
         frameFetchedDelegate_ = new FrameFetcherFrameFetched(frameFetched);
+        string threadName = "t";
 
         NdnRtcWrapper.ndnrtc_startRemoteStreamFetching(ndnrtcHandle_,
-                                                bufferAllocDelegate_,
-                                                frameFetchedDelegate_);
+                                                       threadName,
+                                                       bufferAllocDelegate_,
+                                                       frameFetchedDelegate_);
+    }
+
+    public void stopFetching()
+    {
+        // TODO
+        //NdnRtcWrapper.ndnrtc_
+    }
+
+    public void setBuffersize(Int32 bufferSize)
+    {
+        Debug.LogFormat(this, "Set target buffer size to {0}", bufferSize);
+        NdnRtcWrapper.ndnrtc_setRemoteStreamTargetBuffer(ndnrtcHandle_, bufferSize);
     }
 
     ~RemoteVideoStream()
@@ -318,25 +337,26 @@ public class RemoteVideoStream : ILogComponent
     {
         int bytesSize = width * height * 4;
 
-        Debug.Log(this, "Buffer allocate " + bytesSize + " bytes");
-
         if (frameBufferPtr_ == IntPtr.Zero || width_ != width || height_ != height)
         {
+            Debug.LogFormat(this, "Allocate {0} bytes, frame size {1}x{2}, name {3}", bytesSize, width, height, frameName);
+
             width_ = width;
             height_ = height;
 
             int len = width_ * height_ * 4;
             //Marshal.FreeHGlobal(frameBufferPtr_);
-            frameBufferPtr_ = Marshal.AllocHGlobal(width * height * 4); // ARGB frame
+            frameBufferPtr_ = Marshal.AllocHGlobal(bytesSize); // ARGB frame
             frameBuffer_ = new byte[len];
         }
 
         return frameBufferPtr_;
     }
 
-    private void frameFetched(FrameInfo frameInfo, int width, int height, IntPtr bufferArgb)
+    private void frameFetched(FrameInfo frameInfo, 
+                              int width, int height, IntPtr bufferArgb)
     {
-        Debug.Log(this, "Frame fetched: " + frameInfo.ndnName_);
+        Debug.LogFormat(this, "Frame fetched {0}x{1}", width, height);
 
         // copy to managed code and return
         int len = width * height * 4;
@@ -400,7 +420,8 @@ public class FrameFetcher : ILogComponent
         return frameBuffer_;
     }
 
-    private void frameFetched(FrameInfo frameInfo, int width, int height, IntPtr bufferArgb)
+    private void frameFetched(FrameInfo frameInfo, 
+                              int width, int height, IntPtr bufferArgb)
     {
         if (width > 0 && height > 0)
         {
@@ -505,7 +526,7 @@ public class NdnRtc : MonoBehaviour
     static private bool runFrameFetching_;
 
 	static private NdnRtcLibLogHandler libraryCallbackDelegate;
-	static public LocalVideoStream videoStream;
+	//static public LocalVideoStream videoStream;
 
     public static void fetch(string frameName, LocalVideoStream stream, 
                              OnFrameFetched onFrameFetched, 
@@ -536,50 +557,31 @@ public class NdnRtc : MonoBehaviour
 				instanceId, libraryCallbackDelegate);
 
 			if (res) {
-				LocalStreamParams p = new LocalStreamParams ();
+                //SetupLocalStream(signingIdentity + "/" + instanceId);
+                //runFrameFetching_ = true;
+                //queueSem_ = new Semaphore(0, 30); // up to 30 requests. why not?...
+                //activeTasks_ = new HashSet<FrameFetchingTask>();
+                //frameFetchingTaskQueue_ = new System.Collections.Generic.Queue<FrameFetchingTask>();
+                //frameFetchingThread_ = new Thread(new ThreadStart(delegate() {
+                //    while (runFrameFetching_)
+                //    {
+                //        Debug.Log("[ff-task-worker]: waiting for new tasks...");
+                //        // lock on semaphore / event
+                //        queueSem_.WaitOne();
 
-				p.basePrefix = signingIdentity + "/" + instanceId;
-				p.signingOn = 1;
-				p.dropFrames = 1;
-				p.fecOn = 1;
-				p.frameHeight = 180;
-				p.frameWidth = 320;
-				p.gop = 30;
-				p.startBitrate = 300;
-				p.maxBitrate = 7000;
-				p.ndnSegmentSize = 8000;
-				p.typeIsVideo = 1;
-				p.streamName = "back_camera";
-                //p.threadName = "vp9";
-                p.threadName = "t";
-                p.storagePath = Application.persistentDataPath + "/ndnrtc_storage";
+                //        // deque
+                //        FrameFetchingTask ffTask = frameFetchingTaskQueue_.Dequeue();
 
-				videoStream = new LocalVideoStream (p);
-
-                runFrameFetching_ = true;
-                queueSem_ = new Semaphore(0, 30); // up to 30 requests. why not?...
-                activeTasks_ = new HashSet<FrameFetchingTask>();
-                frameFetchingTaskQueue_ = new System.Collections.Generic.Queue<FrameFetchingTask>();
-                frameFetchingThread_ = new Thread(new ThreadStart(delegate() {
-                    while (runFrameFetching_)
-                    {
-                        Debug.Log("[ff-task-worker]: waiting for new tasks...");
-                        // lock on semaphore / event
-                        queueSem_.WaitOne();
-
-                        // deque
-                        FrameFetchingTask ffTask = frameFetchingTaskQueue_.Dequeue();
-
-                        Debug.Log("[ff-task-worker]: running task for " + ffTask.frameName_);
-                        activeTasks_.Add(ffTask);
-                        ffTask.run(delegate(FrameFetchingTask fft){
-                            Debug.Log("[ff-task-worker]: task completed: "+fft.frameName_);
-                            // cleanup when we are done
-                            activeTasks_.Remove(fft);
-                        });
-                    } // while
-                }));
-                frameFetchingThread_.Start();
+                //        Debug.Log("[ff-task-worker]: running task for " + ffTask.frameName_);
+                //        activeTasks_.Add(ffTask);
+                //        ffTask.run(delegate(FrameFetchingTask fft){
+                //            Debug.Log("[ff-task-worker]: task completed: "+fft.frameName_);
+                //            // cleanup when we are done
+                //            activeTasks_.Remove(fft);
+                //        });
+                //    } // while
+                //}));
+                //frameFetchingThread_.Start();
 			}
 		} catch (System.Exception e) {
 			Debug.LogError ("Error initializing NDN-RTC: " + e.Message);
@@ -588,6 +590,8 @@ public class NdnRtc : MonoBehaviour
 
 	public static void Release ()
 	{
+        Debug.Log("Deinit NDN-RTC");
+
         runFrameFetching_ = false;
         queueSem_.Release();
         frameFetchingThread_.Join();
