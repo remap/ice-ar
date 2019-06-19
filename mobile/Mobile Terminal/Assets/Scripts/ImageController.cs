@@ -51,8 +51,12 @@ public class ImageController : MonoBehaviour
 
     public void enqueueFrame(FetchedUIFrame frameData)
     {
+        lock (fetchedFrames)
+        {
+            fetchedFrames.Enqueue(frameData);
+        }
+
         Debug.Log("[img-controller] enqueued frame");
-        fetchedFrames.Enqueue(frameData);
     }
 
     private Image findSimilarityUIComponent(Image[] imagesInChild)
@@ -71,12 +75,12 @@ public class ImageController : MonoBehaviour
     {
         Debug.Log("[img-controller] inside updateDebugText()");
         debugText_ = "";
-        for (int i = 0; i < data.annotationData.Length; i++)
+        for (int i = 0; i < data.annotations.Length; i++)
         {
-            if (data.annotationData[i].prob >= 0.5f)
+            if (data.annotations[i].prob >= 0.5f)
             {
                 Debug.Log("[img-controller] inside updateDebugText() and inside if");
-                debugText_ += data.annotationData[i].label + ": " + data.annotationData[i].prob + "\n";
+                debugText_ += data.annotations[i].label + ": " + data.annotations[i].prob + "\n";
             }
         }
     }
@@ -160,25 +164,28 @@ public class ImageController : MonoBehaviour
     // Update is called once per frame
     void Update()
     {
-        // if have new frames - dequeue them into our textures array
-        while (fetchedFrames.Count > 0)
+        lock (fetchedFrames)
         {
-            Debug.Log("[img-controller] dequeuing frames " + fetchedFrames.Count);
+            // if have new frames - dequeue them into our textures array
+            while (fetchedFrames.Count > 0)
+            {
+                Debug.Log("[img-controller] dequeuing frames " + fetchedFrames.Count);
 
-            Texture2D tex = new Texture2D(320, 180, TextureFormat.ARGB32, false);
-            //To-Do: Figure out why frame RGB data is reversed (across the vertical axis). Maybe texture format is not ARGB32?
-            //       Could try using Array.reverse(), but that's probably too slow 
-            //       See: https://gamedev.stackexchange.com/questions/108444/unity-texture2d-raw-data-textureformat-problem
-            FetchedUIFrame tempUIFrame = fetchedFrames.Dequeue();
-            tex.LoadRawTextureData(tempUIFrame.argbData_);
-            tex.Apply();
-            textures.Insert(0, tex);
-            //frameTimestamps.Insert(0, (new DateTime(1970, 1, 1) + TimeSpan.FromMilliseconds(tempUIFrame.timestamp_)).ToLocalTime().ToString("MM/dd/yyyy HH:mm:ss"));
-            frameTimestamps.Insert(0, timeAgo(tempUIFrame.timestamp_));
-            frameSimLevels.Insert(0, tempUIFrame.simLevel_);
-            //To-Do: Format above to PST (or w/e your regional time is). Right now I think it's about 7 or 8 hours ahead of our time
+                Texture2D tex = new Texture2D(320, 180, TextureFormat.ARGB32, false);
+                //To-Do: Figure out why frame RGB data is reversed (across the vertical axis). Maybe texture format is not ARGB32?
+                //       Could try using Array.reverse(), but that's probably too slow 
+                //       See: https://gamedev.stackexchange.com/questions/108444/unity-texture2d-raw-data-textureformat-problem
+                FetchedUIFrame tempUIFrame = fetchedFrames.Dequeue();
+                tex.LoadRawTextureData(tempUIFrame.argbData_);
+                tex.Apply();
+                textures.Insert(0, tex);
+                //frameTimestamps.Insert(0, (new DateTime(1970, 1, 1) + TimeSpan.FromMilliseconds(tempUIFrame.timestamp_)).ToLocalTime().ToString("MM/dd/yyyy HH:mm:ss"));
+                frameTimestamps.Insert(0, timeAgo(tempUIFrame.timestamp_));
+                frameSimLevels.Insert(0, tempUIFrame.simLevel_);
+                //To-Do: Format above to PST (or w/e your regional time is). Right now I think it's about 7 or 8 hours ahead of our time
 
-            allowNewMemories = true;
+                allowNewMemories = true;
+            }
         }
 
         while (textures.Count > nFramesToRetain_)
