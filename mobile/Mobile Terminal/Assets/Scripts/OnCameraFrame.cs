@@ -56,6 +56,9 @@ public class OnCameraFrame : MonoBehaviour, ILogComponent
     private string rootPrefix_, userId1_, userId2_;
 
     //private bool publishing_;
+    private bool ndnrtcMainThreadRunning_ = false;
+    private NdnRtcLibCodeBlock libMainThreadCallback_;
+
 
     void Awake()
     {
@@ -145,11 +148,33 @@ public class OnCameraFrame : MonoBehaviour, ILogComponent
             // setup CNL logging 
             //ILOG.J2CsMapping.Util.Logging.Logger.getLogger("").setLevel(ILOG.J2CsMapping.Util.Logging.Level.FINE);
             //ILOG.J2CsMapping.Util.Logging.Logger.Write = delegate (string message) { Debug.Log(System.DateTime.Now + ": " + message); };
+
+            // check ndnrtc thread every second
+            InvokeRepeating("checkNdnrtcThread", 0.1f, 1f);
         }
         catch (System.Exception e)
         {
             Debug.LogExceptionFormat(e, "while initializing");
         }
+    }
+
+    void checkNdnrtcThread()
+    {
+        if (ndnrtcMainThreadRunning_ == false)
+            Debug.LogError("NDN-RTC main thread is NOT running");
+        else
+            Debug.Log("NDN-RTC main thread is running");
+
+        if (libMainThreadCallback_ == null)
+            libMainThreadCallback_ = new NdnRtcLibCodeBlock(ndnrtMainThreadCheck);
+
+        bool res = NdnRtcWrapper.ndnrtc_dispatchOnLibraryThread(libMainThreadCallback_);
+        ndnrtcMainThreadRunning_ = false;
+    }
+
+    void ndnrtMainThreadCheck()
+    {
+        ndnrtcMainThreadRunning_ = true;    
     }
 
     public void OnDestroy()

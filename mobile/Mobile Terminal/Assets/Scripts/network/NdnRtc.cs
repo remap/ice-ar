@@ -30,6 +30,9 @@ using System.Threading;
 public delegate void NdnRtcLibLogHandler([MarshalAs(UnmanagedType.LPStr)]string message);
 
 [UnmanagedFunctionPointerAttribute(CallingConvention.Cdecl)]
+public delegate void NdnRtcLibCodeBlock();
+
+[UnmanagedFunctionPointerAttribute(CallingConvention.Cdecl)]
 public delegate IntPtr FrameFetcherBufferAlloc([MarshalAs(UnmanagedType.LPStr)]string frameName,
                                                 int width, int heght);
 
@@ -77,6 +80,9 @@ public class NdnRtcWrapper
 
     [DllImport("ndnrtc")]
     public static extern void ndnrtc_deinit();
+
+    [DllImport("ndnrtc")]
+    public static extern bool ndnrtc_dispatchOnLibraryThread(NdnRtcLibCodeBlock codeBlock);
 
     [DllImport("ndnrtc")]
     public static extern IntPtr ndnrtc_createLocalStream(LocalStreamParams p,
