@@ -76,13 +76,17 @@ public class NdnRtcWrapper
 
     [DllImport("ndnrtc")]
     public static extern bool ndnrtc_init(string hostname, string path,
-                                           string signingIdentity, string instanceId, NdnRtcLibLogHandler logHandler);
+                                          string signingIdentity, string instanceId, NdnRtcLibLogHandler logHandler,
+                                          bool createThread);
 
     [DllImport("ndnrtc")]
     public static extern void ndnrtc_deinit();
 
     [DllImport("ndnrtc")]
     public static extern bool ndnrtc_dispatchOnLibraryThread(NdnRtcLibCodeBlock codeBlock);
+
+    [DllImport("ndnrtc")]
+    public static extern bool ndnrtc_processEvents();
 
     [DllImport("ndnrtc")]
     public static extern IntPtr ndnrtc_createLocalStream(LocalStreamParams p,
@@ -555,6 +559,7 @@ public class NdnRtc : MonoBehaviour
     static private bool runFrameFetching_;
 
 	static private NdnRtcLibLogHandler libraryCallbackDelegate;
+    private IEnumerator processEventsCoroutine_;
 	//static public LocalVideoStream videoStream;
 
     public static void fetch(string frameName, LocalVideoStream stream, 
@@ -583,7 +588,7 @@ public class NdnRtc : MonoBehaviour
             Debug.Log ( "NDN-RTC version " + version );
 
 			res = NdnRtcWrapper.ndnrtc_init ("localhost", Application.persistentDataPath, signingIdentity, 
-				instanceId, libraryCallbackDelegate);
+				instanceId, libraryCallbackDelegate, false);
 
 			if (res) {
                 //SetupLocalStream(signingIdentity + "/" + instanceId);
@@ -630,7 +635,8 @@ public class NdnRtc : MonoBehaviour
 	// Use this for initialization
 	void Start ()
 	{
-		
+        processEventsCoroutine_ = processEvents();
+        StartCoroutine(processEventsCoroutine_);
 	}
 	
 	// Update is called once per frame
@@ -638,6 +644,16 @@ public class NdnRtc : MonoBehaviour
 	{
 		
 	}
+
+    IEnumerator processEvents()
+    {
+        float FPS = 1000f;
+        while (true)
+        {
+            yield return new WaitForSecondsRealtime(1 / FPS);
+            NdnRtcWrapper.ndnrtc_processEvents();
+        }
+    }
 
 	static private void ndnrtcLogHandler (string message)
 	{

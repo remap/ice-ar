@@ -188,6 +188,7 @@ public class OnCameraFrame : MonoBehaviour, ILogComponent
 
         // init remote stream
         remoteVideoStream_ = new RemoteVideoStream(prefix, "s");
+        remoteVideoStream_.setBuffersize(500);
         remoteVideoStream_.startFetching(delegate (FrameInfo fi, int w, int h, byte[] argbBuffer)
         {
             Debug.LogFormat("Enqueue fetched frame {0}", fi.ndnName_);

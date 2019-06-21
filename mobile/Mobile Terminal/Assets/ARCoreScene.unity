@@ -1903,6 +1903,17 @@ MonoBehaviour:
   prefabText: {fileID: 114074947054447592, guid: 3a9e7ba6e04453b45a7cce3b4b1383c6,
     type: 2}
   spawnText: {fileID: 0}
+--- !u!114 &635449378
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInternal: {fileID: 0}
+  m_GameObject: {fileID: 635449374}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: af3f7834468d64405a231550c155cd06, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
 --- !u!1001 &726216841
 Prefab:
   m_ObjectHideFlags: 0
