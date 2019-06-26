@@ -1914,6 +1914,19 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: af3f7834468d64405a231550c155cd06, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+--- !u!114 &635449379
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInternal: {fileID: 0}
+  m_GameObject: {fileID: 635449374}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 23000eff715b64c2c906e5e59dd28cd2, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  multicastDelay: 0.5
+  stopAcquiringLock: 0
 --- !u!1001 &726216841
 Prefab:
   m_ObjectHideFlags: 0

@@ -208,6 +208,7 @@
     <Compile Include="Assets\Scripts\LabelBackground.cs" />
     <Compile Include="Assets\Scripts\LabelData.cs" />
     <Compile Include="Assets\Scripts\LenseObjects.cs" />
+    <Compile Include="Assets\Scripts\MulticastLock.cs" />
     <Compile Include="Assets\Scripts\NdnBle.cs" />
     <Compile Include="Assets\Scripts\NdnBleDisplayTextScript.cs" />
     <Compile Include="Assets\Scripts\NdnBleMenuSlideScript.cs" />
